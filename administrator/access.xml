@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    None of the portal permissions is granted by default. The administrator sets them to Allowed
+    for the Registered group under Options → Permissions (see README.md).
+-->
+<access component="com_zkbiotime">
+    <section name="component">
+        <action name="core.admin" title="JACTION_ADMIN" />
+        <action name="core.options" title="JACTION_OPTIONS" />
+        <action name="core.manage" title="JACTION_MANAGE" />
+        <action name="zkb.dashboard.view" title="COM_ZKBIOTIME_ACCESS_DASHBOARD_VIEW" description="COM_ZKBIOTIME_ACCESS_DASHBOARD_VIEW_DESC" />
+        <action name="zkb.attendance.view" title="COM_ZKBIOTIME_ACCESS_ATTENDANCE_VIEW" description="COM_ZKBIOTIME_ACCESS_ATTENDANCE_VIEW_DESC" />
+        <action name="zkb.calendar.view" title="COM_ZKBIOTIME_ACCESS_CALENDAR_VIEW" description="COM_ZKBIOTIME_ACCESS_CALENDAR_VIEW_DESC" />
+        <action name="zkb.schedule.view" title="COM_ZKBIOTIME_ACCESS_SCHEDULE_VIEW" description="COM_ZKBIOTIME_ACCESS_SCHEDULE_VIEW_DESC" />
+        <action name="zkb.report.view" title="COM_ZKBIOTIME_ACCESS_REPORT_VIEW" description="COM_ZKBIOTIME_ACCESS_REPORT_VIEW_DESC" />
+        <action name="zkb.report.export" title="COM_ZKBIOTIME_ACCESS_REPORT_EXPORT" description="COM_ZKBIOTIME_ACCESS_REPORT_EXPORT_DESC" />
+        <action name="zkb.profile.view" title="COM_ZKBIOTIME_ACCESS_PROFILE_VIEW" description="COM_ZKBIOTIME_ACCESS_PROFILE_VIEW_DESC" />
+    </section>
+</access>

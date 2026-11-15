@@ -1,0 +1,1 @@
+-- 0.1.0: first version. Tables are created by install.mysql.utf8.sql.
