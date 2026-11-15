@@ -45,6 +45,8 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 - **Integration Settings**: connection, credentials (encrypted), employee mapping, modules,
   data sources for calculated attendance and leave, system settings; **Test Connection**,
   **Read Certificate Pin**, **Close**, **Options**.
+- **Find Endpoints**: reads the API list from ZKBioTime, checks an endpoint (field names, kinds of
+  values and status texts only) and saves it as the Daily Attendance or Leave Source.
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
   source filters, and pages. **New** (map by employee code), **Confirm**, **Suspend**,
   **Re-match**. The status filter *No mapping yet* lists Joomla users that are not matched.
@@ -191,8 +193,17 @@ report endpoint), under **Integration Settings → Daily Attendance Source** and
 - **status names**, one per line `ZKBioTime text = present | late | early | absent | leave |
   holiday | rest | incomplete | other`, which decide colour and label.
 
-Until the daily source is set, the portal shows punches, first and last punch of each day, and
-"—" for schedule, status, late-in, early-out, worked hours and overtime, with a note saying so.
+**Easiest way: Find Endpoints** (*Components → ZKBioTime → Find Endpoints*, or the button on
+Integration Settings). It reads the list of endpoints from your ZKBioTime, checks the one you
+select with an employee code and dates, shows its field names, kinds of values and status texts
+(never personal values), suggests all the lines above, and saves them as the Daily Attendance or
+Leave Source after you review them. If your ZKBioTime publishes no readable API list, type the
+path from `/api/docs/` there.
+
+Until the daily source is set, the portal shows punches and "—" for schedule, status, late-in,
+early-out, worked hours and overtime, with a note saying so. Check-in and check-out then come from
+the punches by their state: the first check-in punch and the last check-out punch (break punches
+ignored), so a check-out is never shown as check-in.
 Nothing is calculated by Joomla. Only counting of values ZKBioTime returned is done (e.g. the
 number of days with status Late, the sum of late-in minutes).
 

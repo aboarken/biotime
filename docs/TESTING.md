@@ -22,6 +22,7 @@ vendor/bin/phpunit
 | Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form, data sources, no free-form queries, 0.1.x port merged into the URL) | `tests/Unit/SettingsValidatorTest.php` |
 | Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification, administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php` |
 | Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; per-day schedules; status mapping; month summaries; nothing calculated without the daily source; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months; exports contain only the user's data (Excel and PDF); profile allow-list | `tests/Unit/AttendanceServiceTest.php` |
+| Find Endpoints: OpenAPI and CoreJSON descriptions, list endpoints only, attendance first, the order the description forms are tried, parameter suggestions, field inspection without personal values, field and status suggestions that form a valid source, login paths refused | `tests/Unit/DiscoveryTest.php` |
 | Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
 
 The GitHub workflow runs PHP lint and these tests on every pull request before building the package.
@@ -56,6 +57,11 @@ php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
   ```bash
   BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' USER_PASS='…' OUT=tests/output node tests/e2e/portal.mjs
   ```
+
+0.3.0 also checks Find Endpoints (read the list, select, check, no employee codes shown, save
+as Daily Attendance Source) and a day with only a check-out punch (shown under Check-Out, with
+*Missing check-in*): 88 portal checks passed on PostgreSQL, and the update from the published
+0.2.0 on MariaDB.
 
 0.2.0 passed both on Joomla 6.2.0 / PHP 8.3 with PostgreSQL 16 (fresh install; 74 portal checks)
 and the install, update and uninstall checks on MariaDB 10.11 (update from the published 0.1.1:
@@ -99,6 +105,12 @@ passwords, tokens or personal data) with the pull request.
       site (tables `#__biotime_settings` and `#__biotime_audit` removed).
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
+
+### 0.3.0 – Find Endpoints and punch states
+- [ ] *Find Endpoints → Read the API list*: the list appears (or the message says none is readable; note which).
+- [ ] Select the daily attendance (time card) endpoint, check it with a real employee code and one week: compare the field names and status texts with ZKBioTime, then save it.
+- [ ] A day with only a check-out punch shows the time under Check-Out and *Missing check-in*.
+- [ ] Record in `docs/API-MAPPING.md` which description form worked (from the log).
 
 ### 0.2.0 – Employee mapping and portal
 

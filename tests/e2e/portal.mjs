@@ -38,12 +38,9 @@ await admin.fill('#jform_server_url', FAKE);
 await admin.fill('#jform_connect_via', '');
 await admin.fill('#jform_api_username', 'portal-api');
 await admin.fill('#jform_api_password', 'Fixture-Pass-123');
-await admin.fill('#jform_daily_path', '/att/api/fixture_daily/');
-await admin.fill('#jform_daily_fields', [
-  'emp_code = employee.emp_code', 'date = att_date', 'schedule = timetable', 'sched_start = check_in_time',
-  'sched_end = check_out_time', 'check_in = clock_in', 'check_out = clock_out', 'late = late', 'early = early',
-  'worked = work_time', 'overtime = ot', 'status = att_status'].join('\n'));
-await admin.fill('#jform_daily_status_map', 'Normal = present\nLate = late\nAbsent = absent\nWeekend = rest');
+await admin.fill('#jform_daily_path', '');
+await admin.fill('#jform_daily_fields', '');
+await admin.fill('#jform_daily_status_map', '');
 await admin.fill('#jform_leave_path', '/att/api/fixture_leave/');
 await admin.fill('#jform_leave_fields', 'emp_code = emp_code\nstart = start\nend = end\ntype = category\nduration = days\nstatus = approval');
 await admin.fill('#jform_leave_status_map', 'Approved = approved');
@@ -54,6 +51,32 @@ const saved = await admin.locator('#system-message-container').innerText();
 check(/Settings saved/.test(saved), `settings with data sources saved (${saved.replace(/\s+/g, ' ').slice(0, 160)})`);
 check((await untranslated(admin)).length === 0, `settings page translated (${(await untranslated(admin)).join(',')})`);
 await admin.screenshot({ path: `${OUT}/admin-settings.png`, fullPage: true });
+
+// Find Endpoints: read the API list, check the daily endpoint, save the reviewed suggestions.
+await admin.goto(`${BASE}/administrator/index.php?option=com_biotime&view=endpoints`, { waitUntil: 'networkidle' });
+await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('button:has-text("Read the API list")')]);
+let ep = await admin.innerText('body');
+check(/describes \d+ list endpoints/.test(ep) && ep.includes('/att/api/fixture_daily/'), 'Find Endpoints: API list read');
+check(!ep.includes('{id}'), 'Find Endpoints: only list endpoints');
+await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('tr:has-text("/att/api/fixture_daily/") a:has-text("Select")')]);
+check(await admin.inputValue('#biotime-path') === '/att/api/fixture_daily/' && await admin.inputValue('#biotime-pf') === 'start_date', 'Find Endpoints: path and filters pre-filled');
+await admin.fill('#biotime-emp', 'FIXTURE1');
+await admin.fill('#biotime-from', `${ym}-01`);
+await admin.fill('#biotime-to', `${ym}-28`);
+await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('button:has-text("Check")')]);
+ep = await admin.innerText('body');
+check(/returned \d+ rows/.test(ep) && ep.includes('att_status') && ep.includes('employee.emp_code'), 'Find Endpoints: fields listed');
+check(/Normal/.test(ep) && /Absent/.test(ep), 'Find Endpoints: status texts listed');
+check(!/FIXTURE1/.test(await admin.locator('table').last().innerText()), 'Find Endpoints: no employee codes in the field table');
+const fieldsText = await admin.inputValue('#biotime-fields');
+check(/date = att_date/.test(fieldsText) && /emp_code = employee\.emp_code/.test(fieldsText) && /schedule = timetable/.test(fieldsText), `Find Endpoints: suggestions (${fieldsText.replace(/\n/g, ' | ')})`);
+check(/Normal = present/.test(await admin.inputValue('#biotime-status')), 'Find Endpoints: status suggestions');
+check((await untranslated(admin)).length === 0, `Find Endpoints translated (${(await untranslated(admin)).join(',')})`);
+await admin.screenshot({ path: `${OUT}/admin-endpoints.png`, fullPage: true });
+await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('button:has-text("Save as Daily Attendance Source")')]);
+check(/Daily Attendance Source is saved/.test(await admin.locator('#system-message-container').innerText()), 'Find Endpoints: saved');
+check(await admin.inputValue('#jform_daily_path') === '/att/api/fixture_daily/', 'settings show the saved daily source');
+await admin.fill('#jform_api_password', 'Fixture-Pass-123');
 
 // Invalid source refused.
 await admin.fill('#jform_daily_extra', 'q = SELECT * FROM users');
@@ -122,6 +145,12 @@ check(/Present Days/.test(text) && /Late-In Occurrences/.test(text) && /Worked H
 check((await sara.locator('svg.biotime-chart').count()) === 1, 'dashboard: chart');
 check(/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard: recent activity and updated time');
 
+// A day with only a check-out punch: the time is under Check-Out, never Check-In.
+await sara.goto(pageUrl(`view=day&date=${ym}-09`), { waitUntil: 'networkidle' });
+const facts = await sara.locator('dl.biotime-facts').innerText();
+check(/Check-In\s*—/.test(facts) && /Check-Out\s*17:10/.test(facts), `check-out alone shown under Check-Out (${facts.replace(/\s+/g, ' ').slice(0, 200)})`);
+check(/Missing check-in/.test(await sara.innerText('body')), 'check-out alone: missing check-in exception');
+
 await sara.goto(pageUrl(`view=day&date=${ym}-03`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
 check(/Late Shift/.test(text) && /Side Door/.test(text) && /All Punches/.test(text), 'day details: schedule and all punches');
@@ -168,8 +197,10 @@ await saraCtx.close();
 
 // Omar is matched by e-mail and sees his own punch (the one hidden from Sara).
 const { ctx: omarCtx, page: omar } = await login('omar');
-await omar.goto(pageUrl(`view=attendance&month=${ym}`), { waitUntil: 'networkidle' });
-check((await omar.innerText('body')).includes('06:06'), 'omar matched by e-mail sees his own punch');
+await omar.goto(pageUrl(`view=day&date=${ym}-04`), { waitUntil: 'networkidle' });
+const omarDay = await omar.innerText('body');
+check(omarDay.includes('06:06'), 'omar matched by e-mail sees his own punch');
+check(/Incomplete punch record/.test(omarDay) || new Date(`${ym}-04`) >= new Date(new Date().toDateString()), 'a single punch of unknown state is an incomplete record');
 await omarCtx.close();
 
 for (const user of ['shared', 'nobody']) {

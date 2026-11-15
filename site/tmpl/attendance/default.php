@@ -125,7 +125,7 @@ $summary = array_filter([
                             <?php foreach ($day->exceptions as $ex) : ?>
                                 <span class="badge text-bg-light border biotime-exception"><?php echo $this->escape($f->exception($ex)); ?></span>
                             <?php endforeach; ?>
-                            <?php if (count($day->punches) > 1) : ?>
+                            <?php if (count($day->punches) > 1 || ($day->punches !== [] && $day->checkIn === null && $day->checkOut === null)) : ?>
                                 <details class="biotime-punches mt-1">
                                     <summary><?php echo Text::sprintf('COM_BIOTIME_N_PUNCHES', count($day->punches)); ?></summary>
                                     <ol class="list-unstyled small mb-0">

@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-15
+
+### Added
+- **Find Endpoints** (*Components → ZKBioTime → Find Endpoints*, and a button on Integration Settings): reads the list of API endpoints from your ZKBioTime (`/api/docs/`, `/api/personnel_docs/`), lists attendance, report and leave endpoints first, and checks the one you select with an employee code and dates. It shows the field names, the kind of value in each (date, time, number, …) and the status texts found, never names, codes or other personal values, then suggests the field and status lines. **Save as Daily Attendance Source** or **Save as Leave Source** stores them after you review them. Only reading (GET) requests are sent; the page needs Super User rights, every action is a POST with a CSRF token, limited to 60 per hour and audited.
+
+### Fixed
+- **A check-out was shown under Check-In** when ZKBioTime's calculated times were not available and a day had only a check-out punch. Check-in and check-out are now taken from the punches by their state (check-in, check-out, overtime in/out; break punches are ignored): the first check-in punch and the last check-out punch. A day with only a check-out shows Check-In "—" and the exception *Missing check-in*. A single punch of unknown state is shown under neither and listed as an incomplete punch record.
+- A test that should catch missing language strings per page was not checking any file; it now does, and the two strings it found missing on Find Endpoints were added.
+
 ## [0.2.0] - 2026-11-15
 
 ### Added

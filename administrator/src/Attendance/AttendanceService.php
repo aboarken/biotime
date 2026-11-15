@@ -33,6 +33,7 @@ final class AttendanceService
     public const TX_EMP_CODE = 'emp_code';
     public const TX_TIME     = 'punch_time';
     public const TX_STATE    = 'punch_state_display';
+    public const TX_STATE_CODE = 'punch_state';
     public const TX_DEVICE   = 'terminal_alias';
     public const TX_AREA     = 'area_alias';
 
@@ -201,10 +202,9 @@ final class AttendanceService
             $fromPunches = false;
 
             if ($checkIn === null && $checkOut === null && $p !== []) {
-                // First and last punch of the day, exactly as recorded.
-                $checkIn     = $p[0]->time;
-                $checkOut    = \count($p) > 1 ? $p[\count($p) - 1]->time : null;
-                $fromPunches = true;
+                // ZKBioTime gave no calculated times: use the punches, by their state.
+                [$checkIn, $checkOut] = self::checkTimes($p);
+                $fromPunches          = true;
             }
 
             $day = new Day(
@@ -342,7 +342,9 @@ final class AttendanceService
             ? mb_substr(trim(strip_tags((string) $item[$k])), 0, 100)
             : null;
 
-        return ['t' => $time, 's' => $text(self::TX_STATE), 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA)];
+        $code = isset($item[self::TX_STATE_CODE]) && is_scalar($item[self::TX_STATE_CODE]) && preg_match('/^\d{1,3}$/', (string) $item[self::TX_STATE_CODE]) ? (string) $item[self::TX_STATE_CODE] : null;
+
+        return ['t' => $time, 's' => $text(self::TX_STATE), 'c' => $code, 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA)];
     }
 
     /**
@@ -397,6 +399,41 @@ final class AttendanceService
             'duration' => $this->leave->value($item, 'duration'),
             'status'   => $this->leave->value($item, 'status'),
         ];
+    }
+
+    /**
+     * Check-in and check-out from one day's punches (in time order), exactly as recorded:
+     *  - when punches carry a state: the first check-in punch and the last check-out punch;
+     *    break punches are ignored, and a check-out is never shown as check-in;
+     *  - without states: the first and last punch when there are at least two; a single punch
+     *    of unknown state is shown under neither (it stays in the punch list as incomplete).
+     *
+     * @param list<Punch> $punches
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    public static function checkTimes(array $punches): array
+    {
+        $typed = array_filter($punches, static fn (Punch $p): bool => $p->direction() !== null);
+
+        if ($typed !== []) {
+            $in  = null;
+            $out = null;
+
+            foreach ($punches as $punch) {
+                if ($in === null && $punch->direction() === Punch::IN) {
+                    $in = $punch->time;
+                }
+
+                if ($punch->direction() === Punch::OUT && ($in === null || $punch->time >= $in)) {
+                    $out = $punch->time;
+                }
+            }
+
+            return [$in, $out];
+        }
+
+        return \count($punches) >= 2 ? [$punches[0]->time, $punches[\count($punches) - 1]->time] : [null, null];
     }
 
     /** "YYYY-MM-DD HH:MM[:SS]" (or with T), kept as the server recorded it: never shifted. */

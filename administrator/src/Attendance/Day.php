@@ -84,11 +84,12 @@ final class Day
             $ex[] = self::EX_MISSING_IN;
         }
 
-        if ($isPast && $this->checkIn !== null && $this->checkOut === null && ($dailyConfigured || \count($this->punches) !== 1)) {
+        if ($isPast && $this->checkIn !== null && $this->checkOut === null) {
             $ex[] = self::EX_MISSING_OUT;
         }
 
-        if ($isPast && \count($this->punches) === 1 && !$this->hasRow) {
+        // A single punch whose state is unknown: neither check-in nor check-out can be told.
+        if ($isPast && \count($this->punches) === 1 && !$this->hasRow && $this->checkIn === null && $this->checkOut === null) {
             $ex[] = self::EX_INCOMPLETE;
         }
 

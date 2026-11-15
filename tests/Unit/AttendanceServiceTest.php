@@ -8,6 +8,7 @@ namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\Punch;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 use BiotimePortal\Component\Biotime\Administrator\Export\ExportService;
 use BiotimePortal\Component\Biotime\Administrator\Export\PdfWriter;
@@ -195,7 +196,7 @@ final class AttendanceServiceTest extends TestCase
         self::assertContains(Day::EX_NO_SCHEDULE, $period->day('2026-11-04')->exceptions, 'punch but no schedule');
 
         $plain = $this->service()->month($this->alice, 2026, 11);
-        self::assertContains(Day::EX_INCOMPLETE, $plain->day('2026-11-04')->exceptions, 'one punch only');
+        self::assertContains(Day::EX_MISSING_OUT, $plain->day('2026-11-04')->exceptions, 'one check-in punch only');
         self::assertSame('08:00:00', $plain->day('2026-11-04')->checkIn);
         self::assertNull($plain->day('2026-11-04')->checkOut);
     }
@@ -306,6 +307,34 @@ final class AttendanceServiceTest extends TestCase
 
         $this->expectExceptionObject(new \BiotimePortal\Component\Biotime\Administrator\Api\ZkbException('not_found', 'Employee record does not match the mapping'));
         (new ProfileService(fn () => Fakes::client($this->zkb), Fakes::cache($this->session), $this->log))->profile($this->alice);
+    }
+
+    /** A check-out punch is never shown as check-in (reported on a real site). */
+    public function testCheckOutAloneIsNotShownAsCheckIn(): void
+    {
+        $p = static fn (string $t, ?string $state, ?string $code = null): Punch => new Punch('2026-11-02', $t, $state, null, null, $code);
+
+        self::assertSame([null, '17:00:00'], AttendanceService::checkTimes([$p('17:00:00', 'Check Out')]));
+        self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'Check In')]));
+        self::assertSame(['08:00:00', '17:00:00'], AttendanceService::checkTimes([
+            $p('08:00:00', 'Check In'), $p('12:00:00', 'Break Out'), $p('13:00:00', 'Break In'), $p('17:00:00', 'Check Out'),
+        ]), 'break punches are ignored');
+        self::assertSame(['08:00:00', '19:30:00'], AttendanceService::checkTimes([
+            $p('08:00:00', 'Check In'), $p('17:00:00', 'Check Out'), $p('18:00:00', 'Overtime In'), $p('19:30:00', 'Overtime Out'),
+        ]));
+        self::assertSame([null, '17:00:00'], AttendanceService::checkTimes([$p('17:00:00', null, '1')]), 'code 1 = check-out when there is no text');
+        self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'تسجيل دخول', '0')]), 'unknown text falls back to the code');
+        self::assertSame([null, null], AttendanceService::checkTimes([$p('09:00:00', null)]), 'single punch of unknown state: neither');
+        self::assertSame(['08:00:00', '17:00:00'], AttendanceService::checkTimes([$p('08:00:00', null), $p('17:00:00', null)]), 'unknown states: first and last');
+
+        // Through the whole service: the day shows only a check-out and says check-in is missing.
+        $this->zkb->list('/iclock/api/transactions/', [['emp_code' => 'E1', 'punch_time' => '2026-11-09 17:05:00', 'punch_state_display' => 'Check Out']]);
+        $day = $this->service()->month($this->alice, 2026, 11)->day('2026-11-09');
+
+        self::assertNull($day->checkIn);
+        self::assertSame('17:05:00', $day->checkOut);
+        self::assertContains(Day::EX_MISSING_IN, $day->exceptions);
+        self::assertNotContains(Day::EX_INCOMPLETE, $day->exceptions);
     }
 
     public function testValueParsingHelpers(): void

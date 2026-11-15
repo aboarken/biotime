@@ -66,6 +66,16 @@ final class ZkbClient
     private const PARAM_TX_START = 'start_time';
     private const PARAM_TX_END   = 'end_time';
 
+    /**
+     * API description pages (Find Endpoints). The administrator's manual names /api/docs/ and
+     * /api/personnel_docs/. Their machine-readable form depends on the build: OpenAPI/Swagger
+     * (?format=openapi) or Django REST framework CoreJSON (?format=corejson) is tried in that
+     * order, the next one only when the previous is not found or not readable; the form that
+     * worked is logged. UNVERIFIED on 9.5.
+     */
+    private const DOC_PATHS   = ['/api/docs/', '/api/personnel_docs/'];
+    private const DOC_FORMATS = ['openapi', 'corejson'];
+
     /** Paging query parameters. UNVERIFIED on 9.5 (manual, list endpoints). */
     private const PARAM_PAGE      = 'page';
     private const PARAM_PAGE_SIZE = 'page_size';
@@ -365,6 +375,74 @@ final class ZkbClient
         $query[$source->paramTo]   = $to->format($source->dateFormat);
 
         return $this->listAll($source->path, $query);
+    }
+
+    /**
+     * The GET list endpoints of every API description page that can be read (Find Endpoints).
+     *
+     * @return array{endpoints: list<array{path: string, summary: string, params: list<string>, relevant: bool}>, sources: list<string>}
+     *
+     * @throws ZkbException when no description could be read at all (the last error)
+     */
+    public function apiCatalog(): array
+    {
+        $endpoints = [];
+        $sources   = [];
+        $last      = null;
+
+        foreach (self::DOC_PATHS as $path) {
+            foreach (self::DOC_FORMATS as $format) {
+                try {
+                    $doc = $this->get($path, ['format' => $format]);
+                } catch (ZkbException $e) {
+                    $last = $e;
+
+                    // Only "not found" or an unreadable / refused form moves on to the next one.
+                    if (\in_array($e->getKind(), [ZkbException::NOT_FOUND, ZkbException::BAD_RESPONSE, ZkbException::VALIDATION], true)) {
+                        continue;
+                    }
+
+                    throw $e;
+                }
+
+                if (!\BiotimePortal\Component\Biotime\Administrator\Discovery\ApiCatalog::looksLikeDescription($doc)) {
+                    $last = new ZkbException(ZkbException::BAD_RESPONSE, 'Not an API description');
+
+                    continue;
+                }
+
+                $found = \BiotimePortal\Component\Biotime\Administrator\Discovery\ApiCatalog::parse($doc);
+                $endpoints = array_merge($endpoints, $found);
+                $sources[] = $path . '?format=' . $format;
+                $this->logger->info(\sprintf('ZKBioTime API description read from %s?format=%s: %d list endpoints', $path, $format, \count($found)));
+
+                break;
+            }
+        }
+
+        if ($sources === []) {
+            $this->logger->warning('No ZKBioTime API description could be read (tried ' . implode(', ', self::DOC_PATHS) . ' as ' . implode(' and ', self::DOC_FORMATS) . ')');
+
+            throw $last ?? new ZkbException(ZkbException::NOT_FOUND, 'No API description');
+        }
+
+        return ['endpoints' => \BiotimePortal\Component\Biotime\Administrator\Discovery\ApiCatalog::merge($endpoints), 'sources' => $sources];
+    }
+
+    /**
+     * A few sample rows of a list endpoint chosen by the administrator (Find Endpoints).
+     *
+     * @param array<string, string> $query  employee and date filters
+     *
+     * @throws ZkbException
+     */
+    public function probe(string $path, array $query, int $rows = 20): ListPage
+    {
+        if (\in_array($path, [self::PATH_JWT_AUTH, self::PATH_TOKEN_AUTH], true)) {
+            throw new \InvalidArgumentException('Invalid path');
+        }
+
+        return $this->listPage($path, $query, 1, max(1, min(50, $rows)));
     }
 
     /**

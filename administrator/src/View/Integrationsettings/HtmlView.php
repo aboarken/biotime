@@ -76,6 +76,10 @@ final class HtmlView extends BaseHtmlView
             ->icon('icon-lock')
             ->listCheck(false);
 
+        $toolbar->linkButton('endpoints', 'COM_BIOTIME_ENDPOINTS_BUTTON')
+            ->url('index.php?option=com_biotime&view=endpoints')
+            ->icon('icon-search');
+
         // Back to the administrator dashboard; unsaved changes are discarded.
         $toolbar->linkButton('close', 'JTOOLBAR_CLOSE')
             ->url('index.php')

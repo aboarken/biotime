@@ -74,6 +74,7 @@ $stored = static fn (bool $set): string => Text::_($set ? 'COM_BIOTIME_SETTINGS_
             <legend><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_' . strtoupper($set)); ?></legend>
             <?php if (\in_array($set, ['daily', 'leave'], true)) : ?>
                 <p class="small"><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_' . strtoupper($set) . '_HELP'); ?></p>
+                <p><a class="btn btn-sm btn-outline-primary" href="<?php echo Route::_('index.php?option=com_biotime&view=endpoints'); ?>"><span class="icon-search" aria-hidden="true"></span> <?php echo Text::_('COM_BIOTIME_ENDPOINTS_BUTTON'); ?></a></p>
             <?php endif; ?>
             <?php echo $this->form->renderFieldset($set); ?>
         </fieldset>
