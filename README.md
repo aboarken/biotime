@@ -57,6 +57,7 @@ Joomla server, that each employee only sees their own records.
 | Section | Setting | Notes |
 |---|---|---|
 | Connection | Server URL, Port | e.g. `https://biotime.example.com` and `8081`. A warning is shown for plain `http`. |
+| | Connect via | optional; see *Server with an internal name* below |
 | | Connection timeout, Total timeout | seconds; connection ≤ total |
 | Credentials | Authentication method | **JWT** (username + password exchanged for a short-lived token, renewed automatically) or **General Auth Token** (a token entered here, or obtained with username + password) |
 | | API username, API password, General Auth Token | Password and token are encrypted (AES-256-GCM) before they are stored and never shown again: the page only says *Stored (encrypted)* or *Not set*. |
@@ -69,6 +70,20 @@ Joomla server, that each employee only sees their own records.
 Settings are stored in the component's own table `#__biotime_settings`, not in Joomla's
 component options, because Joomla's Options page replaces every option on save and the secrets
 must be encrypted first. *Options* holds only the permissions.
+
+**Server with an internal name (Connect via).** When ZKBioTime's own name is only known inside
+the company network and Joomla reaches it through a public address, enter the internal name as
+*Server URL* and the public address as *Connect via*, for example:
+
+| Server URL | Port | Connect via |
+|---|---|---|
+| `https://zkb.mysite.com` | (empty) | `api.zkb.mysite.com` |
+
+Joomla then opens the connection to `api.zkb.mysite.com` (port 443 unless *Connect via* names
+another one) but still checks the certificate against `zkb.mysite.com` and sends
+`Host: zkb.mysite.com`, so the server's existing certificate stays valid and no DNS change is
+needed on the Joomla server. *Read Certificate Pin* reads the certificate through the same
+address. If the certificate is not signed by a public CA, add a CA bundle or a certificate pin.
 
 **Encryption secret.** Secrets are encrypted with a key derived from the environment variable
 `BIOTIME_PORTAL_SECRET` (recommended, at least 32 random characters) or, when that is not set,
@@ -128,7 +143,7 @@ are written.
 
 | Message | Check |
 |---|---|
-| could not be reached | URL, port, firewall/VPN between the web server and ZKBioTime, timeouts, TLS settings; the log has the cURL reason |
+| could not be reached | URL, port, *Connect via*, firewall/VPN between the web server and ZKBioTime, timeouts, TLS settings; the log has the cURL reason |
 | did not accept the portal's credentials | username, password or token, authentication method |
 | did not allow the portal to read this information | the API user's permissions in ZKBioTime |
 | could not find what was asked for | server URL must not contain an extra path; record the ZKBioTime build number |

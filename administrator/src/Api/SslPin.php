@@ -76,7 +76,7 @@ final class SslPin
      *
      * @throws \RuntimeException
      */
-    public static function readFromServer(string $baseUrl, int $timeout = 10): array
+    public static function readFromServer(string $baseUrl, int $timeout = 10, string $connectVia = ''): array
     {
         $parts = parse_url($baseUrl);
 
@@ -87,7 +87,10 @@ final class SslPin
         $host = trim($parts['host'], '[]');
         $port = (int) ($parts['port'] ?? 443);
 
-        $target  = (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? '[' . $host . ']' : $host) . ':' . $port;
+        // Same path as the API calls: connect to "connect via", present the server URL's name (SNI).
+        $target = $connectVia !== ''
+            ? ClientConfig::normalizeConnectVia($connectVia, $port)
+            : (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? '[' . $host . ']' : $host) . ':' . $port;
         $context = stream_context_create(['ssl' => [
             'capture_peer_cert' => true,
             'verify_peer'       => false,

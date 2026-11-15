@@ -73,6 +73,15 @@ final class SettingsValidator
         }
 
         $values['server_port'] = $port;
+
+        // Connect via: another address for the TCP connection, same name for TLS and Host.
+        try {
+            $basePort              = (int) $port ?: ($urlPort ?: (str_starts_with(strtolower($url), 'https://') ? 443 : 80));
+            $values['connect_via'] = ClientConfig::normalizeConnectVia(self::str($input['connect_via'] ?? ''), $basePort);
+        } catch (\InvalidArgumentException) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_CONNECT_VIA';
+            $values['connect_via'] = '';
+        }
         $https                 = str_starts_with(strtolower($url), 'https://');
 
         // Authentication.

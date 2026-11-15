@@ -66,7 +66,8 @@ final class ZkbClientFactory
                 $settings->connectTimeout(),
                 $settings->verifyTls(),
                 $settings->caBundle(),
-                $settings->tlsPin()
+                $settings->tlsPin(),
+                $settings->connectVia()
             );
         } catch (\InvalidArgumentException $e) {
             throw new ZkbException(ZkbException::NOT_CONFIGURED, 'ZKBioTime server URL is invalid', 0, '', $e);

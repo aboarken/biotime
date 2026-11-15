@@ -61,6 +61,35 @@ final class ConnectionConfigTest extends TestCase
         new ClientConfig('http://x.example', 0, 30, 5, true, '', self::PIN);
     }
 
+    public function testConnectViaKeepsTheServerNameAndChangesOnlyTheAddress(): void
+    {
+        $config = new ClientConfig('https://zkb.mysite.com', 0, 30, 5, true, '', '', 'API.zkb.mysite.com');
+
+        self::assertSame('https://zkb.mysite.com', $config->baseUrl, 'URL, SNI and Host header keep the server name');
+        self::assertSame('api.zkb.mysite.com:443', $config->connectVia, 'port defaults to the server URL port');
+        self::assertSame('zkb.mysite.com:443:api.zkb.mysite.com:443', $config->connectToEntry());
+
+        $other = new ClientConfig('http://zkb.mysite.com', 8081, 30, 5, true, '', '', '203.0.113.10:18081');
+        self::assertSame('zkb.mysite.com:8081:203.0.113.10:18081', $other->connectToEntry());
+
+        self::assertNull((new ClientConfig('https://zkb.mysite.com'))->connectToEntry());
+        self::assertSame('[2001:db8::1]:8443', ClientConfig::normalizeConnectVia('[2001:db8::1]:8443', 443));
+        self::assertSame('api.zkb.mysite.com:8081', ClientConfig::normalizeConnectVia(' api.zkb.mysite.com ', 8081));
+    }
+
+    public function testInvalidConnectViaIsRefused(): void
+    {
+        foreach (['https://api.example.com', 'api.example.com/path', 'api.example.com:0', 'api.example.com:70000', '-bad-.com', '[not-ipv6]:443', '[1.2.3.4]:443', '2001:db8::1', 'a b', 'host:port'] as $bad) {
+            try {
+                ClientConfig::normalizeConnectVia($bad, 443);
+                self::fail('Accepted ' . $bad);
+            } catch (\InvalidArgumentException) {
+            }
+        }
+
+        self::assertTrue(true);
+    }
+
     public function testPinNormalisation(): void
     {
         self::assertSame('', SslPin::normalize('  '));

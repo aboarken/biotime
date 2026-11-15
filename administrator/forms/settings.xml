@@ -10,6 +10,8 @@
                required="true" validate="url" scheme="https,http" filter="url" size="60" />
         <field name="server_port" type="number" label="COM_BIOTIME_SETTINGS_SERVER_PORT"
                description="COM_BIOTIME_SETTINGS_SERVER_PORT_DESC" hint="8081" min="1" max="65535" filter="integer" />
+        <field name="connect_via" type="text" label="COM_BIOTIME_SETTINGS_CONNECT_VIA"
+               description="COM_BIOTIME_SETTINGS_CONNECT_VIA_DESC" hint="api.zkb.example.com:443" filter="string" size="60" />
         <field name="connect_timeout" type="number" label="COM_BIOTIME_SETTINGS_CONNECT_TIMEOUT"
                description="COM_BIOTIME_SETTINGS_CONNECT_TIMEOUT_DESC" default="5" min="1" max="60" filter="integer" required="true" />
         <field name="timeout" type="number" label="COM_BIOTIME_SETTINGS_TIMEOUT"

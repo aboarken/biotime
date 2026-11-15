@@ -1,0 +1,1 @@
+-- No schema changes in 0.1.1 (Connect via is stored as a settings row).

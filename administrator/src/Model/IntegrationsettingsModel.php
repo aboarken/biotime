@@ -102,7 +102,11 @@ final class IntegrationsettingsModel extends FormModel
             throw new \RuntimeException('No server URL saved');
         }
 
-        return SslPin::readFromServer(ClientConfig::buildBaseUrl($settings->serverUrl(), $settings->serverPort()), $settings->connectTimeout());
+        return SslPin::readFromServer(
+            ClientConfig::buildBaseUrl($settings->serverUrl(), $settings->serverPort()),
+            $settings->connectTimeout(),
+            $settings->connectVia()
+        );
     }
 
     private function component(): BiotimeComponent

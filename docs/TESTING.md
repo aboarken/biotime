@@ -17,7 +17,7 @@ vendor/bin/phpunit
 |---|---|
 | JWT and General Auth Token login, header format, token caching, renewal before expiry, one renewal after "unauthorised", static token, wrong credentials, no secrets in logs or dumps, connection test | `tests/Unit/ZkbClientAuthTest.php` |
 | Error mapping for every kind, GET retry on network and server errors, no retry for login, paging (`next`, `count`, safety maximum, max items, `results` and bare-list fallbacks), path/query/id/emp_code validation, log lines without personal data | `tests/Unit/ZkbClientRequestTest.php` |
-| URL and port, timeouts, certificate pin, redaction | `tests/Unit/ConnectionConfigTest.php` |
+| URL and port, Connect via, timeouts, certificate pin, redaction | `tests/Unit/ConnectionConfigTest.php` |
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
 | Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form) | `tests/Unit/SettingsValidatorTest.php` |
 | Every `COM_BIOTIME_` string used exists; every error kind has a message naming ZKBioTime and a hint | `tests/Unit/LanguageTest.php` |
@@ -44,7 +44,15 @@ php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
 BASE_URL=http://127.0.0.1:8090 ADMIN_USER=admin ADMIN_PASS='…' OUT=tests/output node tests/e2e/admin-settings.mjs
 ```
 
-For 0.1.0 this passed on Joomla 6.2.0 / PHP 8.3 with PostgreSQL 16 and with MariaDB 10.11:
+It also checks *Connect via*: a server URL whose name does not resolve is reached only through the
+*Connect via* address, and the stand-in server receives the server URL's name in the Host header
+(set `FAKE_LOG` to the stand-in's log file).
+
+Over TLS (0.1.1, by hand with a self-signed certificate for the internal name): CA bundle and
+certificate pin both connect through *Connect via*, a wrong pin and an untrusted certificate are
+refused, and *Read Certificate Pin* reads the right key.
+
+For 0.1.0 and 0.1.1 this passed on Joomla 6.2.0 / PHP 8.3 with PostgreSQL 16 and with MariaDB 10.11:
 install, install over itself (update), and uninstall (tables and files removed).
 
 ## 3. Live checklist on the real ZKBioTime 9.5 server (administrator)
@@ -70,6 +78,10 @@ passwords, tokens or personal data) with the pull request.
   - [ ] no password, token or employee data anywhere in the file.
 - [ ] Wrong password → "did not accept the portal's credentials".
 - [ ] Wrong port or host → "could not be reached" within the connection timeout.
+- [ ] *(0.1.1)* Internal name: Server URL `https://zkb.mysite.com`, Connect via `api.zkb.mysite.com`
+      (and a port if the public one differs) → Test Connection succeeds; Read Certificate Pin shows
+      the certificate of `zkb.mysite.com`. With Connect via emptied, the same URL fails when the
+      Joomla server cannot resolve the internal name.
 - [ ] If the server uses https: **Read Certificate Pin**, compare with the pin computed on the
       server (see README), save it, **Test Connection** again.
 - [ ] Switch to *General Auth Token* (username + password, no token) → Test Connection.

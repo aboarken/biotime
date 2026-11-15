@@ -36,6 +36,7 @@ final class Settings
         'verify_tls'      => '1',
         'ca_bundle'       => '',
         'tls_pin'         => '',
+        'connect_via'     => '',
         // System
         'page_size'       => '100',
         'max_pages'       => '50',
@@ -137,6 +138,12 @@ final class Settings
     public function tlsPin(): string
     {
         return $this->get('tls_pin');
+    }
+
+    /** "host", "host:port" or "IP:port" to connect to instead of the server URL's host; '' = direct. */
+    public function connectVia(): string
+    {
+        return $this->get('connect_via');
     }
 
     public function pageSize(): int
