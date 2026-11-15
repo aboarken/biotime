@@ -19,6 +19,7 @@ endpoint paths are named in exactly one place: the constants at the top of
 | Item | Value |
 |---|---|
 | ZKBioTime version | 9.5 |
+| Server | the school's ZKBioTime (port 5555), first checked 2026-11-15 from the administrator's log |
 | Build number | **not recorded yet** (ZKBioTime *System → About*) |
 | `/api/docs/` export received | no |
 | `/api/personnel_docs/` export received | no |
@@ -36,7 +37,7 @@ instead of guessed. The client makes the first real connection tell us what is d
 - unknown or missing fields are never filled in: they show "—";
 - an unreadable answer is the error *unreadable response*; the log names the keys received.
 
-## Authentication — UNVERIFIED
+## Authentication — VERIFIED (login works; method not yet recorded)
 
 | | JWT | General Auth Token |
 |---|---|---|
@@ -61,7 +62,13 @@ instead of guessed. The client makes the first real connection tell us what is d
 | Never read or shown | passwords, `device_password`, card numbers, biometric templates (`fingerprint`, `face`, …), national ID / `ssn`, device data, any field not listed above |
 | Source | ZKBioTime API User Manual, Personnel → Employee (to be confirmed on `/api/personnel_docs/`) |
 
-## Transactions (punches) — UNVERIFIED
+## Transactions (punches) — VERIFIED
+
+Verified 2026-11-15 on the real server: `GET /iclock/api/transactions/` with `page`, `page_size`,
+`emp_code`, `start_time`, `end_time` answered HTTP 200 with the rows under `data` (16 punches for
+November, 38 for October for one employee). The state fields (`punch_state_display`,
+`punch_state`) are still to be confirmed from a sample row.
+
 
 | | |
 |---|---|
@@ -71,7 +78,12 @@ instead of guessed. The client makes the first real connection tell us what is d
 | Used for | All punches of a day; check-in = first check-in punch and check-out = last check-out punch **only** when the daily source does not provide them (break punches ignored; without states: first and last of two or more punches); days with punches; duplicate, incomplete and missing check-in/out exceptions |
 | Source | ZKBioTime API User Manual, Transaction |
 
-## API description (Find Endpoints) — UNVERIFIED
+## API description (Find Endpoints) — VERIFIED (CoreJSON)
+
+Verified 2026-11-15 on the real server: `?format=openapi` → 404 (no OpenAPI);
+`?format=corejson` → 406 when only `application/json` is accepted. The CoreJSON media type
+(`application/coreapi+json`) is therefore requested for that form since 0.3.1. Unknown paths
+answer HTTP 200 with a web page, which the portal reports as "not API data".
 
 | | |
 |---|---|

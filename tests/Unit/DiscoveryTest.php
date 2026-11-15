@@ -83,6 +83,47 @@ final class DiscoveryTest extends TestCase
         self::assertContains('/att/api/dailyReport/', array_column($result['endpoints'], 'path'));
     }
 
+    /**
+     * As seen on a real ZKBioTime server: no OpenAPI (404), and CoreJSON only when the CoreJSON
+     * media type is accepted (plain application/json alone is refused with 406).
+     */
+    public function testCoreJsonIsRequestedWithItsOwnMediaType(): void
+    {
+        $zkb   = new RoutingTransport();
+        $serve = static function (array $q, array $headers): array {
+            if (($q['format'] ?? '') !== 'corejson') {
+                return [404, ['detail' => 'Not found.']];
+            }
+
+            if (!str_contains($headers['Accept'] ?? '', 'application/coreapi+json')) {
+                return [406, ['detail' => 'Could not satisfy the request Accept header.']];
+            }
+
+            return [200, ['_type' => 'document', 'att' => ['timecard' => ['list' => ['_type' => 'link', 'url' => '/att/api/timecard/', 'fields' => [['name' => 'emp_code', 'location' => 'query']]]]]]];
+        };
+        $zkb->on('/api/docs/', $serve);
+        $zkb->on('/api/personnel_docs/', $serve);
+
+        $result = Fakes::client($zkb)->apiCatalog();
+
+        self::assertSame(['/api/docs/?format=corejson', '/api/personnel_docs/?format=corejson'], $result['sources']);
+        self::assertSame(['/att/api/timecard/'], array_column($result['endpoints'], 'path'));
+        self::assertSame(['emp_code'], $result['endpoints'][0]['params']);
+    }
+
+    public function testAWebPageInsteadOfDataIsUnreadable(): void
+    {
+        $zkb = new RoutingTransport();
+        $zkb->on('/att/api/does_not_exist/', static fn (): array => [200, '<!DOCTYPE html><html><body>ZKBioTime</body></html>']);
+
+        try {
+            Fakes::client($zkb)->probe('/att/api/does_not_exist/', ['emp_code' => 'E1']);
+            self::fail('Expected an exception');
+        } catch (ZkbException $e) {
+            self::assertSame(ZkbException::BAD_RESPONSE, $e->getKind());
+        }
+    }
+
     public function testNoReadableDescriptionIsReported(): void
     {
         $zkb = new RoutingTransport();

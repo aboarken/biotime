@@ -52,7 +52,8 @@ final class EndpointsController extends BaseController
         } catch (ZkbException $e) {
             $this->app->setUserState(self::STATE_CATALOG, ['endpoints' => [], 'sources' => [], 'error' => $e->getKind(), 'at' => time()]);
             $this->audit(AuditLogInterface::RESULT_ERROR, 'catalog ' . $e->getKind());
-            $this->app->enqueueMessage(Text::_($e->getKind() === ZkbException::NOT_FOUND ? 'COM_BIOTIME_ENDPOINTS_NO_DOCS' : $e->getLanguageKey()), 'warning');
+            $noDocs = \in_array($e->getKind(), [ZkbException::NOT_FOUND, ZkbException::VALIDATION, ZkbException::BAD_RESPONSE], true);
+            $this->app->enqueueMessage(Text::_($noDocs ? 'COM_BIOTIME_ENDPOINTS_NO_DOCS' : $e->getLanguageKey()) . $this->serverSaid($e), 'warning');
         }
 
         $this->setRedirect(Route::_(self::URL, false));
@@ -103,7 +104,14 @@ final class EndpointsController extends BaseController
         } catch (ZkbException $e) {
             $this->audit(AuditLogInterface::RESULT_ERROR, 'check ' . $path . ' ' . $e->getKind());
 
-            $this->failCheck($form, $e->getLanguageKey(), $e->getKind());
+            $key = match ($e->getKind()) {
+                ZkbException::BAD_RESPONSE => 'COM_BIOTIME_ENDPOINTS_ERR_NOT_DATA',
+                ZkbException::NOT_FOUND    => 'COM_BIOTIME_ENDPOINTS_ERR_NO_PATH',
+                ZkbException::VALIDATION   => 'COM_BIOTIME_ENDPOINTS_ERR_REFUSED',
+                default                    => $e->getLanguageKey(),
+            };
+
+            $this->failCheck($form, $key, $e->getKind(), $this->serverSaid($e));
 
             return;
         }
@@ -177,11 +185,28 @@ final class EndpointsController extends BaseController
     /**
      * @param array<string, string> $form
      */
-    private function failCheck(array $form, string $key, ?string $kind = null): void
+    private function failCheck(array $form, string $key, ?string $kind = null, string $detail = ''): void
     {
         $this->app->setUserState(self::STATE_CHECK, $form + ['rows' => 0, 'count' => null, 'fields' => [], 'suggest' => [], 'statuses' => [], 'error' => $kind ?? 'input']);
-        $this->app->enqueueMessage(Text::_($key), 'warning');
+        $this->app->enqueueMessage(Text::_($key) . $detail, 'warning');
         $this->setRedirect(Route::_(self::URL . '#biotime-check', false));
+    }
+
+    /**
+     * " ZKBioTime answered HTTP 400: <its message>" for the administrator (already scrubbed of
+     * secrets by the client), escaped for the message area.
+     */
+    private function serverSaid(ZkbException $e): string
+    {
+        if ($e->getHttpStatus() === 0 && $e->getServerMessage() === '') {
+            return '';
+        }
+
+        return ' ' . htmlspecialchars(Text::sprintf(
+            'COM_BIOTIME_ENDPOINTS_SERVER_SAID',
+            $e->getHttpStatus() > 0 ? (string) $e->getHttpStatus() : '—',
+            $e->getServerMessage() !== '' ? $e->getServerMessage() : '—'
+        ), ENT_QUOTES, 'UTF-8');
     }
 
     private function date(string $value): ?\DateTimeImmutable

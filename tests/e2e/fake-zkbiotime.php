@@ -51,22 +51,35 @@ if (!preg_match('/^(JWT|Token) \S+$/', $_SERVER['HTTP_AUTHORIZATION'] ?? '')) {
     return true;
 }
 
-// An API description like /api/docs/?format=openapi (Swagger 2.0) listing the fixture endpoints.
-if ($path === '/api/docs/') {
-    if (($q['format'] ?? '') !== 'openapi') {
+// The API description, as the real server answers: no OpenAPI (404); CoreJSON (?format=corejson)
+// only when the CoreJSON media type is accepted, otherwise 406.
+if (\in_array($path, ['/api/docs/', '/api/personnel_docs/'], true)) {
+    if (($q['format'] ?? '') !== 'corejson') {
         $out(404, ['detail' => 'Not found.']);
 
         return true;
     }
 
-    $param = static fn (string ...$names): array => array_map(static fn ($n) => ['name' => $n, 'in' => 'query', 'type' => 'string'], $names);
-    $out(200, ['swagger' => '2.0', 'basePath' => '/', 'paths' => [
-        '/personnel/api/employees/'      => ['get' => ['summary' => 'Employee list', 'parameters' => $param('emp_code', 'page', 'page_size')]],
-        '/personnel/api/employees/{id}/' => ['get' => ['summary' => 'Employee']],
-        '/iclock/api/transactions/'      => ['get' => ['summary' => 'Transactions', 'parameters' => $param('emp_code', 'start_time', 'end_time')]],
-        '/att/api/fixture_daily/'        => ['get' => ['summary' => 'Fixture daily attendance', 'parameters' => $param('emp_code', 'start_date', 'end_date')]],
-        '/att/api/fixture_leave/'        => ['get' => ['summary' => 'Fixture leave', 'parameters' => $param('emp_code', 'start_date', 'end_date')]],
-    ]]);
+    if (!str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/coreapi+json')) {
+        $out(406, ['detail' => 'Could not satisfy the request Accept header.']);
+
+        return true;
+    }
+
+    $link = static fn (string $url, string $title, string ...$params): array => ['_type' => 'link', 'url' => $url, 'action' => 'get', 'description' => $title,
+        'fields' => array_map(static fn ($n) => ['name' => $n, 'location' => 'query'], $params)];
+    $doc  = $path === '/api/personnel_docs/'
+        ? ['_type' => 'document', 'employees' => ['list' => $link('/personnel/api/employees/', 'Employee list', 'emp_code', 'page', 'page_size'), 'read' => $link('/personnel/api/employees/{id}/', 'Employee')]]
+        : ['_type' => 'document',
+            'transactions' => ['list' => $link('/iclock/api/transactions/', 'Transactions', 'emp_code', 'start_time', 'end_time')],
+            'att'          => [
+                'fixture_daily' => ['list' => $link('/att/api/fixture_daily/', 'Fixture daily attendance', 'emp_code', 'start_date', 'end_date')],
+                'fixture_leave' => ['list' => $link('/att/api/fixture_leave/', 'Fixture leave', 'emp_code', 'start_date', 'end_date')],
+            ]];
+
+    http_response_code(200);
+    header('Content-Type: application/coreapi+json');
+    echo json_encode($doc);
 
     return true;
 }
@@ -149,6 +162,9 @@ if ($path === '/att/api/fixture_leave/') {
     return true;
 }
 
-$out(404, ['detail' => 'Not found.']);
+// Unknown paths: the real server answered a web page (HTTP 200, not JSON).
+http_response_code(200);
+header('Content-Type: text/html');
+echo '<!DOCTYPE html><html><body>ZKBioTime</body></html>';
 
 return true;
