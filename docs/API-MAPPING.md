@@ -67,9 +67,19 @@ instead of guessed. The client makes the first real connection tell us what is d
 |---|---|
 | Method and path | `GET /iclock/api/transactions/` — `ZkbClient::PATH_TRANSACTIONS` |
 | Parameters | `emp_code` (the mapped employee), `start_time` and `end_time` (`YYYY-MM-DD HH:MM:SS`, first and last second of the month), `page`, `page_size` |
-| Fields read | `emp_code` (ownership check), `punch_time`, `punch_state_display`, `terminal_alias` (device), `area_alias` (area) |
-| Used for | All punches of a day; check-in / check-out as first and last punch **only** when the daily source does not provide them; days with punches; duplicate and incomplete punch exceptions |
+| Fields read | `emp_code` (ownership check), `punch_time`, `punch_state_display` (state text), `punch_state` (state code, used only without text: 0/4 in, 1/5 out, 2/3 break, ZKTeco convention), `terminal_alias` (device), `area_alias` (area) |
+| Used for | All punches of a day; check-in = first check-in punch and check-out = last check-out punch **only** when the daily source does not provide them (break punches ignored; without states: first and last of two or more punches); days with punches; duplicate, incomplete and missing check-in/out exceptions |
 | Source | ZKBioTime API User Manual, Transaction |
+
+## API description (Find Endpoints) — UNVERIFIED
+
+| | |
+|---|---|
+| Paths | `/api/docs/` and `/api/personnel_docs/` — `ZkbClient::DOC_PATHS` |
+| Forms tried, in order | `?format=openapi` (OpenAPI / Swagger 2), then `?format=corejson` (Django REST framework CoreJSON) — `ZkbClient::DOC_FORMATS`. The next form is tried only after "not found", an unreadable answer or a refused format; the form that worked is logged. |
+| Read | GET list endpoints (no `{id}`), their summary and query parameter names |
+| Check | `GET <selected path>?page=1&page_size=20&<filters>`; only field names, kinds of values and status-like texts are shown |
+| Source | ZKBioTime administrator's manual (pages `/api/docs/` and `/api/personnel_docs/`); format to be confirmed on the 9.5 server |
 
 ## Calculated daily attendance and schedules — CONFIGURED
 

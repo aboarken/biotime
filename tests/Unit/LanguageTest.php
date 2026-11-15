@@ -53,10 +53,12 @@ final class LanguageTest extends TestCase
         // Shared classes that render text on the site.
         $siteShared = ['administrator/src/Support/', 'administrator/src/Export/', 'administrator/src/Api/ZkbException.php'];
         $missing    = [];
-        $files      = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(self::ROOT, \FilesystemIterator::SKIP_DOTS));
+        $root       = str_replace('\\', '/', (string) realpath(self::ROOT));
+        $files      = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        $checked    = 0;
 
         foreach ($files as $file) {
-            $path = ltrim(str_replace([str_replace('\\', '/', realpath(self::ROOT) ?: self::ROOT), '\\'], ['', '/'], $file->getPathname()), '/');
+            $path = ltrim(substr(str_replace('\\', '/', $file->getPathname()), \strlen($root)), '/');
 
             if (!preg_match('/\.(php|xml)$/', $path) || preg_match('#^(vendor|tests|dist|build|\.git)/|/lib/#', $path) || $path === 'biotime.xml') {
                 continue;
@@ -67,6 +69,8 @@ final class LanguageTest extends TestCase
             $isMenuXml = str_starts_with($path, 'site/tmpl/') && str_ends_with($path, '.xml');
             $isSite    = !$isMenuXml && (str_starts_with($path, 'site/') || \in_array(true, array_map(static fn ($p) => str_starts_with($path, $p), $siteShared), true));
             $isAdmin   = str_starts_with($path, 'administrator/') || $path === 'script.php';
+
+            $checked += ($isSite || $isAdmin || $isMenuXml) ? 1 : 0;
 
             foreach (array_unique($m[0]) as $key) {
                 if (str_ends_with($key, '_')) {
@@ -87,6 +91,7 @@ final class LanguageTest extends TestCase
             }
         }
 
+        self::assertGreaterThan(50, $checked, 'the scan must actually reach the component files');
         self::assertSame([], $missing);
     }
 

@@ -6,7 +6,7 @@
     <creationDate>2026-11</creationDate>
     <copyright>(C) 2026</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <description>COM_BIOTIME_XML_DESCRIPTION</description>
     <namespace path="src">BiotimePortal\Component\Biotime</namespace>
 
@@ -58,6 +58,7 @@
         <submenu>
             <menu link="option=com_biotime&amp;view=integrationsettings">COM_BIOTIME_SUBMENU_SETTINGS</menu>
             <menu link="option=com_biotime&amp;view=usermappings">COM_BIOTIME_SUBMENU_MAPPINGS</menu>
+            <menu link="option=com_biotime&amp;view=endpoints">COM_BIOTIME_SUBMENU_ENDPOINTS</menu>
         </submenu>
         <files folder="administrator">
             <filename>access.xml</filename>

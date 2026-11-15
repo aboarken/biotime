@@ -51,6 +51,26 @@ if (!preg_match('/^(JWT|Token) \S+$/', $_SERVER['HTTP_AUTHORIZATION'] ?? '')) {
     return true;
 }
 
+// An API description like /api/docs/?format=openapi (Swagger 2.0) listing the fixture endpoints.
+if ($path === '/api/docs/') {
+    if (($q['format'] ?? '') !== 'openapi') {
+        $out(404, ['detail' => 'Not found.']);
+
+        return true;
+    }
+
+    $param = static fn (string ...$names): array => array_map(static fn ($n) => ['name' => $n, 'in' => 'query', 'type' => 'string'], $names);
+    $out(200, ['swagger' => '2.0', 'basePath' => '/', 'paths' => [
+        '/personnel/api/employees/'      => ['get' => ['summary' => 'Employee list', 'parameters' => $param('emp_code', 'page', 'page_size')]],
+        '/personnel/api/employees/{id}/' => ['get' => ['summary' => 'Employee']],
+        '/iclock/api/transactions/'      => ['get' => ['summary' => 'Transactions', 'parameters' => $param('emp_code', 'start_time', 'end_time')]],
+        '/att/api/fixture_daily/'        => ['get' => ['summary' => 'Fixture daily attendance', 'parameters' => $param('emp_code', 'start_date', 'end_date')]],
+        '/att/api/fixture_leave/'        => ['get' => ['summary' => 'Fixture leave', 'parameters' => $param('emp_code', 'start_date', 'end_date')]],
+    ]]);
+
+    return true;
+}
+
 $employees = [
     ['id' => 1, 'emp_code' => 'FIXTURE1', 'first_name' => 'Sara', 'last_name' => 'Fixture', 'email' => 'sara@example.test', 'hire_date' => '2021-03-01',
         'department' => ['id' => 1, 'dept_name' => 'Finance'], 'position' => ['id' => 2, 'position_name' => 'Accountant'], 'area' => [['id' => 1, 'area_name' => 'HQ']],
@@ -97,6 +117,8 @@ if ($path === '/iclock/api/transactions/') {
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 09:20:00", 'punch_state_display' => 'Check In', 'terminal_alias' => 'Side Door'],
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 09:20:20", 'punch_state_display' => 'Check In', 'terminal_alias' => 'Side Door'],
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 15:30:00", 'punch_state_display' => 'Check Out', 'terminal_alias' => 'Main Gate'],
+        // A day with only a check-out punch (and no calculated row): must show under Check-Out.
+        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-09 17:10:00", 'punch_state' => '1', 'punch_state_display' => 'Check Out', 'terminal_alias' => 'Main Gate'],
         // Another employee's punch, as if the server ignored the filter: the portal must hide it.
         ['emp_code' => 'FIXTURE2', 'punch_time' => "$ym-04 06:06:06", 'punch_state_display' => 'OTHER-EMPLOYEE-PUNCH'],
     ];
