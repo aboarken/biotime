@@ -8,6 +8,9 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 ### Added
 - **Connect via** (*Integration Settings → Connection*), as in the ServiceDesk Plus component: for a ZKBioTime server whose own name (e.g. `zkb.example.com`, the name on its certificate) is only known inside the company network, while Joomla reaches it through a public address (e.g. `api.zkb.example.com`). Joomla opens the connection to the *Connect via* address (host, host:port or IP:port) but keeps the server URL's name for the certificate check and the Host header, so the existing certificate stays valid. *Test Connection* and *Read Certificate Pin* use the same path.
 
+### Changed
+- The source moved to the GitHub repository `aboarken/biotime`. Joomla now checks `https://github.com/aboarken/biotime/releases/latest/download/updates.xml` for updates and reads the changelog from the same release. The extension is still `com_biotime`.
+
 ## [0.1.0] - 2026-11-15
 
 ### Added
