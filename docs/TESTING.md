@@ -58,6 +58,9 @@ php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
   BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' USER_PASS='…' OUT=tests/output node tests/e2e/portal.mjs
   ```
 
+The stand-in server answers the API description like the real one (no OpenAPI; CoreJSON only
+with `application/coreapi+json`, else 406; unknown paths a web page with HTTP 200).
+
 0.3.0 also checks Find Endpoints (read the list, select, check, no employee codes shown, save
 as Daily Attendance Source) and a day with only a check-out punch (shown under Check-Out, with
 *Missing check-in*): 88 portal checks passed on PostgreSQL, and the update from the published

@@ -76,6 +76,15 @@ final class ZkbClient
     private const DOC_PATHS   = ['/api/docs/', '/api/personnel_docs/'];
     private const DOC_FORMATS = ['openapi', 'corejson'];
 
+    /**
+     * Accept header per description form. CoreJSON is served as application/coreapi+json: asking
+     * for plain JSON only is refused with 406 (seen on the ams.tis.edu.sa server, 2026-11-15).
+     */
+    private const DOC_ACCEPT = [
+        'openapi'  => 'application/openapi+json, application/json;q=0.9',
+        'corejson' => 'application/coreapi+json, application/vnd.coreapi+json;q=0.9, application/json;q=0.8',
+    ];
+
     /** Paging query parameters. UNVERIFIED on 9.5 (manual, list endpoints). */
     private const PARAM_PAGE      = 'page';
     private const PARAM_PAGE_SIZE = 'page_size';
@@ -170,12 +179,12 @@ final class ZkbClient
      *
      * @throws ZkbException
      */
-    public function get(string $path, array $query = []): array
+    public function get(string $path, array $query = [], ?string $accept = null): array
     {
         $token = $this->token(false);
 
         try {
-            return $this->request('GET', $path, $query, null, $token);
+            return $this->request('GET', $path, $query, null, $token, $accept);
         } catch (ZkbException $e) {
             if ($e->getKind() !== ZkbException::AUTH || !$this->credentials->canRenew()) {
                 throw $e;
@@ -185,7 +194,7 @@ final class ZkbClient
         $this->logger->info(\sprintf('ZKBioTime GET %s answered "unauthorised"; renewing the token once', $path));
         $this->tokens->clear();
 
-        return $this->request('GET', $path, $query, null, $this->token(true));
+        return $this->request('GET', $path, $query, null, $this->token(true), $accept);
     }
 
     /**
@@ -393,7 +402,7 @@ final class ZkbClient
         foreach (self::DOC_PATHS as $path) {
             foreach (self::DOC_FORMATS as $format) {
                 try {
-                    $doc = $this->get($path, ['format' => $format]);
+                    $doc = $this->get($path, ['format' => $format], self::DOC_ACCEPT[$format]);
                 } catch (ZkbException $e) {
                     $last = $e;
 
@@ -585,7 +594,7 @@ final class ZkbClient
      *
      * @throws ZkbException
      */
-    private function request(string $method, string $path, array $query, ?array $json, #[\SensitiveParameter] ?string $token): array
+    private function request(string $method, string $path, array $query, ?array $json, #[\SensitiveParameter] ?string $token, ?string $accept = null): array
     {
         if (!preg_match('#^(/[A-Za-z0-9_-]+)+/$#', $path)) {
             throw new \InvalidArgumentException('Invalid ZKBioTime API path');
@@ -597,7 +606,7 @@ final class ZkbClient
             $url .= '?' . http_build_query(self::checkQuery($query), '', '&', PHP_QUERY_RFC3986);
         }
 
-        $headers = ['Accept' => 'application/json'];
+        $headers = ['Accept' => $accept !== null && preg_match('#^[a-z0-9.+/*;=, -]{1,200}$#i', $accept) ? $accept : 'application/json'];
         $body    = null;
 
         if ($token !== null) {

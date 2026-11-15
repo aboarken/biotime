@@ -57,9 +57,10 @@ final class RoutingTransport implements TransportInterface
             return new TransportResponse(404, '{"detail":"Not found."}');
         }
 
-        [$status, $data] = $handler($query);
+        [$status, $data] = $handler($query, $headers);
 
-        return new TransportResponse($status, json_encode($data));
+        // A string answer is sent as is (e.g. an HTML page); anything else as JSON.
+        return new TransportResponse($status, \is_string($data) ? $data : json_encode($data));
     }
 
     /** @return list<array<string, string>> queries sent to $path */

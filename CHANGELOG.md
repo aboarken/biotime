@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-11-15
+
+### Fixed
+- **Find Endpoints could not read the API list** ("ZKBioTime did not accept the request"): the server publishes it as CoreJSON (`/api/docs/?format=corejson`) and refuses the request with 406 when only plain JSON is accepted. The CoreJSON media type (`application/coreapi+json`) is now requested.
+
+### Changed
+- Find Endpoints shows ZKBioTime's own answer (HTTP status and message) when reading the list or checking an endpoint fails, and explains a web page returned instead of data: the path probably does not exist on that server.
+- `docs/API-MAPPING.md`: login and the transaction list are verified on a real ZKBioTime server.
+
 ## [0.3.0] - 2026-11-15
 
 ### Added
