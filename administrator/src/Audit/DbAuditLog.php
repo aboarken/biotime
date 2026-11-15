@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Audit;
+namespace BiotimePortal\Component\Biotime\Administrator\Audit;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -13,11 +13,11 @@ namespace ZkbPortal\Component\Zkbiotime\Administrator\Audit;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 use Psr\Log\LoggerInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Redactor;
+use BiotimePortal\Component\Biotime\Administrator\Api\Redactor;
 
 final class DbAuditLog implements AuditLogInterface, AuditCounterInterface
 {
-    private const TABLE = '#__zkbiotime_audit';
+    private const TABLE = '#__biotime_audit';
 
     public function __construct(
         private readonly DatabaseInterface $db,

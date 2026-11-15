@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Log;
+namespace BiotimePortal\Component\Biotime\Administrator\Log;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -15,7 +15,7 @@ use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
 
 /**
- * PSR-3 logger writing to administrator/logs/com_zkbiotime.php through the Joomla Log API.
+ * PSR-3 logger writing to administrator/logs/com_biotime.php through the Joomla Log API.
  *
  * Callers must pass messages that are already free of secrets (ZkbClient scrubs them).
  * Context arrays are deliberately ignored so request data is never dumped by accident.
@@ -23,7 +23,7 @@ use Psr\Log\LogLevel;
  */
 final class JoomlaLogger extends AbstractLogger
 {
-    public const CATEGORY = 'com_zkbiotime';
+    public const CATEGORY = 'com_biotime';
 
     private static bool $registered = false;
 
@@ -31,7 +31,7 @@ final class JoomlaLogger extends AbstractLogger
     {
         if (!self::$registered) {
             Log::addLogger(
-                ['text_file' => 'com_zkbiotime.php', 'text_entry_format' => '{DATETIME}	{PRIORITY}	{MESSAGE}'],
+                ['text_file' => 'com_biotime.php', 'text_entry_format' => '{DATETIME}	{PRIORITY}	{MESSAGE}'],
                 Log::ALL & ~Log::DEBUG,
                 [self::CATEGORY]
             );

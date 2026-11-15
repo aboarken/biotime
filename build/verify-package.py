@@ -32,9 +32,9 @@ def main() -> int:
                     errors.append(f'development file in package: {name}')
             z.extractall(d)
 
-        manifest_path = os.path.join(d, 'zkbiotime.xml')
+        manifest_path = os.path.join(d, 'biotime.xml')
         if not os.path.isfile(manifest_path):
-            print('zkbiotime.xml is not at the root of the package')
+            print('biotime.xml is not at the root of the package')
             return 1
 
         m = ET.parse(manifest_path).getroot()
@@ -85,7 +85,7 @@ def main() -> int:
             print(' -', e)
         return 1
 
-    print(f'Package OK: com_zkbiotime {version}')
+    print(f'Package OK: com_biotime {version}')
     return 0
 
 

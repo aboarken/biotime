@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Support;
+namespace BiotimePortal\Component\Biotime\Tests\Support;
 
 use Psr\Log\AbstractLogger;
 

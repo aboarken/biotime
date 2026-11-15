@@ -1,14 +1,14 @@
 {
   "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
-  "name": "com_zkbiotime",
+  "name": "com_biotime",
   "version": "0.1.0",
   "description": "ZKBioTime attendance portal assets",
   "license": "GPL-2.0-or-later",
   "assets": [
     {
-      "name": "com_zkbiotime.admin",
+      "name": "com_biotime.admin",
       "type": "style",
-      "uri": "com_zkbiotime/admin.css"
+      "uri": "com_biotime/admin.css"
     }
   ]
 }

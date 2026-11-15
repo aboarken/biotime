@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Security;
+namespace BiotimePortal\Component\Biotime\Administrator\Security;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -14,7 +14,7 @@ namespace ZkbPortal\Component\Zkbiotime\Administrator\Security;
  * Supplies the master secret used by KeyVault. The secret is never stored in the database.
  *
  * Order:
- *  1. Environment variable ZKBIOTIME_PORTAL_SECRET (recommended; at least 32 characters).
+ *  1. Environment variable BIOTIME_PORTAL_SECRET (recommended; at least 32 characters).
  *  2. The "secret" value from Joomla's configuration.php (file on disk, not the database).
  *
  * Changing the secret makes stored secrets unreadable: the administrator must enter the API
@@ -22,7 +22,7 @@ namespace ZkbPortal\Component\Zkbiotime\Administrator\Security;
  */
 final class SecretProvider
 {
-    public const ENV_NAME        = 'ZKBIOTIME_PORTAL_SECRET';
+    public const ENV_NAME        = 'BIOTIME_PORTAL_SECRET';
     public const SOURCE_ENV      = 'environment';
     public const SOURCE_JOOMLA   = 'joomla_configuration';
     public const SOURCE_NONE     = 'none';

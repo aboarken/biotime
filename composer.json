@@ -1,5 +1,5 @@
 {
-    "name": "zkbportal/com_zkbiotime",
+    "name": "biotimeportal/com_biotime",
     "description": "Joomla 6 component: read-only ZKBioTime 9.5 attendance self-service portal (development tooling only; not part of the installable package)",
     "type": "project",
     "license": "GPL-2.0-or-later",
@@ -12,9 +12,9 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "ZkbPortal\\Component\\Zkbiotime\\Administrator\\": "administrator/src/",
-            "ZkbPortal\\Component\\Zkbiotime\\Site\\": "site/src/",
-            "ZkbPortal\\Component\\Zkbiotime\\Tests\\": "tests/"
+            "BiotimePortal\\Component\\Biotime\\Administrator\\": "administrator/src/",
+            "BiotimePortal\\Component\\Biotime\\Site\\": "site/src/",
+            "BiotimePortal\\Component\\Biotime\\Tests\\": "tests/"
         }
     },
     "config": {

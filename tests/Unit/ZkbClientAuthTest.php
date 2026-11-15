@@ -4,15 +4,15 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Unit;
+namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\CachedToken;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Credentials;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbClient;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbException;
-use ZkbPortal\Component\Zkbiotime\Tests\Support\ClientBuilder;
+use BiotimePortal\Component\Biotime\Administrator\Api\CachedToken;
+use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportException;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Tests\Support\ClientBuilder;
 
 /**
  * Authentication, token caching and renewal.
@@ -153,7 +153,7 @@ final class ZkbClientAuthTest extends TestCase
             self::fail('Expected an exception');
         } catch (ZkbException $e) {
             self::assertSame(ZkbException::AUTH, $e->getKind());
-            self::assertSame('COM_ZKBIOTIME_ERROR_AUTH', $e->getLanguageKey());
+            self::assertSame('COM_BIOTIME_ERROR_AUTH', $e->getLanguageKey());
         }
 
         self::assertCount(4, $this->b->transport->requests, 'login, read, one renewal, one retry; nothing more');

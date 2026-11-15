@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Model;
+namespace BiotimePortal\Component\Biotime\Administrator\Model;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -12,21 +12,21 @@ namespace ZkbPortal\Component\Zkbiotime\Administrator\Model;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\Model\FormModel;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ClientConfig;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ConnectionReport;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\MemoryTokenStore;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\SslPin;
-use ZkbPortal\Component\Zkbiotime\Administrator\Controller\SettingsController;
-use ZkbPortal\Component\Zkbiotime\Administrator\Extension\ZkbiotimeComponent;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\Settings;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\SettingsValidator;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\ValidationFailed;
+use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
+use BiotimePortal\Component\Biotime\Administrator\Api\ConnectionReport;
+use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
+use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
+use BiotimePortal\Component\Biotime\Administrator\Controller\SettingsController;
+use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
+use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
+use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
+use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
 
 final class IntegrationsettingsModel extends FormModel
 {
     public function getForm($data = [], $loadData = true)
     {
-        $form = $this->loadForm('com_zkbiotime.settings', 'settings', ['control' => 'jform', 'load_data' => $loadData]);
+        $form = $this->loadForm('com_biotime.settings', 'settings', ['control' => 'jform', 'load_data' => $loadData]);
 
         return $form ?: false;
     }
@@ -81,7 +81,7 @@ final class IntegrationsettingsModel extends FormModel
     }
 
     /**
-     * @throws \ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbException
+     * @throws \BiotimePortal\Component\Biotime\Administrator\Api\ZkbException
      */
     public function testConnection(): ConnectionReport
     {
@@ -105,11 +105,11 @@ final class IntegrationsettingsModel extends FormModel
         return SslPin::readFromServer(ClientConfig::buildBaseUrl($settings->serverUrl(), $settings->serverPort()), $settings->connectTimeout());
     }
 
-    private function component(): ZkbiotimeComponent
+    private function component(): BiotimeComponent
     {
-        $component = Factory::getApplication()->bootComponent('com_zkbiotime');
+        $component = Factory::getApplication()->bootComponent('com_biotime');
 
-        if (!$component instanceof ZkbiotimeComponent) {
+        if (!$component instanceof BiotimeComponent) {
             throw new \LogicException('Unexpected component class');
         }
 

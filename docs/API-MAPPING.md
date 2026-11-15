@@ -87,15 +87,15 @@ and a warning is logged.
 
 | Answer | Kind | Message key |
 |---|---|---|
-| no connection, DNS, TLS, timeout | network | `COM_ZKBIOTIME_ERROR_NETWORK` |
-| 401 (after one renewal) | authentication | `COM_ZKBIOTIME_ERROR_AUTH` |
-| 403 | permission | `COM_ZKBIOTIME_ERROR_PERMISSION` |
-| 404, 405 | not found | `COM_ZKBIOTIME_ERROR_NOT_FOUND` |
-| 400, 422, other 4xx; `code` ≠ 0 | validation | `COM_ZKBIOTIME_ERROR_VALIDATION` |
-| 429 | rate limited | `COM_ZKBIOTIME_ERROR_RATE_LIMITED` |
-| 5xx (after one retry) | server error | `COM_ZKBIOTIME_ERROR_SERVER` |
-| not JSON, 3xx, unexpected shape | unreadable response | `COM_ZKBIOTIME_ERROR_BAD_RESPONSE` |
-| settings missing or undecryptable | not configured | `COM_ZKBIOTIME_ERROR_NOT_CONFIGURED` |
+| no connection, DNS, TLS, timeout | network | `COM_BIOTIME_ERROR_NETWORK` |
+| 401 (after one renewal) | authentication | `COM_BIOTIME_ERROR_AUTH` |
+| 403 | permission | `COM_BIOTIME_ERROR_PERMISSION` |
+| 404, 405 | not found | `COM_BIOTIME_ERROR_NOT_FOUND` |
+| 400, 422, other 4xx; `code` ≠ 0 | validation | `COM_BIOTIME_ERROR_VALIDATION` |
+| 429 | rate limited | `COM_BIOTIME_ERROR_RATE_LIMITED` |
+| 5xx (after one retry) | server error | `COM_BIOTIME_ERROR_SERVER` |
+| not JSON, 3xx, unexpected shape | unreadable response | `COM_BIOTIME_ERROR_BAD_RESPONSE` |
+| settings missing or undecryptable | not configured | `COM_BIOTIME_ERROR_NOT_CONFIGURED` |
 
 ## Data needed by later stages — endpoints not chosen yet
 

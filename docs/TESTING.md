@@ -20,7 +20,7 @@ vendor/bin/phpunit
 | URL and port, timeouts, certificate pin, redaction | `tests/Unit/ConnectionConfigTest.php` |
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
 | Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form) | `tests/Unit/SettingsValidatorTest.php` |
-| Every `COM_ZKBIOTIME_` string used exists; every error kind has a message naming ZKBioTime and a hint | `tests/Unit/LanguageTest.php` |
+| Every `COM_BIOTIME_` string used exists; every error kind has a message naming ZKBioTime and a hint | `tests/Unit/LanguageTest.php` |
 
 Tests for employee matching, ownership/IDOR, per-day schedules, status mapping, month summaries,
 exports and the per-user cache are added with the stages that bring those features.
@@ -59,12 +59,12 @@ passwords, tokens or personal data) with the pull request.
       attendance.
 
 ### 0.1.0 – Connection and authentication
-- [ ] Install `com_zkbiotime.zip` on a Joomla 6.2 test site (*System → Install → Extensions*).
+- [ ] Install `com_biotime.zip` on a Joomla 6.2 test site (*System → Install → Extensions*).
 - [ ] *Components → ZKBioTime → Integration Settings*: enter URL, port, JWT, username, password; **Save**.
 - [ ] Status shows *API password: Stored (encrypted)*; the password field is empty after saving.
 - [ ] **Test Connection** → "Connected to ZKBioTime with JWT … The API user can read N employees."
       N should match the number of employees in ZKBioTime.
-- [ ] Open `administrator/logs/com_zkbiotime.php`:
+- [ ] Open `administrator/logs/com_biotime.php`:
   - [ ] the line *list read from "data" (as documented)* — or note which form was logged;
   - [ ] the line *token renewed after …* — note whether it says *default lifetime used*;
   - [ ] no password, token or employee data anywhere in the file.
@@ -78,7 +78,7 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Remove the API user's personnel permission in ZKBioTime → Test Connection shows a permission error. Restore it.
 - [ ] Stop ZKBioTime (or block the port) → "could not be reached". Start it again.
 - [ ] Joomla: update by installing the same package again (settings kept); uninstall on a test
-      site (tables `#__zkbiotime_settings` and `#__zkbiotime_audit` removed).
+      site (tables `#__biotime_settings` and `#__biotime_audit` removed).
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 

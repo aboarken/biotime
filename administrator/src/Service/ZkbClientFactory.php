@@ -4,26 +4,26 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Service;
+namespace BiotimePortal\Component\Biotime\Administrator\Service;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Psr\Log\LoggerInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ClientConfig;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Credentials;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\TokenStoreInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\JoomlaHttpTransport;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbClient;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVault;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVaultException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\SecretProvider;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\DbTokenStore;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\Settings;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\SettingsRepository;
+use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
+use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
+use BiotimePortal\Component\Biotime\Administrator\Api\TokenStoreInterface;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\JoomlaHttpTransport;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportInterface;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
+use BiotimePortal\Component\Biotime\Administrator\Security\SecretProvider;
+use BiotimePortal\Component\Biotime\Administrator\Settings\DbTokenStore;
+use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
+use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 /**
  * Builds ZkbClient from the stored settings. Decrypted secrets exist only inside the client.

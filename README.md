@@ -1,4 +1,4 @@
-# Joomla ZKBioTime (`com_zkbiotime`)
+# Joomla ZKBioTime (`com_biotime`)
 
 **A read-only employee self-service attendance portal for ZKTeco ZKBioTime 9.5, inside Joomla 6.**
 
@@ -14,7 +14,7 @@ administrator on the real ZKBioTime server before the next stage starts.
 | Stage | Version | Content | Status |
 |---|---|---|---|
 | 1 | 0.1.0 | Connection and authentication: Integration Settings, encrypted credentials, Test Connection, API client, install/update/release process | **this version** |
-| 2 | 0.2.0 | Employee mapping: `#__zkbiotime_usermap`, automatic e-mail matching, User Mappings page, "account could not be matched" page | next |
+| 2 | 0.2.0 | Employee mapping: `#__biotime_usermap`, automatic e-mail matching, User Mappings page, "account could not be matched" page | next |
 | 3 | 0.3.0 | Transactions: **My Attendance** with check-in/check-out and all punches | planned |
 | 4 | 0.4.0 | Schedules: per-day schedule, **My Schedules**, **Attendance Calendar** | planned |
 | 5 | 0.5.0 | Calculated attendance: statuses, late-in, early-out, worked hours, **My Dashboard** | planned |
@@ -36,7 +36,7 @@ The installer refuses to install with a clear message when PHP, Joomla or OpenSS
 
 ## Installation
 
-1. Download `com_zkbiotime.zip` from the latest release on the
+1. Download `com_biotime.zip` from the latest release on the
    [Releases page](https://github.com/aboarken/com_biotime/releases).
 2. Joomla Administrator → **System → Install → Extensions** → upload the package.
 3. Open **Components → ZKBioTime → Integration Settings**.
@@ -66,12 +66,12 @@ Joomla server, that each employee only sees their own records.
 | System | Detailed logging | see *Troubleshooting* |
 | | API page size, Safety maximum (pages) | default 100 rows × 50 pages; pages say when results were cut off |
 
-Settings are stored in the component's own table `#__zkbiotime_settings`, not in Joomla's
+Settings are stored in the component's own table `#__biotime_settings`, not in Joomla's
 component options, because Joomla's Options page replaces every option on save and the secrets
 must be encrypted first. *Options* holds only the permissions.
 
 **Encryption secret.** Secrets are encrypted with a key derived from the environment variable
-`ZKBIOTIME_PORTAL_SECRET` (recommended, at least 32 random characters) or, when that is not set,
+`BIOTIME_PORTAL_SECRET` (recommended, at least 32 random characters) or, when that is not set,
 from the `secret` in Joomla's `configuration.php`. The page shows which one is in use. If it
 changes, enter the API password (or token) again.
 
@@ -114,14 +114,14 @@ the **Registered** group (or the group your employees are in); without them, use
   API token is cached server-side, encrypted, and renewed shortly before it expires; after an
   "unauthorised" answer it is renewed once, then the error is reported.
 - Every state-changing action is a POST with a CSRF token and a permission check; settings
-  changes and connection tests are recorded in `#__zkbiotime_audit`.
+  changes and connection tests are recorded in `#__biotime_audit`.
 - Ids and employee codes are checked against strict patterns before they go into an API path
   or query.
 - The integration is read-only: the only POST sent to ZKBioTime is the login.
 
 ## Troubleshooting
 
-`administrator/logs/com_zkbiotime.php` records each API call (method, path, query parameter
+`administrator/logs/com_biotime.php` records each API call (method, path, query parameter
 names, HTTP status, time) and every problem in plain words. Passwords, tokens, headers and
 personal data are never written to it. With *Detailed logging* off, only warnings and errors
 are written.
@@ -139,14 +139,14 @@ are written.
 - Every change goes through a pull request; the maintainer merges.
 - Automated tests: `composer install` then `vendor/bin/phpunit` — see [docs/TESTING.md](docs/TESTING.md),
   which also has the live checklist for the real server.
-- Each version: bump `<version>` in `zkbiotime.xml` and `media/joomla.asset.json`, add
+- Each version: bump `<version>` in `biotime.xml` and `media/joomla.asset.json`, add
   `administrator/sql/updates/{mysql,postgresql}/<version>.sql` (a comment when nothing changes),
   add a `CHANGELOG.md` entry and `docs/release-notes/<version>.md`.
 
 ### Releases
 
 The **Release package** workflow (`.github/workflows/release.yml`) lints PHP, runs the tests,
-builds and checks `com_zkbiotime.zip`, and writes `updates.xml` (with SHA-256, target platform
+builds and checks `com_biotime.zip`, and writes `updates.xml` (with SHA-256, target platform
 Joomla 6 and minimum PHP 8.3) and `changelog.xml` (from `CHANGELOG.md`). On every pull request
 they are kept as a workflow artifact. To publish: *Actions → Release package → Run workflow*
 on `main` creates release `v<version>` with the three files and the release notes. Joomla sites

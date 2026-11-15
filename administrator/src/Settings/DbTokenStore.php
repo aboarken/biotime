@@ -4,20 +4,20 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Settings;
+namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Psr\Log\LoggerInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\CachedToken;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\TokenStoreInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVault;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVaultException;
+use BiotimePortal\Component\Biotime\Administrator\Api\CachedToken;
+use BiotimePortal\Component\Biotime\Administrator\Api\TokenStoreInterface;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
 
 /**
- * Keeps the API token in #__zkbiotime_settings, encrypted, shared by all page loads so ZKBioTime
+ * Keeps the API token in #__biotime_settings, encrypted, shared by all page loads so ZKBioTime
  * is not asked for a new token on every request. It never reaches a session, cookie or page.
  */
 final class DbTokenStore implements TokenStoreInterface

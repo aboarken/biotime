@@ -4,14 +4,14 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Security;
+namespace BiotimePortal\Component\Biotime\Administrator\Security;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use ZkbPortal\Component\Zkbiotime\Administrator\Audit\AuditCounterInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Audit\AuditCounterInterface;
+use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 
 /**
  * Sliding one-hour limit per user and action, counted from the audit table.

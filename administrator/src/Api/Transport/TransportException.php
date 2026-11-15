@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport;
+namespace BiotimePortal\Component\Biotime\Administrator\Api\Transport;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;

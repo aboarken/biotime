@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Settings;
+namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;

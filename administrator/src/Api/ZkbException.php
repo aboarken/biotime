@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Api;
+namespace BiotimePortal\Component\Biotime\Administrator\Api;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -81,10 +81,10 @@ final class ZkbException extends \RuntimeException
     }
 
     /**
-     * Language key of the friendly message, e.g. COM_ZKBIOTIME_ERROR_NETWORK.
+     * Language key of the friendly message, e.g. COM_BIOTIME_ERROR_NETWORK.
      */
     public function getLanguageKey(): string
     {
-        return 'COM_ZKBIOTIME_ERROR_' . strtoupper($this->kind);
+        return 'COM_BIOTIME_ERROR_' . strtoupper($this->kind);
     }
 }

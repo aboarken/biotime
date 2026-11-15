@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport;
+namespace BiotimePortal\Component\Biotime\Administrator\Api\Transport;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -12,7 +12,7 @@ namespace ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport;
 
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ClientConfig;
+use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
 
 /**
  * Transport backed by the Joomla Framework HTTP client (cURL adapter only).

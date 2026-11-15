@@ -1,10 +1,10 @@
-CREATE TABLE IF NOT EXISTS `#__zkbiotime_settings` (
+CREATE TABLE IF NOT EXISTS `#__biotime_settings` (
   `name` VARCHAR(100) NOT NULL,
   `value` MEDIUMTEXT NOT NULL,
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `#__zkbiotime_audit` (
+CREATE TABLE IF NOT EXISTS `#__biotime_audit` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` INT UNSIGNED NOT NULL DEFAULT 0,
   `actor_id` INT UNSIGNED NOT NULL DEFAULT 0,

@@ -4,13 +4,13 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Unit;
+namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 
 /**
- * Every COM_ZKBIOTIME_ language key used in code, templates and XML exists in a language file,
+ * Every COM_BIOTIME_ language key used in code, templates and XML exists in a language file,
  * and every language file parses.
  */
 final class LanguageTest extends TestCase
@@ -44,11 +44,11 @@ final class LanguageTest extends TestCase
                 continue;
             }
 
-            preg_match_all('/\bCOM_ZKBIOTIME_[A-Z0-9_]+\b/', (string) file_get_contents($path), $m);
+            preg_match_all('/\bCOM_BIOTIME_[A-Z0-9_]+\b/', (string) file_get_contents($path), $m);
 
             foreach ($m[0] as $key) {
                 // Prefixes completed at run time.
-                if (\in_array($key, ['COM_ZKBIOTIME_ERROR_', 'COM_ZKBIOTIME_TEST_HINT_'], true) || str_ends_with($key, '_')) {
+                if (\in_array($key, ['COM_BIOTIME_ERROR_', 'COM_BIOTIME_TEST_HINT_'], true) || str_ends_with($key, '_')) {
                     continue;
                 }
 
@@ -69,7 +69,7 @@ final class LanguageTest extends TestCase
             $error = (new ZkbException($kind, 'x'))->getLanguageKey();
             self::assertArrayHasKey($error, $strings);
             self::assertStringContainsString('ZKBioTime', $strings[$error], $error . ' must name ZKBioTime');
-            self::assertArrayHasKey('COM_ZKBIOTIME_TEST_HINT_' . strtoupper($kind), $strings);
+            self::assertArrayHasKey('COM_BIOTIME_TEST_HINT_' . strtoupper($kind), $strings);
         }
     }
 }

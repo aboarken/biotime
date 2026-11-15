@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extension type="component" method="upgrade">
-    <name>com_zkbiotime</name>
+    <name>com_biotime</name>
     <author>ZKBioTime Portal</author>
     <authorUrl>https://github.com/aboarken/com_biotime</authorUrl>
     <creationDate>2026-11</creationDate>
     <copyright>(C) 2026</copyright>
     <license>GNU General Public License version 2 or later</license>
     <version>0.1.0</version>
-    <description>COM_ZKBIOTIME_XML_DESCRIPTION</description>
-    <namespace path="src">ZkbPortal\Component\Zkbiotime</namespace>
+    <description>COM_BIOTIME_XML_DESCRIPTION</description>
+    <namespace path="src">BiotimePortal\Component\Biotime</namespace>
 
     <scriptfile>script.php</scriptfile>
 
@@ -36,7 +36,7 @@
         <folder>src</folder>
     </files>
 
-    <media destination="com_zkbiotime" folder="media">
+    <media destination="com_biotime" folder="media">
         <filename>joomla.asset.json</filename>
         <folder>css</folder>
     </media>
@@ -52,9 +52,9 @@
     </updateservers>
 
     <administration>
-        <menu img="class:clock">COM_ZKBIOTIME</menu>
+        <menu img="class:clock">COM_BIOTIME</menu>
         <submenu>
-            <menu link="option=com_zkbiotime&amp;view=integrationsettings">COM_ZKBIOTIME_SUBMENU_SETTINGS</menu>
+            <menu link="option=com_biotime&amp;view=integrationsettings">COM_BIOTIME_SUBMENU_SETTINGS</menu>
         </submenu>
         <files folder="administrator">
             <filename>access.xml</filename>

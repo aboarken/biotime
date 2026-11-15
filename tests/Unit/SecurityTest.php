@@ -4,14 +4,14 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Unit;
+namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ZkbPortal\Component\Zkbiotime\Administrator\Audit\AuditCounterInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVault;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVaultException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\RateLimiter;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\SecretProvider;
+use BiotimePortal\Component\Biotime\Administrator\Audit\AuditCounterInterface;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
+use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
+use BiotimePortal\Component\Biotime\Administrator\Security\SecretProvider;
 
 final class SecurityTest extends TestCase
 {

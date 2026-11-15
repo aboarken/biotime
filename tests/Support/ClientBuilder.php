@@ -4,13 +4,13 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Support;
+namespace BiotimePortal\Component\Biotime\Tests\Support;
 
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ClientConfig;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Credentials;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\MemoryTokenStore;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\TokenStoreInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbClient;
+use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
+use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
+use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
+use BiotimePortal\Component\Biotime\Administrator\Api\TokenStoreInterface;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 
 /**
  * Builds a ZkbClient around FakeTransport with a controllable clock.

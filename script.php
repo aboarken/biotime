@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Installer script for com_zkbiotime.
+ * Installer script for com_biotime.
  *
  * @license GNU General Public License version 2 or later
  */
@@ -68,19 +68,19 @@ return new class () implements ServiceProviderInterface {
                     $app = Factory::getApplication();
 
                     if (version_compare(PHP_VERSION, self::MIN_PHP, '<')) {
-                        $app->enqueueMessage(Text::sprintf('COM_ZKBIOTIME_INSTALL_MIN_PHP', self::MIN_PHP), 'error');
+                        $app->enqueueMessage(Text::sprintf('COM_BIOTIME_INSTALL_MIN_PHP', self::MIN_PHP), 'error');
 
                         return false;
                     }
 
                     if (version_compare(JVERSION, self::MIN_JOOMLA, '<')) {
-                        $app->enqueueMessage(Text::sprintf('COM_ZKBIOTIME_INSTALL_MIN_JOOMLA', self::MIN_JOOMLA), 'error');
+                        $app->enqueueMessage(Text::sprintf('COM_BIOTIME_INSTALL_MIN_JOOMLA', self::MIN_JOOMLA), 'error');
 
                         return false;
                     }
 
                     if (!\extension_loaded('openssl') || !\in_array('aes-256-gcm', openssl_get_cipher_methods(), true)) {
-                        $app->enqueueMessage(Text::_('COM_ZKBIOTIME_INSTALL_NO_OPENSSL'), 'error');
+                        $app->enqueueMessage(Text::_('COM_BIOTIME_INSTALL_NO_OPENSSL'), 'error');
 
                         return false;
                     }
@@ -91,15 +91,15 @@ return new class () implements ServiceProviderInterface {
                 public function postflight(string $type, InstallerAdapter $adapter): bool
                 {
                     if ($type === 'install') {
-                        Factory::getApplication()->enqueueMessage(Text::_('COM_ZKBIOTIME_INSTALL_NEXT_STEPS'), 'info');
+                        Factory::getApplication()->enqueueMessage(Text::_('COM_BIOTIME_INSTALL_NEXT_STEPS'), 'info');
                     }
 
                     if ($type !== 'update') {
                         return true;
                     }
 
-                    $removed = $this->removeObsoleteFiles(JPATH_SITE . '/components/com_zkbiotime', self::OBSOLETE_SITE)
-                        + $this->removeObsoleteFiles(JPATH_ADMINISTRATOR . '/components/com_zkbiotime', self::OBSOLETE_ADMIN);
+                    $removed = $this->removeObsoleteFiles(JPATH_SITE . '/components/com_biotime', self::OBSOLETE_SITE)
+                        + $this->removeObsoleteFiles(JPATH_ADMINISTRATOR . '/components/com_biotime', self::OBSOLETE_ADMIN);
 
                     $db = Factory::getContainer()->get(DatabaseInterface::class);
 
@@ -109,11 +109,11 @@ return new class () implements ServiceProviderInterface {
                     $app = Factory::getApplication();
 
                     if ($removed > 0) {
-                        $app->enqueueMessage(Text::sprintf('COM_ZKBIOTIME_INSTALL_CLEANED_FILES', $removed), 'info');
+                        $app->enqueueMessage(Text::sprintf('COM_BIOTIME_INSTALL_CLEANED_FILES', $removed), 'info');
                     }
 
                     if ($trashed > 0) {
-                        $app->enqueueMessage(Text::sprintf('COM_ZKBIOTIME_INSTALL_TRASHED_MENU', $trashed), 'warning');
+                        $app->enqueueMessage(Text::sprintf('COM_BIOTIME_INSTALL_TRASHED_MENU', $trashed), 'warning');
                     }
 
                     return true;
@@ -152,7 +152,7 @@ return new class () implements ServiceProviderInterface {
                     $count = 0;
 
                     foreach (self::OBSOLETE_VIEWS as $view) {
-                        $link  = 'index.php?option=com_zkbiotime&view=' . $view;
+                        $link  = 'index.php?option=com_biotime&view=' . $view;
                         $like  = $link . '&%';
                         $query = $db->createQuery()
                             ->update($db->quoteName('#__menu'))
@@ -181,7 +181,7 @@ return new class () implements ServiceProviderInterface {
                     }
 
                     $query = $db->createQuery()
-                        ->delete($db->quoteName('#__zkbiotime_settings'))
+                        ->delete($db->quoteName('#__biotime_settings'))
                         ->whereIn($db->quoteName('name'), self::OBSOLETE_SETTINGS, ParameterType::STRING);
 
                     try {

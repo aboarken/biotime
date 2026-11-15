@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Extension;
+namespace BiotimePortal\Component\Biotime\Administrator\Extension;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -12,17 +12,17 @@ namespace ZkbPortal\Component\Zkbiotime\Administrator\Extension;
 
 use Joomla\CMS\Extension\MVCComponent;
 use Psr\Container\ContainerInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Audit\AuditLogInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Log\JoomlaLogger;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\RateLimiter;
-use ZkbPortal\Component\Zkbiotime\Administrator\Service\ZkbClientFactory;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\SettingsRepository;
+use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
+use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
+use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
+use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 /**
  * Component class. Gives controllers and models access to the services registered in
  * services/provider.php.
  */
-final class ZkbiotimeComponent extends MVCComponent
+final class BiotimeComponent extends MVCComponent
 {
     private ?ContainerInterface $services = null;
 

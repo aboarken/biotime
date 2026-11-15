@@ -4,14 +4,14 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Unit;
+namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVault;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\KeyVaultException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\Settings;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\SettingsValidator;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\ValidationFailed;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
+use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
+use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
+use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
 
 final class SettingsValidatorTest extends TestCase
 {
@@ -86,7 +86,7 @@ final class SettingsValidatorTest extends TestCase
     {
         $current = new Settings(['api_password_enc' => 'v1:stored']);
 
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_JWT_CREDENTIALS'], $this->errors($this->input(['api_password' => '', 'clear_password' => '1']), $current));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_JWT_CREDENTIALS'], $this->errors($this->input(['api_password' => '', 'clear_password' => '1']), $current));
     }
 
     public function testTokenMethodAcceptsAStaticTokenAlone(): void
@@ -100,7 +100,7 @@ final class SettingsValidatorTest extends TestCase
 
     public function testTokenMethodNeedsATokenOrALogin(): void
     {
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_TOKEN_CREDENTIALS'], $this->errors($this->input(['auth_method' => 'token', 'api_password' => ''])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_TOKEN_CREDENTIALS'], $this->errors($this->input(['auth_method' => 'token', 'api_password' => ''])));
     }
 
     public function testRulesAreCheckedAndAllErrorsCollected(): void
@@ -119,9 +119,9 @@ final class SettingsValidatorTest extends TestCase
         ]));
 
         foreach ([
-            'COM_ZKBIOTIME_SETTINGS_ERR_PORT', 'COM_ZKBIOTIME_SETTINGS_ERR_URL', 'COM_ZKBIOTIME_SETTINGS_ERR_METHOD',
-            'COM_ZKBIOTIME_SETTINGS_ERR_USERNAME', 'COM_ZKBIOTIME_SETTINGS_ERR_TIMEOUTS', 'COM_ZKBIOTIME_SETTINGS_ERR_PIN',
-            'COM_ZKBIOTIME_SETTINGS_ERR_PAGE_SIZE', 'COM_ZKBIOTIME_SETTINGS_ERR_MAX_PAGES',
+            'COM_BIOTIME_SETTINGS_ERR_PORT', 'COM_BIOTIME_SETTINGS_ERR_URL', 'COM_BIOTIME_SETTINGS_ERR_METHOD',
+            'COM_BIOTIME_SETTINGS_ERR_USERNAME', 'COM_BIOTIME_SETTINGS_ERR_TIMEOUTS', 'COM_BIOTIME_SETTINGS_ERR_PIN',
+            'COM_BIOTIME_SETTINGS_ERR_PAGE_SIZE', 'COM_BIOTIME_SETTINGS_ERR_MAX_PAGES',
         ] as $key) {
             self::assertContains($key, $errors);
         }
@@ -129,13 +129,13 @@ final class SettingsValidatorTest extends TestCase
 
     public function testSmallerRules(): void
     {
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_URL_REQUIRED'], $this->errors($this->input(['server_url' => ''])));
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_PORT'], $this->errors($this->input(['server_url' => 'https://x.example:8081', 'server_port' => '8082'])));
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_TIMEOUT_RANGE'], $this->errors($this->input(['timeout' => '0'])));
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_PASSWORD'], $this->errors($this->input(['api_password' => "a\nb"])));
-        self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_TOKEN'], $this->errors($this->input(['auth_method' => 'token', 'api_token' => 'has spaces in it 1234'])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED'], $this->errors($this->input(['server_url' => ''])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_PORT'], $this->errors($this->input(['server_url' => 'https://x.example:8081', 'server_port' => '8082'])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_TIMEOUT_RANGE'], $this->errors($this->input(['timeout' => '0'])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_PASSWORD'], $this->errors($this->input(['api_password' => "a\nb"])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_TOKEN'], $this->errors($this->input(['auth_method' => 'token', 'api_token' => 'has spaces in it 1234'])));
         self::assertSame(
-            ['COM_ZKBIOTIME_SETTINGS_ERR_PIN_HTTPS'],
+            ['COM_BIOTIME_SETTINGS_ERR_PIN_HTTPS'],
             $this->errors($this->input(['server_url' => 'http://10.0.0.5', 'server_port' => '', 'tls_pin' => 'sha256//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=']))
         );
     }
@@ -146,7 +146,7 @@ final class SettingsValidatorTest extends TestCase
             $this->validator(static fn (): bool => false)->validate($this->input(['ca_bundle' => '/etc/ssl/missing.pem']), new Settings());
             self::fail('Expected ValidationFailed');
         } catch (ValidationFailed $e) {
-            self::assertSame(['COM_ZKBIOTIME_SETTINGS_ERR_CA_BUNDLE'], $e->getKeys());
+            self::assertSame(['COM_BIOTIME_SETTINGS_ERR_CA_BUNDLE'], $e->getKeys());
         }
     }
 
@@ -158,7 +158,7 @@ final class SettingsValidatorTest extends TestCase
             $validator->validate($this->input(), new Settings());
             self::fail('Expected ValidationFailed');
         } catch (ValidationFailed $e) {
-            self::assertContains('COM_ZKBIOTIME_SETTINGS_ERR_NO_SECRET', $e->getKeys());
+            self::assertContains('COM_BIOTIME_SETTINGS_ERR_NO_SECRET', $e->getKeys());
         }
     }
 

@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Settings;
+namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -14,11 +14,11 @@ use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 
 /**
- * Reads and writes #__zkbiotime_settings (name/value rows). Unknown names are ignored.
+ * Reads and writes #__biotime_settings (name/value rows). Unknown names are ignored.
  */
 final class SettingsRepository
 {
-    private const TABLE = '#__zkbiotime_settings';
+    private const TABLE = '#__biotime_settings';
 
     private ?Settings $cache = null;
 

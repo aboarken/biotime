@@ -1,11 +1,11 @@
-# Builds the Joomla installation package (com_zkbiotime.zip), the Joomla update server file
+# Builds the Joomla installation package (com_biotime.zip), the Joomla update server file
 # (updates.xml) and the Joomla changelog (changelog.xml), and attaches them to GitHub releases.
 # Joomla sites find updates through releases/latest/download/updates.xml (see <updateservers> in
-# zkbiotime.xml) and the changelog through releases/latest/download/changelog.xml.
+# biotime.xml) and the changelog through releases/latest/download/changelog.xml.
 #
 # - Pull requests and pushes to main: build and check the package, keep it as a workflow artifact.
 # - Release published in the GitHub UI (tag v<version>): build from that tag, check that the tag
-#   matches the manifest version, and attach com_zkbiotime.zip and updates.xml to the release.
+#   matches the manifest version, and attach com_biotime.zip and updates.xml to the release.
 # - Run manually (Actions > Release package > Run workflow): create release v<manifest version>
 #   from main with docs/release-notes/<version>.md as notes, and attach both files.
 name: Release package
@@ -35,7 +35,7 @@ jobs:
       - name: Read version from manifest
         id: version
         run: |
-          version="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' zkbiotime.xml | head -n1)"
+          version="$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' biotime.xml | head -n1)"
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Manifest version: $version"
@@ -65,14 +65,14 @@ jobs:
       - name: Build package
         run: |
           build/build-package.sh
-          cp "dist/com_zkbiotime-${{ steps.version.outputs.version }}.zip" dist/com_zkbiotime.zip
+          cp "dist/com_biotime-${{ steps.version.outputs.version }}.zip" dist/com_biotime.zip
 
       - name: Check package structure
-        run: python3 -I build/verify-package.py dist/com_zkbiotime.zip "${{ steps.version.outputs.version }}"
+        run: python3 -I build/verify-package.py dist/com_biotime.zip "${{ steps.version.outputs.version }}"
 
       - name: Write Joomla update file
         run: |
-          python3 -I build/make-update-xml.py dist/com_zkbiotime.zip "${{ steps.version.outputs.version }}" dist/updates.xml
+          python3 -I build/make-update-xml.py dist/com_biotime.zip "${{ steps.version.outputs.version }}" dist/updates.xml
           python3 -I -c "import xml.etree.ElementTree as E; E.parse('dist/updates.xml')"
 
       - name: Write Joomla changelog file
@@ -83,9 +83,9 @@ jobs:
       - name: Keep package as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: com_zkbiotime-${{ steps.version.outputs.version }}
+          name: com_biotime-${{ steps.version.outputs.version }}
           path: |
-            dist/com_zkbiotime.zip
+            dist/com_biotime.zip
             dist/updates.xml
             dist/changelog.xml
           if-no-files-found: error
@@ -95,7 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" dist/com_zkbiotime.zip dist/updates.xml dist/changelog.xml --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" dist/com_biotime.zip dist/updates.xml dist/changelog.xml --clobber --repo "$GITHUB_REPOSITORY"
 
       - name: Create release with package
         if: github.event_name == 'workflow_dispatch'
@@ -112,11 +112,11 @@ jobs:
           fi
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "Release $tag exists; replacing its package and update file."
-            gh release upload "$tag" dist/com_zkbiotime.zip dist/updates.xml dist/changelog.xml --clobber --repo "$GITHUB_REPOSITORY"
+            gh release upload "$tag" dist/com_biotime.zip dist/updates.xml dist/changelog.xml --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$tag" dist/com_zkbiotime.zip dist/updates.xml dist/changelog.xml \
+            gh release create "$tag" dist/com_biotime.zip dist/updates.xml dist/changelog.xml \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "com_zkbiotime $VERSION" \
+              --title "com_biotime $VERSION" \
               --notes-file "$notes"
           fi

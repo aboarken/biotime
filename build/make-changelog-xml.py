@@ -5,7 +5,7 @@ Usage: build/make-changelog-xml.py <CHANGELOG.md> <output.xml>
 
 Joomla shows it when the version number is clicked in System > Manage > Extensions, and from the
 update view (format: https://manual.joomla.org/docs/building-extensions/install-update/installation/change-log/).
-It is attached to every GitHub release; <changelogurl> in zkbiotime.xml and in updates.xml
+It is attached to every GitHub release; <changelogurl> in biotime.xml and in updates.xml
 points to releases/latest/download/changelog.xml, which holds every version.
 
 Sections map to Joomla change types: Security -> security, Fixed -> fix, Added -> addition,
@@ -16,7 +16,7 @@ import re
 import sys
 from xml.sax.saxutils import escape
 
-ELEMENT = 'com_zkbiotime'
+ELEMENT = 'com_biotime'
 TYPES = {'security': 'security', 'fixed': 'fix', 'added': 'addition', 'changed': 'change', 'removed': 'remove'}
 ORDER = ['security', 'fix', 'addition', 'change', 'remove', 'note']
 

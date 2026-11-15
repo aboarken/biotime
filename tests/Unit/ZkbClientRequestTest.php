@@ -4,16 +4,16 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Unit;
+namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\CachedToken;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportResponse;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbClient;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ZkbException;
-use ZkbPortal\Component\Zkbiotime\Tests\Support\ClientBuilder;
+use BiotimePortal\Component\Biotime\Administrator\Api\CachedToken;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportException;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportResponse;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
+use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Tests\Support\ClientBuilder;
 
 /**
  * Error mapping, retries, paging and input validation.
@@ -59,7 +59,7 @@ final class ZkbClientRequestTest extends TestCase
         } catch (ZkbException $e) {
             self::assertSame($kind, $e->getKind());
             self::assertSame($status, $e->getHttpStatus());
-            self::assertSame('COM_ZKBIOTIME_ERROR_' . strtoupper($kind), $e->getLanguageKey());
+            self::assertSame('COM_BIOTIME_ERROR_' . strtoupper($kind), $e->getLanguageKey());
         }
     }
 

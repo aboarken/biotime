@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Site\Controller;
+namespace BiotimePortal\Component\Biotime\Site\Controller;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -28,12 +28,12 @@ final class DisplayController extends BaseController
 
         if ($user === null || $user->guest) {
             $return = base64_encode(Uri::getInstance()->toString(['path', 'query', 'fragment']));
-            $this->app->enqueueMessage(Text::_('COM_ZKBIOTIME_LOGIN_REQUIRED'), 'warning');
+            $this->app->enqueueMessage(Text::_('COM_BIOTIME_LOGIN_REQUIRED'), 'warning');
             $this->setRedirect(Route::_('index.php?option=com_users&view=login&return=' . $return, false));
 
             return $this;
         }
 
-        throw new RouteNotFoundException(Text::_('COM_ZKBIOTIME_NOT_AVAILABLE_YET'), 404);
+        throw new RouteNotFoundException(Text::_('COM_BIOTIME_NOT_AVAILABLE_YET'), 404);
     }
 }

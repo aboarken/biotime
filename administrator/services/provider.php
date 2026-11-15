@@ -15,19 +15,19 @@ use Joomla\CMS\MVC\Factory\MVCFactoryInterface;
 use Joomla\Database\DatabaseInterface;
 use Joomla\DI\Container;
 use Joomla\DI\ServiceProviderInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Audit\AuditLogInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Audit\DbAuditLog;
-use ZkbPortal\Component\Zkbiotime\Administrator\Extension\ZkbiotimeComponent;
-use ZkbPortal\Component\Zkbiotime\Administrator\Log\JoomlaLogger;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\RateLimiter;
-use ZkbPortal\Component\Zkbiotime\Administrator\Security\SecretProvider;
-use ZkbPortal\Component\Zkbiotime\Administrator\Service\ZkbClientFactory;
-use ZkbPortal\Component\Zkbiotime\Administrator\Settings\SettingsRepository;
+use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
+use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
+use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
+use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
+use BiotimePortal\Component\Biotime\Administrator\Security\SecretProvider;
+use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
+use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 return new class () implements ServiceProviderInterface {
     public function register(Container $container): void
     {
-        $namespace = '\\ZkbPortal\\Component\\Zkbiotime';
+        $namespace = '\\BiotimePortal\\Component\\Biotime';
 
         $container->registerServiceProvider(new MVCFactory($namespace));
         $container->registerServiceProvider(new ComponentDispatcherFactory($namespace));
@@ -66,8 +66,8 @@ return new class () implements ServiceProviderInterface {
 
         $container->set(
             ComponentInterface::class,
-            static function (Container $c): ZkbiotimeComponent {
-                $component = new ZkbiotimeComponent($c->get(ComponentDispatcherFactoryInterface::class));
+            static function (Container $c): BiotimeComponent {
+                $component = new BiotimeComponent($c->get(ComponentDispatcherFactoryInterface::class));
                 $component->setMVCFactory($c->get(MVCFactoryInterface::class));
                 $component->setServiceContainer($c);
 

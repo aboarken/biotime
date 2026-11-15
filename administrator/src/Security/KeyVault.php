@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Security;
+namespace BiotimePortal\Component\Biotime\Administrator\Security;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -27,7 +27,7 @@ final class KeyVault
 
     private const VERSION = 'v1';
     private const CIPHER  = 'aes-256-gcm';
-    private const INFO    = 'com_zkbiotime/secret-encryption/v1';
+    private const INFO    = 'com_biotime/secret-encryption/v1';
 
     private string $key;
 

@@ -4,16 +4,16 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Api;
+namespace BiotimePortal\Component\Biotime\Administrator\Api;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Psr\Log\LoggerInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportResponse;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportException;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportInterface;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportResponse;
 
 /**
  * The single gateway to the ZKBioTime REST API. Nothing else in the component talks to ZKBioTime.

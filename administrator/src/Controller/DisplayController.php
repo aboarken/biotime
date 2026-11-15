@@ -4,7 +4,7 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Controller;
+namespace BiotimePortal\Component\Biotime\Administrator\Controller;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -25,7 +25,7 @@ final class DisplayController extends BaseController
     public function display($cachable = false, $urlparams = [])
     {
         // Settings and identity mappings are security-sensitive: super-user level permission only.
-        if (!$this->app->getIdentity()->authorise('core.admin', 'com_zkbiotime')) {
+        if (!$this->app->getIdentity()->authorise('core.admin', 'com_biotime')) {
             throw new NotAllowed(Text::_('JERROR_ALERTNOAUTHOR'), 403);
         }
 

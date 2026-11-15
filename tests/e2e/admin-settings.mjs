@@ -3,7 +3,7 @@
 //
 //   BASE_URL=http://127.0.0.1:8090 ADMIN_USER=admin ADMIN_PASS=... OUT=tests/output node tests/e2e/admin-settings.mjs
 //
-// Checks: page renders without untranslated COM_ZKBIOTIME_ strings, Save validates and never
+// Checks: page renders without untranslated COM_BIOTIME_ strings, Save validates and never
 // echoes secrets, Test Connection succeeds and fails as expected, Close and Options exist,
 // no horizontal page overflow at 390 px. Writes screenshots to OUT.
 import { createRequire } from 'node:module';
@@ -29,9 +29,9 @@ await page.fill('#mod-login-password', process.env.ADMIN_PASS ?? '');
 await Promise.all([page.waitForURL((u) => !u.toString().includes('login'), { waitUntil: 'networkidle' }).catch(() => {}), page.click('#btn-login-submit')]);
 await page.waitForSelector('#header, .header', { timeout: 15000 });
 
-const settingsUrl = `${BASE}/administrator/index.php?option=com_zkbiotime&view=integrationsettings`;
+const settingsUrl = `${BASE}/administrator/index.php?option=com_biotime&view=integrationsettings`;
 const messages = async () => (await page.locator('#system-message-container').innerText().catch(() => '')).trim();
-const untranslated = async () => (await page.content()).match(/COM_ZKBIOTIME_[A-Z0-9_]+/g) ?? [];
+const untranslated = async () => (await page.content()).match(/COM_BIOTIME_[A-Z0-9_]+/g) ?? [];
 const clickTask = async (selector) => { await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle' }), page.click(selector)]); };
 const save = () => clickTask('#toolbar-apply button, button.button-apply');
 const test = () => clickTask('#toolbar-test button, button.button-test');
@@ -106,7 +106,7 @@ await page.screenshot({ path: `${OUT}/settings-phone.png`, fullPage: true });
 
 // Permissions tab lists the seven portal actions.
 await page.setViewportSize({ width: 1366, height: 900 });
-await page.goto(`${BASE}/administrator/index.php?option=com_config&view=component&component=com_zkbiotime`);
+await page.goto(`${BASE}/administrator/index.php?option=com_config&view=component&component=com_biotime`);
 const perms = await page.innerText('body');
 for (const label of ['View My Dashboard', 'View My Attendance', 'View Attendance Calendar', 'View My Schedules', 'View Attendance Reports', 'Export Attendance Reports', 'View My Profile']) {
   check(perms.includes(label), `permission "${label}" listed`);
@@ -114,7 +114,7 @@ for (const label of ['View My Dashboard', 'View My Attendance', 'View Attendance
 check((await untranslated()).length === 0, 'Options page has no untranslated strings');
 
 // A GET to a task must not change anything (CSRF): expect a token error, not a save.
-await page.goto(`${BASE}/administrator/index.php?option=com_zkbiotime&task=settings.test`);
+await page.goto(`${BASE}/administrator/index.php?option=com_biotime&task=settings.test`);
 check(!/Connected to ZKBioTime/.test(await page.innerText('body')), 'task without token refused');
 
 await browser.close();

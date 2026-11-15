@@ -4,12 +4,12 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Unit;
+namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\ClientConfig;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Redactor;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\SslPin;
+use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
+use BiotimePortal\Component\Biotime\Administrator\Api\Redactor;
+use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
 
 final class ConnectionConfigTest extends TestCase
 {

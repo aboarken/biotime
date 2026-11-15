@@ -4,11 +4,11 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Tests\Support;
+namespace BiotimePortal\Component\Biotime\Tests\Support;
 
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportException;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportInterface;
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Transport\TransportResponse;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportException;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportInterface;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportResponse;
 
 /**
  * Stands in for ZKBioTime. Each queued answer is a TransportResponse, a TransportException to

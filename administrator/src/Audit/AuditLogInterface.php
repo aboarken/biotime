@@ -4,14 +4,14 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Audit;
+namespace BiotimePortal\Component\Biotime\Administrator\Audit;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Writes to #__zkbiotime_audit. Implementations must never throw: a failed audit write is logged.
+ * Writes to #__biotime_audit. Implementations must never throw: a failed audit write is logged.
  */
 interface AuditLogInterface
 {

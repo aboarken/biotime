@@ -4,16 +4,16 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace ZkbPortal\Component\Zkbiotime\Administrator\Settings;
+namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use ZkbPortal\Component\Zkbiotime\Administrator\Api\Credentials;
+use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 
 /**
- * Immutable view of the settings stored in #__zkbiotime_settings (name/value rows).
+ * Immutable view of the settings stored in #__biotime_settings (name/value rows).
  *
  * Settings live in the component's own table, not in com_config params: com_config replaces all
  * params on save, and the password and token must be encrypted before they are stored.

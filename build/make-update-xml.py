@@ -3,9 +3,9 @@
 
 Usage: build/make-update-xml.py <package.zip> <version> <output.xml>
 
-Joomla reads this file from the update server named in zkbiotime.xml
+Joomla reads this file from the update server named in biotime.xml
 (https://github.com/aboarken/com_biotime/releases/latest/download/updates.xml),
-so it is attached to every GitHub release next to com_zkbiotime.zip. It names the
+so it is attached to every GitHub release next to com_biotime.zip. It names the
 version, the download URL of that release's package and the package's SHA-256 checksum,
 which Joomla checks before installing.
 """
@@ -15,7 +15,7 @@ import sys
 from xml.sax.saxutils import escape
 
 REPO = 'https://github.com/aboarken/com_biotime'
-PACKAGE = 'com_zkbiotime.zip'
+PACKAGE = 'com_biotime.zip'
 
 
 def main() -> int:
@@ -38,11 +38,11 @@ def main() -> int:
     <update>
         <name>ZKBioTime</name>
         <description>{escape('Read-only employee self-service attendance portal for ZKTeco ZKBioTime 9.5.')}</description>
-        <element>com_zkbiotime</element>
+        <element>com_biotime</element>
         <type>component</type>
         <client>administrator</client>
         <version>{version}</version>
-        <infourl title="com_zkbiotime {version}">{REPO}/releases/tag/{tag}</infourl>
+        <infourl title="com_biotime {version}">{REPO}/releases/tag/{tag}</infourl>
         <downloads>
             <downloadurl type="full" format="zip">{REPO}/releases/download/{tag}/{PACKAGE}</downloadurl>
         </downloads>
