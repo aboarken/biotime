@@ -47,19 +47,20 @@ check(await page.locator('#toolbar-options button, #toolbar-options a, .button-o
 check((await page.innerText('body')).includes('Not set'), 'unset secrets shown as Not set');
 await page.screenshot({ path: `${OUT}/settings-empty.png`, fullPage: true });
 
-// Validation: wrong port and missing password.
-await page.fill('#jform_server_url', `${FAKE}`);
-await page.fill('#jform_server_port', '99999');
+// The port is part of the server URL: there is no separate field.
+check(await page.locator('#jform_server_port').count() === 0, 'no separate Port field');
+
+// Validation: invalid port in the URL and missing password.
+await page.fill('#jform_server_url', `${FAKE}:99999`);
 await page.fill('#jform_api_username', 'portal-api');
 await page.check('#jform_clear_password');
 await save();
 const errorText = await messages();
-check(/port must be a number/i.test(errorText), 'invalid port refused');
+check(/server URL must be/i.test(errorText), 'invalid port in the URL refused');
 check(/JWT needs an API username and password/i.test(errorText), 'missing password refused');
 
 // Valid save.
-await page.fill('#jform_server_url', `${FAKE}`);
-await page.fill('#jform_server_port', FAKE_PORT);
+await page.fill('#jform_server_url', `${FAKE}:${FAKE_PORT}`);
 await page.fill('#jform_api_username', 'portal-api');
 await page.fill('#jform_api_password', PASSWORD);
 await save();
@@ -73,7 +74,7 @@ check(/plain http/i.test(await page.innerText('body')), 'plain http warning');
 // Test connection succeeds.
 await test();
 const ok = await messages();
-check(/Connected to ZKBioTime with JWT/.test(ok) && /can read 3 employees/.test(ok), `test connection ok (${ok.replace(/\s+/g, ' ')})`);
+check(/Connected to ZKBioTime with JWT/.test(ok) && /can read \d+ employees/.test(ok), `test connection ok (${ok.replace(/\s+/g, ' ')})`);
 await page.screenshot({ path: `${OUT}/settings-test-ok.png`, fullPage: true });
 
 // Wrong password: authentication error with hint.
@@ -86,7 +87,7 @@ check(!(await page.content()).includes('wrong-password'), 'wrong password not ec
 
 // Unreachable port: network error.
 await page.fill('#jform_api_password', PASSWORD);
-await page.fill('#jform_server_port', '18999');
+await page.fill('#jform_server_url', `${FAKE}:18999`);
 await save();
 await test();
 check(/could not be reached/.test(await messages()), 'unreachable server reported');
@@ -94,8 +95,7 @@ await page.screenshot({ path: `${OUT}/settings-test-network-error.png`, fullPage
 
 // Connect via: the server URL's name does not resolve; only the "connect via" address reaches
 // the server. The stand-in server logs the Host header it receives (FAKE_LOG).
-await page.fill('#jform_server_url', 'http://zkb.mysite.invalid');
-await page.fill('#jform_server_port', FAKE_PORT);
+await page.fill('#jform_server_url', `http://zkb.mysite.invalid:${FAKE_PORT}`);
 await page.fill('#jform_connect_via', 'https://wrong.example');
 await save();
 check(/Connect via must be a host name/.test(await messages()), 'invalid connect via refused');
@@ -109,15 +109,14 @@ if (process.env.FAKE_LOG) {
   check(hosts.includes(`fake-zkbiotime Host: zkb.mysite.invalid:${FAKE_PORT} /jwt-api-token-auth/`), 'Host header keeps the server URL name');
 }
 await page.screenshot({ path: `${OUT}/settings-connect-via.png`, fullPage: true });
-await page.fill('#jform_server_url', 'http://zkb.mysite.invalid');
+await page.fill('#jform_server_url', `http://zkb.mysite.invalid:${FAKE_PORT}`);
 await page.fill('#jform_connect_via', '');
 await save();
 await test();
 check(/could not be reached/.test(await messages()), 'same name without connect via cannot be reached');
 
 // Restore a working configuration.
-await page.fill('#jform_server_url', `${FAKE}`);
-await page.fill('#jform_server_port', FAKE_PORT);
+await page.fill('#jform_server_url', `${FAKE}:${FAKE_PORT}`);
 await page.fill('#jform_connect_via', '');
 await save();
 

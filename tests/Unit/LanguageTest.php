@@ -31,33 +31,101 @@ final class LanguageTest extends TestCase
         return $all;
     }
 
-    public function testEveryUsedKeyExists(): void
+    /** @return array<string, string> */
+    private static function file(string $path): array
     {
-        $strings = self::strings();
-        $files   = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(self::ROOT, \FilesystemIterator::SKIP_DOTS));
-        $missing = [];
+        $parsed = parse_ini_file(self::ROOT . '/' . $path, false, INI_SCANNER_RAW);
+        self::assertIsArray($parsed, 'Cannot parse ' . $path);
+
+        return $parsed;
+    }
+
+    /**
+     * Keys used by code running on the site (portal) must be in the site language file; keys used
+     * by the administrator pages in the administrator files; menu item XML keys in the .sys.ini.
+     */
+    public function testEveryUsedKeyExistsForItsClient(): void
+    {
+        $site  = self::file('site/language/en-GB/com_biotime.ini');
+        $admin = self::file('administrator/language/en-GB/com_biotime.ini') + self::file('administrator/language/en-GB/com_biotime.sys.ini');
+        $sys   = self::file('administrator/language/en-GB/com_biotime.sys.ini');
+
+        // Shared classes that render text on the site.
+        $siteShared = ['administrator/src/Support/', 'administrator/src/Export/', 'administrator/src/Api/ZkbException.php'];
+        $missing    = [];
+        $files      = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(self::ROOT, \FilesystemIterator::SKIP_DOTS));
 
         foreach ($files as $file) {
-            $path = str_replace('\\', '/', $file->getPathname());
+            $path = ltrim(str_replace([str_replace('\\', '/', realpath(self::ROOT) ?: self::ROOT), '\\'], ['', '/'], $file->getPathname()), '/');
 
-            if (!preg_match('/\.(php|xml)$/', $path) || preg_match('#/(vendor|tests|\.git|dist)/#', $path)) {
+            if (!preg_match('/\.(php|xml)$/', $path) || preg_match('#^(vendor|tests|dist|build|\.git)/|/lib/#', $path) || $path === 'biotime.xml') {
                 continue;
             }
 
-            preg_match_all('/\bCOM_BIOTIME_[A-Z0-9_]+\b/', (string) file_get_contents($path), $m);
+            preg_match_all('/\bCOM_BIOTIME_[A-Z0-9_]+\b/', (string) file_get_contents($file->getPathname()), $m);
 
-            foreach ($m[0] as $key) {
-                // Prefixes completed at run time.
-                if (\in_array($key, ['COM_BIOTIME_ERROR_', 'COM_BIOTIME_TEST_HINT_'], true) || str_ends_with($key, '_')) {
-                    continue;
+            $isMenuXml = str_starts_with($path, 'site/tmpl/') && str_ends_with($path, '.xml');
+            $isSite    = !$isMenuXml && (str_starts_with($path, 'site/') || \in_array(true, array_map(static fn ($p) => str_starts_with($path, $p), $siteShared), true));
+            $isAdmin   = str_starts_with($path, 'administrator/') || $path === 'script.php';
+
+            foreach (array_unique($m[0]) as $key) {
+                if (str_ends_with($key, '_')) {
+                    continue; // prefix completed at run time
                 }
 
-                if (!isset($strings[$key])) {
-                    $missing[$key] = $path;
+                if ($isMenuXml && !isset($sys[$key])) {
+                    $missing[$key] = $path . ' (sys.ini)';
+                }
+
+                if ($isSite && !isset($site[$key])) {
+                    $missing[$key] = $path . ' (site)';
+                }
+
+                if ($isAdmin && !$isSite && !isset($admin[$key])) {
+                    $missing[$key] = $path . ' (administrator)';
                 }
             }
         }
 
+        self::assertSame([], $missing);
+    }
+
+    public function testRunTimeKeysExist(): void
+    {
+        $site  = self::file('site/language/en-GB/com_biotime.ini');
+        $admin = self::file('administrator/language/en-GB/com_biotime.ini');
+        $need  = [];
+
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\Day::EXCEPTIONS as $ex) {
+            $need[] = ['COM_BIOTIME_EXCEPTION_' . strtoupper($ex), $site];
+        }
+
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig::DAILY_STATUSES as $st) {
+            $need[] = ['COM_BIOTIME_STATUS_' . strtoupper($st), $site];
+        }
+
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig::LEAVE_STATUSES as $st) {
+            $need[] = ['COM_BIOTIME_LEAVE_' . strtoupper($st), $site];
+        }
+
+        foreach (['PUNCHES', 'DAILY', 'LEAVE'] as $part) {
+            $need[] = ['COM_BIOTIME_PART_' . $part, $site];
+            $need[] = ['COM_BIOTIME_NOTE_PART_MISSING_' . $part, $site];
+        }
+
+        foreach (['DAILY', 'LEAVE'] as $kind) {
+            foreach (['ERR_PATH', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP', 'ERR_LINE'] as $err) {
+                $need[] = ['COM_BIOTIME_SETTINGS_' . $kind . '_' . $err, $admin];
+            }
+
+            $need[] = ['COM_BIOTIME_SETTINGS_FIELDSET_' . $kind . '_HELP', $admin];
+        }
+
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::STATUSES as $st) {
+            $need[] = ['COM_BIOTIME_MAPSTATUS_' . strtoupper($st), $admin];
+        }
+
+        $missing = array_values(array_filter(array_map(static fn ($n) => isset($n[1][$n[0]]) ? null : $n[0], $need)));
         self::assertSame([], $missing);
     }
 
@@ -69,6 +137,7 @@ final class LanguageTest extends TestCase
             $error = (new ZkbException($kind, 'x'))->getLanguageKey();
             self::assertArrayHasKey($error, $strings);
             self::assertStringContainsString('ZKBioTime', $strings[$error], $error . ' must name ZKBioTime');
+            self::assertArrayHasKey($error, self::file('site/language/en-GB/com_biotime.ini'), 'portal needs ' . $error);
             self::assertArrayHasKey('COM_BIOTIME_TEST_HINT_' . strtoupper($kind), $strings);
         }
     }

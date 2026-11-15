@@ -10,3 +10,6 @@
 \define('_JEXEC', 1);
 
 require __DIR__ . '/../vendor/autoload.php';
+
+// Several small fakes share one file.
+require __DIR__ . '/Support/Fakes.php';

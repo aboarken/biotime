@@ -6,7 +6,7 @@
     <creationDate>2026-11</creationDate>
     <copyright>(C) 2026</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>0.1.1</version>
+    <version>0.2.0</version>
     <description>COM_BIOTIME_XML_DESCRIPTION</description>
     <namespace path="src">BiotimePortal\Component\Biotime</namespace>
 
@@ -33,7 +33,9 @@
 
     <files folder="site">
         <folder>language</folder>
+        <folder>layouts</folder>
         <folder>src</folder>
+        <folder>tmpl</folder>
     </files>
 
     <media destination="com_biotime" folder="media">
@@ -55,12 +57,14 @@
         <menu img="class:clock">COM_BIOTIME</menu>
         <submenu>
             <menu link="option=com_biotime&amp;view=integrationsettings">COM_BIOTIME_SUBMENU_SETTINGS</menu>
+            <menu link="option=com_biotime&amp;view=usermappings">COM_BIOTIME_SUBMENU_MAPPINGS</menu>
         </submenu>
         <files folder="administrator">
             <filename>access.xml</filename>
             <filename>config.xml</filename>
             <folder>forms</folder>
             <folder>language</folder>
+            <folder>lib</folder>
             <folder>services</folder>
             <folder>sql</folder>
             <folder>src</folder>

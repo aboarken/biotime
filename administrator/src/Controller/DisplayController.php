@@ -20,7 +20,7 @@ final class DisplayController extends BaseController
     protected $default_view = 'integrationsettings';
 
     /** Administrator views that exist in this version. */
-    private const VIEWS = ['integrationsettings'];
+    private const VIEWS = ['integrationsettings', 'usermappings', 'usermap'];
 
     public function display($cachable = false, $urlparams = [])
     {

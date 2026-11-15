@@ -31,8 +31,7 @@ final class SettingsValidatorTest extends TestCase
     private function input(array $override = []): array
     {
         return $override + [
-            'server_url'      => 'https://biotime.example.com',
-            'server_port'     => '8443',
+            'server_url'      => 'https://biotime.example.com:8443',
             'auth_method'     => 'jwt',
             'api_username'    => 'portal-api',
             'api_password'    => 'Pa55 word!',
@@ -45,6 +44,17 @@ final class SettingsValidatorTest extends TestCase
             'page_size'       => '100',
             'max_pages'       => '50',
             'detailed_log'    => '1',
+            'cache_minutes'   => '5',
+            'date_format'     => 'Y-m-d',
+            'time_format'     => 'H:i',
+            'server_timezone' => '',
+            'export_per_hour' => '10',
+            'report_max_days' => '93',
+            'match_field'     => 'employeeid',
+            'auto_match'      => '1',
+            'module_charts'   => '1',
+            'module_exports'  => '1',
+            'module_leave'    => '1',
         ];
     }
 
@@ -64,8 +74,8 @@ final class SettingsValidatorTest extends TestCase
     {
         $values = $this->validator()->validate($this->input(), new Settings());
 
-        self::assertSame('https://biotime.example.com', $values['server_url']);
-        self::assertSame('8443', $values['server_port']);
+        self::assertSame('https://biotime.example.com:8443', $values['server_url']);
+        self::assertSame('', $values['server_port'], 'the old separate port is cleared');
         self::assertSame('Pa55 word!', $this->vault->decrypt($values['api_password_enc'], KeyVault::CONTEXT_PASSWORD));
         self::assertArrayNotHasKey('api_password', $values, 'plain password is never stored');
         self::assertSame('', $values['token_cache_enc'], 'saving empties the cached token');
@@ -107,7 +117,6 @@ final class SettingsValidatorTest extends TestCase
     {
         $errors = $this->errors($this->input([
             'server_url'      => 'ftp://x',
-            'server_port'     => '99999',
             'auth_method'     => 'basic',
             'api_username'    => "bad\x01name",
             'api_token'       => 'short',
@@ -119,7 +128,7 @@ final class SettingsValidatorTest extends TestCase
         ]));
 
         foreach ([
-            'COM_BIOTIME_SETTINGS_ERR_PORT', 'COM_BIOTIME_SETTINGS_ERR_URL', 'COM_BIOTIME_SETTINGS_ERR_METHOD',
+            'COM_BIOTIME_SETTINGS_ERR_URL', 'COM_BIOTIME_SETTINGS_ERR_METHOD',
             'COM_BIOTIME_SETTINGS_ERR_USERNAME', 'COM_BIOTIME_SETTINGS_ERR_TIMEOUTS', 'COM_BIOTIME_SETTINGS_ERR_PIN',
             'COM_BIOTIME_SETTINGS_ERR_PAGE_SIZE', 'COM_BIOTIME_SETTINGS_ERR_MAX_PAGES',
         ] as $key) {
@@ -130,22 +139,22 @@ final class SettingsValidatorTest extends TestCase
     public function testSmallerRules(): void
     {
         self::assertSame(['COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED'], $this->errors($this->input(['server_url' => ''])));
-        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_PORT'], $this->errors($this->input(['server_url' => 'https://x.example:8081', 'server_port' => '8082'])));
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_URL'], $this->errors($this->input(['server_url' => 'https://x.example:99999'])));
         self::assertSame(['COM_BIOTIME_SETTINGS_ERR_TIMEOUT_RANGE'], $this->errors($this->input(['timeout' => '0'])));
         self::assertSame(['COM_BIOTIME_SETTINGS_ERR_PASSWORD'], $this->errors($this->input(['api_password' => "a\nb"])));
         self::assertSame(['COM_BIOTIME_SETTINGS_ERR_TOKEN'], $this->errors($this->input(['auth_method' => 'token', 'api_token' => 'has spaces in it 1234'])));
         self::assertSame(
             ['COM_BIOTIME_SETTINGS_ERR_PIN_HTTPS'],
-            $this->errors($this->input(['server_url' => 'http://10.0.0.5', 'server_port' => '', 'tls_pin' => 'sha256//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=']))
+            $this->errors($this->input(['server_url' => 'http://10.0.0.5', 'tls_pin' => 'sha256//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=']))
         );
     }
 
     public function testConnectViaIsNormalisedWithTheServerPort(): void
     {
-        $values = $this->validator()->validate($this->input(['server_url' => 'https://zkb.mysite.com', 'server_port' => '', 'connect_via' => 'Api.zkb.mysite.com']), new Settings());
+        $values = $this->validator()->validate($this->input(['server_url' => 'https://zkb.mysite.com', 'connect_via' => 'Api.zkb.mysite.com']), new Settings());
         self::assertSame('api.zkb.mysite.com:443', $values['connect_via']);
 
-        $values = $this->validator()->validate($this->input(['server_url' => 'http://zkb.mysite.com', 'server_port' => '8081', 'connect_via' => 'api.zkb.mysite.com']), new Settings());
+        $values = $this->validator()->validate($this->input(['server_url' => 'http://zkb.mysite.com:8081', 'connect_via' => 'api.zkb.mysite.com']), new Settings());
         self::assertSame('api.zkb.mysite.com:8081', $values['connect_via']);
 
         $values = $this->validator()->validate($this->input(), new Settings());
@@ -206,13 +215,68 @@ final class SettingsValidatorTest extends TestCase
 
     public function testSettingsClampStoredValues(): void
     {
-        $settings = new Settings(['timeout' => '9999', 'connect_timeout' => '0', 'page_size' => '-3', 'max_pages' => '', 'server_port' => '99999', 'auth_method' => 'x']);
+        $settings = new Settings(['timeout' => '9999', 'connect_timeout' => '0', 'page_size' => '-3', 'max_pages' => '', 'server_port' => '99999', 'auth_method' => 'x', 'cache_minutes' => '500', 'date_format' => 'x', 'server_timezone' => 'Mars/Base', 'match_field' => 'Bad Name']);
 
         self::assertSame(300, $settings->timeout());
         self::assertSame(1, $settings->connectTimeout());
         self::assertSame(1, $settings->pageSize());
         self::assertSame(50, $settings->maxPages());
-        self::assertSame(0, $settings->serverPort());
+        self::assertSame('', $settings->serverUrl());
         self::assertSame('jwt', $settings->authMethod());
+        self::assertSame(60, $settings->cacheMinutes());
+        self::assertSame('Y-m-d', $settings->dateFormat());
+        self::assertSame('', $settings->serverTimezone());
+        self::assertSame('', $settings->matchField());
+        self::assertSame('employeeid', (new Settings())->matchField());
+    }
+
+    public function testPortOfOlderVersionIsMergedIntoTheUrl(): void
+    {
+        self::assertSame('https://zkb.example.com:5555', (new Settings(['server_url' => 'https://zkb.example.com', 'server_port' => '5555']))->serverUrl());
+        self::assertSame('https://zkb.example.com', (new Settings(['server_url' => 'https://zkb.example.com', 'server_port' => '443']))->serverUrl());
+        self::assertSame('https://zkb.example.com:7000', (new Settings(['server_url' => 'https://zkb.example.com:7000', 'server_port' => '5555']))->serverUrl(), 'a port in the URL wins');
+        self::assertSame('https://zkb.example.com:5555', (new Settings(['server_url' => 'https://zkb.example.com', 'server_port' => '5555']))->toFormData()['server_url']);
+        self::assertArrayNotHasKey('server_port', (new Settings())->toFormData());
+    }
+
+    public function testDataSourcesAreValidatedAndStored(): void
+    {
+        $values = $this->validator()->validate($this->input([
+            'daily_path'       => '/att/api/somereport/',
+            'daily_param_emp'  => 'emp_code',
+            'daily_param_from' => 'start_date',
+            'daily_param_to'   => 'end_date',
+            'daily_fields'     => "emp_code = emp_code\ndate = att_date\nstatus = attendance_status",
+            'daily_status_map' => "On Time = present\nLate = late",
+            'daily_extra'      => 'report_id = 12',
+        ]), new Settings());
+
+        self::assertSame('/att/api/somereport/', $values['daily_path']);
+        self::assertSame("emp_code = emp_code\ndate = att_date\nstatus = attendance_status", $values['daily_fields']);
+
+    }
+
+    /** @return iterable<string, array{array<string, string>, string}> */
+    public static function badSources(): iterable
+    {
+        yield 'traversal' => [['daily_path' => '/att/../x/'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_PATH'];
+        yield 'login path' => [['daily_path' => '/jwt-api-token-auth/', 'daily_fields' => "emp_code=a\ndate=b"], 'COM_BIOTIME_SETTINGS_DAILY_ERR_PATH'];
+        yield 'missing emp_code' => [['daily_path' => '/a/', 'daily_fields' => 'date = d'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_FIELDS_REQUIRED'];
+        yield 'unknown field' => [['daily_fields' => 'salary = pay'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_FIELDS'];
+        yield 'sql in extra' => [['daily_extra' => 'q = SELECT * FROM x'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_EXTRA'];
+        yield 'paging in extra' => [['daily_extra' => 'page = 2'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_EXTRA'];
+        yield 'bad param' => [['daily_param_emp' => 'Emp Code'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_PARAM'];
+        yield 'bad status' => [['daily_status_map' => 'Late = tardy'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_STATUS_MAP'];
+        yield 'bad leave status' => [['leave_status_map' => 'OK = present'], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_STATUS_MAP'];
+        yield 'no separator' => [['leave_fields' => 'no separator'], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_LINE'];
+        yield 'match field' => [['match_field' => 'employee id!'], 'COM_BIOTIME_SETTINGS_ERR_MATCH_FIELD'];
+        yield 'cache' => [['cache_minutes' => '61'], 'COM_BIOTIME_SETTINGS_ERR_CACHE'];
+        yield 'time zone' => [['server_timezone' => 'Nowhere/City'], 'COM_BIOTIME_SETTINGS_ERR_TIMEZONE'];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('badSources')]
+    public function testInvalidSourcesAndSystemValuesAreRefused(array $override, string $key): void
+    {
+        self::assertSame([$key], $this->errors($this->input($override)));
     }
 }

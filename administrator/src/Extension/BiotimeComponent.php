@@ -10,9 +10,17 @@ namespace BiotimePortal\Component\Biotime\Administrator\Extension;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use Joomla\CMS\Component\Router\RouterServiceInterface;
+use Joomla\CMS\Component\Router\RouterServiceTrait;
 use Joomla\CMS\Extension\MVCComponent;
 use Psr\Container\ContainerInterface;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Export\ExportService;
+use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
+use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
+use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
+use BiotimePortal\Component\Biotime\Administrator\Profile\ProfileService;
 use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
 use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
 use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
@@ -22,8 +30,10 @@ use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
  * Component class. Gives controllers and models access to the services registered in
  * services/provider.php.
  */
-final class BiotimeComponent extends MVCComponent
+final class BiotimeComponent extends MVCComponent implements RouterServiceInterface
 {
+    use RouterServiceTrait;
+
     private ?ContainerInterface $services = null;
 
     public function setServiceContainer(ContainerInterface $services): void
@@ -49,6 +59,36 @@ final class BiotimeComponent extends MVCComponent
     public function getRateLimiter(): RateLimiter
     {
         return $this->service(RateLimiter::class);
+    }
+
+    public function getIdentityResolver(): IdentityResolver
+    {
+        return $this->service(IdentityResolver::class);
+    }
+
+    public function getMappingManager(): MappingManager
+    {
+        return $this->service(MappingManager::class);
+    }
+
+    public function getUserMapRepository(): UserMapRepositoryInterface
+    {
+        return $this->service(UserMapRepositoryInterface::class);
+    }
+
+    public function getAttendanceService(): AttendanceService
+    {
+        return $this->service(AttendanceService::class);
+    }
+
+    public function getProfileService(): ProfileService
+    {
+        return $this->service(ProfileService::class);
+    }
+
+    public function getExportService(): ExportService
+    {
+        return $this->service(ExportService::class);
     }
 
     public function getLogger(): JoomlaLogger

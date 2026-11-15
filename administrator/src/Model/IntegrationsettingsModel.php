@@ -103,7 +103,7 @@ final class IntegrationsettingsModel extends FormModel
         }
 
         return SslPin::readFromServer(
-            ClientConfig::buildBaseUrl($settings->serverUrl(), $settings->serverPort()),
+            ClientConfig::buildBaseUrl($settings->serverUrl()),
             $settings->connectTimeout(),
             $settings->connectVia()
         );

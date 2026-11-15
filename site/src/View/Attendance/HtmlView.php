@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * @license GNU General Public License version 2 or later
+ */
+
+namespace BiotimePortal\Component\Biotime\Site\View\Attendance;
+
+// phpcs:disable PSR1.Files.SideEffects
+\defined('_JEXEC') or die;
+// phpcs:enable PSR1.Files.SideEffects
+
+use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
+use BiotimePortal\Component\Biotime\Site\Model\AttendanceModel;
+use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
+use Joomla\CMS\Factory;
+use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
+
+/**
+ * My Attendance: one month, one row per day, with the schedule applied on each date.
+ */
+final class HtmlView extends BaseHtmlView
+{
+    use PortalViewTrait;
+
+    public const PAGE_SIZE = 25;
+
+    /** Status filter values: portal statuses plus "exceptions" and "punches". */
+    public const FILTERS = [...SourceConfig::DAILY_STATUSES, 'exceptions', 'punches', 'nopunches'];
+
+    public Period $period;
+
+    public Summary $summary;
+
+    /** @var list<Day> */
+    public array $rows = [];
+
+    public string $status = '';
+
+    public string $date = '';
+
+    public int $page = 1;
+
+    public int $pages = 1;
+
+    public int $total = 0;
+
+    public function display($tpl = null): void
+    {
+        /** @var AttendanceModel $model */
+        $model = $this->getModel();
+        $input = Factory::getApplication()->getInput();
+
+        // Search by date: the date's month is shown, filtered to that day.
+        $date = $input->getString('date', '');
+
+        if (preg_match('/^(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $date) && checkdate((int) substr($date, 5, 2), (int) substr($date, 8, 2), (int) substr($date, 0, 4))) {
+            $this->date = $date;
+            $input->set('month', substr($date, 0, 7));
+        }
+
+        $status       = $input->getCmd('status', '');
+        $this->status = \in_array($status, self::FILTERS, true) ? $status : '';
+
+        [$this->year, $this->month] = $model->selectedMonth();
+        $this->period  = $model->period();
+        $this->summary = $this->period->summary();
+
+        $rows = array_values(array_filter($this->period->days, fn (Day $d): bool => $this->matches($d)));
+
+        $this->total = \count($rows);
+        $this->pages = max(1, (int) ceil($this->total / self::PAGE_SIZE));
+        $this->page  = min(max(1, $input->getInt('page', 1)), $this->pages);
+        $this->rows  = \array_slice($rows, ($this->page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
+
+        $this->preparePage($model, 'attendance', 'COM_BIOTIME_ATTENDANCE_TITLE');
+        $model->logPage('attendance', \sprintf('%04d-%02d', $this->year, $this->month) . ($this->status !== '' ? ' status=' . $this->status : ''));
+
+        parent::display($tpl);
+    }
+
+    public function pageUrl(int $page): string
+    {
+        return $this->monthUrl('attendance', $this->year, $this->month, array_filter([
+            'status' => $this->status,
+            'date'   => $this->date,
+            'page'   => $page > 1 ? (string) $page : '',
+        ]));
+    }
+
+    private function matches(Day $d): bool
+    {
+        if ($this->date !== '' && $d->date !== $this->date) {
+            return false;
+        }
+
+        return match ($this->status) {
+            ''           => true,
+            'exceptions' => $d->exceptions !== [],
+            'punches'    => $d->punches !== [],
+            'nopunches'  => $d->punches === [],
+            'late'       => $d->status === 'late' || ($d->late ?? 0) > 0,
+            'early'      => $d->status === 'early' || ($d->early ?? 0) > 0,
+            default      => $d->status === $this->status,
+        };
+    }
+}
