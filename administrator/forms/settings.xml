@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Integration Settings. Values are validated and stored by SettingsValidator /
+    IntegrationsettingsModel (not by com_config); the password and token are encrypted first.
+-->
+<form>
+    <fieldset name="connection" label="COM_BIOTIME_SETTINGS_FIELDSET_CONNECTION">
+        <field name="server_url" type="url" label="COM_BIOTIME_SETTINGS_SERVER_URL"
+               description="COM_BIOTIME_SETTINGS_SERVER_URL_DESC" hint="https://biotime.example.com"
+               required="true" validate="url" scheme="https,http" filter="url" size="60" />
+        <field name="server_port" type="number" label="COM_BIOTIME_SETTINGS_SERVER_PORT"
+               description="COM_BIOTIME_SETTINGS_SERVER_PORT_DESC" hint="8081" min="1" max="65535" filter="integer" />
+        <field name="connect_timeout" type="number" label="COM_BIOTIME_SETTINGS_CONNECT_TIMEOUT"
+               description="COM_BIOTIME_SETTINGS_CONNECT_TIMEOUT_DESC" default="5" min="1" max="60" filter="integer" required="true" />
+        <field name="timeout" type="number" label="COM_BIOTIME_SETTINGS_TIMEOUT"
+               description="COM_BIOTIME_SETTINGS_TIMEOUT_DESC" default="30" min="1" max="300" filter="integer" required="true" />
+    </fieldset>
+
+    <fieldset name="credentials" label="COM_BIOTIME_SETTINGS_FIELDSET_CREDENTIALS">
+        <field name="auth_method" type="list" label="COM_BIOTIME_SETTINGS_METHOD"
+               description="COM_BIOTIME_SETTINGS_METHOD_DESC" default="jwt" validate="options">
+            <option value="jwt">COM_BIOTIME_SETTINGS_METHOD_JWT</option>
+            <option value="token">COM_BIOTIME_SETTINGS_METHOD_TOKEN</option>
+        </field>
+        <field name="api_username" type="text" label="COM_BIOTIME_SETTINGS_USERNAME"
+               description="COM_BIOTIME_SETTINGS_USERNAME_DESC" autocomplete="off" maxlength="150" filter="string" size="40" />
+        <field name="api_password" type="password" label="COM_BIOTIME_SETTINGS_PASSWORD"
+               description="COM_BIOTIME_SETTINGS_PASSWORD_DESC" autocomplete="new-password" filter="unset" lock="false" maxlength="256" />
+        <field name="clear_password" type="checkbox" label="COM_BIOTIME_SETTINGS_CLEAR_PASSWORD"
+               description="COM_BIOTIME_SETTINGS_CLEAR_PASSWORD_DESC" value="1" filter="unset" />
+        <field name="api_token" type="password" label="COM_BIOTIME_SETTINGS_TOKEN"
+               description="COM_BIOTIME_SETTINGS_TOKEN_DESC" autocomplete="new-password" filter="unset" lock="false"
+               showon="auth_method:token" />
+        <field name="clear_token" type="checkbox" label="COM_BIOTIME_SETTINGS_CLEAR_TOKEN"
+               description="COM_BIOTIME_SETTINGS_CLEAR_TOKEN_DESC" value="1" filter="unset" showon="auth_method:token" />
+    </fieldset>
+
+    <fieldset name="tls" label="COM_BIOTIME_SETTINGS_FIELDSET_TLS">
+        <field name="verify_tls" type="radio" label="COM_BIOTIME_SETTINGS_VERIFY_TLS"
+               description="COM_BIOTIME_SETTINGS_VERIFY_TLS_DESC" layout="joomla.form.field.radio.switcher" default="1" filter="integer">
+            <option value="0">JNO</option>
+            <option value="1">JYES</option>
+        </field>
+        <field name="ca_bundle" type="text" label="COM_BIOTIME_SETTINGS_CA_BUNDLE"
+               description="COM_BIOTIME_SETTINGS_CA_BUNDLE_DESC" filter="path" size="60" />
+        <field name="tls_pin" type="text" label="COM_BIOTIME_SETTINGS_TLS_PIN"
+               description="COM_BIOTIME_SETTINGS_TLS_PIN_DESC" hint="sha256//..." filter="raw" size="60" />
+    </fieldset>
+
+    <fieldset name="system" label="COM_BIOTIME_SETTINGS_FIELDSET_SYSTEM">
+        <field name="detailed_log" type="radio" label="COM_BIOTIME_SETTINGS_DETAILED_LOG"
+               description="COM_BIOTIME_SETTINGS_DETAILED_LOG_DESC" layout="joomla.form.field.radio.switcher" default="1" filter="integer">
+            <option value="0">JNO</option>
+            <option value="1">JYES</option>
+        </field>
+        <field name="page_size" type="number" label="COM_BIOTIME_SETTINGS_PAGE_SIZE"
+               description="COM_BIOTIME_SETTINGS_PAGE_SIZE_DESC" default="100" min="1" max="1000" filter="integer" required="true" />
+        <field name="max_pages" type="number" label="COM_BIOTIME_SETTINGS_MAX_PAGES"
+               description="COM_BIOTIME_SETTINGS_MAX_PAGES_DESC" default="50" min="1" max="1000" filter="integer" required="true" />
+    </fieldset>
+</form>
