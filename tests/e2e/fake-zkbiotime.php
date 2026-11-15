@@ -15,6 +15,9 @@ const USER     = 'portal-api';
 const PASSWORD = 'Fixture-Pass-123';
 
 $path = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+// Lets the browser check confirm that "Connect via" keeps the server URL's name in the Host header.
+error_log('fake-zkbiotime Host: ' . ($_SERVER['HTTP_HOST'] ?? '-') . ' ' . $path);
 $b64  = static fn (string $s): string => rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
 $out  = static function (int $status, array $data): void {
     http_response_code($status);

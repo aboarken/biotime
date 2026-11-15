@@ -140,6 +140,20 @@ final class SettingsValidatorTest extends TestCase
         );
     }
 
+    public function testConnectViaIsNormalisedWithTheServerPort(): void
+    {
+        $values = $this->validator()->validate($this->input(['server_url' => 'https://zkb.mysite.com', 'server_port' => '', 'connect_via' => 'Api.zkb.mysite.com']), new Settings());
+        self::assertSame('api.zkb.mysite.com:443', $values['connect_via']);
+
+        $values = $this->validator()->validate($this->input(['server_url' => 'http://zkb.mysite.com', 'server_port' => '8081', 'connect_via' => 'api.zkb.mysite.com']), new Settings());
+        self::assertSame('api.zkb.mysite.com:8081', $values['connect_via']);
+
+        $values = $this->validator()->validate($this->input(), new Settings());
+        self::assertSame('', $values['connect_via']);
+
+        self::assertSame(['COM_BIOTIME_SETTINGS_ERR_CONNECT_VIA'], $this->errors($this->input(['connect_via' => 'https://api.zkb.mysite.com'])));
+    }
+
     public function testMissingCaBundleIsRefused(): void
     {
         try {

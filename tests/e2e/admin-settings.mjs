@@ -92,8 +92,33 @@ await test();
 check(/could not be reached/.test(await messages()), 'unreachable server reported');
 await page.screenshot({ path: `${OUT}/settings-test-network-error.png`, fullPage: true });
 
-// Restore a working configuration.
+// Connect via: the server URL's name does not resolve; only the "connect via" address reaches
+// the server. The stand-in server logs the Host header it receives (FAKE_LOG).
+await page.fill('#jform_server_url', 'http://zkb.mysite.invalid');
 await page.fill('#jform_server_port', FAKE_PORT);
+await page.fill('#jform_connect_via', 'https://wrong.example');
+await save();
+check(/Connect via must be a host name/.test(await messages()), 'invalid connect via refused');
+await page.fill('#jform_connect_via', `127.0.0.1:${FAKE_PORT}`);
+await save();
+await test();
+const via = await messages();
+check(/Connected to ZKBioTime with JWT/.test(via), `test connection through connect via (${via.replace(/\s+/g, ' ')})`);
+if (process.env.FAKE_LOG) {
+  const hosts = fs.readFileSync(process.env.FAKE_LOG, 'utf8');
+  check(hosts.includes(`fake-zkbiotime Host: zkb.mysite.invalid:${FAKE_PORT} /jwt-api-token-auth/`), 'Host header keeps the server URL name');
+}
+await page.screenshot({ path: `${OUT}/settings-connect-via.png`, fullPage: true });
+await page.fill('#jform_server_url', 'http://zkb.mysite.invalid');
+await page.fill('#jform_connect_via', '');
+await save();
+await test();
+check(/could not be reached/.test(await messages()), 'same name without connect via cannot be reached');
+
+// Restore a working configuration.
+await page.fill('#jform_server_url', `${FAKE}`);
+await page.fill('#jform_server_port', FAKE_PORT);
+await page.fill('#jform_connect_via', '');
 await save();
 
 // Phone width: no horizontal page scroll.

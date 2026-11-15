@@ -61,6 +61,14 @@ final class JoomlaHttpTransport implements TransportInterface
             CURLOPT_SSL_VERIFYHOST => $this->config->verifyTls ? 2 : 0,
         ];
 
+        $connectTo = $this->config->connectToEntry();
+
+        if ($connectTo !== null) {
+            // Open the connection to the "connect via" address (e.g. the firewall's public name)
+            // while SNI, the certificate name check and the Host header keep the server URL's host.
+            $curl[CURLOPT_CONNECT_TO] = [$connectTo];
+        }
+
         if ($this->config->isPinned()) {
             // The pinned public key identifies the server instead of a CA and host name, so an IP
             // address or a self-signed certificate works. cURL aborts before any data (including
