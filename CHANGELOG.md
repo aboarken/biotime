@@ -3,6 +3,21 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-15
+
+### Added
+- **Six portal pages** (menu item types under *Menus → Add New Menu Item → ZKBioTime*): **My Dashboard** (summary cards, Monthly Overview chart with the same figures as a table, Recent Activity), **My Attendance** (one row per day with the schedule applied on that date, scheduled start and end, check-in, check-out, late-in, early-out, worked hours, overtime, status, all punches and exceptions; month, status and date filters), **Attendance Calendar** (status as colour and text; keyboard and phone friendly), **My Schedules** (month and week), **Attendance Reports** (a month or a range of up to 93 days; late-in, early-out, absence, overtime, leave and exception reports; **PDF and Excel downloads**) and **My Profile** (read only, allow-listed fields). Day details open from these pages.
+- **Employee mapping** (`#__biotime_usermap`): users are matched by the Joomla custom user field **employeeid** (= ZKBioTime emp_code) first, then by exact e-mail; one employee is never mapped to two users; a changed field or e-mail suspends the mapping. Unmatched users see a friendly "could not be matched" page.
+- **User Mappings** page: search, status and source filters, *No mapping yet* report, New (map by employee code), Confirm, Suspend, Re-match; every change audited.
+- **Daily Attendance Source** and **Leave Source** in Integration Settings: the administrator chooses the read-only ZKBioTime endpoint (or saved report) for calculated attendance, per-day schedules and leave, with parameter and field names and status names. No queries or SQL can be entered. Without it, those values show "—"; nothing is calculated by Joomla.
+- Modules (charts, exports, leave), cache time per user (default 5 minutes, "Updated hh:mm" on pages), date and time formats, ZKBioTime server time zone (times are never shifted), longest report range and exports per user and hour.
+- Ownership checks on every read: rows of other employees are dropped and logged; URL values never choose the employee.
+- One log line per page load saying what was read, hidden or skipped.
+- Bundled TCPDF (LGPL-3.0-or-later, DejaVu Sans with Arabic) for PDF exports.
+
+### Changed
+- **Server URL and port are one field**, e.g. `https://zkb.example.com:5555`. A port saved separately by 0.1.x is merged into the URL on update.
+
 ## [0.1.1] - 2026-11-15
 
 ### Added

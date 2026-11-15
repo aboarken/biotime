@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form>
+    <fields name="filter">
+        <field name="search" type="text" inputmode="search" label="COM_BIOTIME_MAPPINGS_SEARCH"
+               description="COM_BIOTIME_MAPPINGS_SEARCH_DESC" hint="JSEARCH_FILTER" />
+        <field name="status" type="list" label="COM_BIOTIME_MAPPING_STATUS" onchange="this.form.submit();" validate="options">
+            <option value="">COM_BIOTIME_MAPPINGS_SELECT_STATUS</option>
+            <option value="active">COM_BIOTIME_MAPSTATUS_ACTIVE</option>
+            <option value="ambiguous">COM_BIOTIME_MAPSTATUS_AMBIGUOUS</option>
+            <option value="not_found">COM_BIOTIME_MAPSTATUS_NOT_FOUND</option>
+            <option value="suspended">COM_BIOTIME_MAPSTATUS_SUSPENDED</option>
+            <option value="none">COM_BIOTIME_MAPSTATUS_NONE</option>
+        </field>
+        <field name="source" type="list" label="COM_BIOTIME_MAPPING_SOURCE" onchange="this.form.submit();" validate="options">
+            <option value="">COM_BIOTIME_MAPPINGS_SELECT_SOURCE</option>
+            <option value="auto">COM_BIOTIME_SOURCE_AUTO</option>
+            <option value="admin">COM_BIOTIME_SOURCE_ADMIN</option>
+        </field>
+    </fields>
+    <fields name="list">
+        <field name="fullordering" type="list" label="JGLOBAL_SORT_BY" default="m.checked_at DESC" onchange="this.form.submit();" validate="options">
+            <option value="">JGLOBAL_SORT_BY</option>
+            <option value="m.checked_at DESC">COM_BIOTIME_SORT_CHECKED_DESC</option>
+            <option value="m.checked_at ASC">COM_BIOTIME_SORT_CHECKED_ASC</option>
+            <option value="u.name ASC">COM_BIOTIME_SORT_NAME_ASC</option>
+            <option value="u.name DESC">COM_BIOTIME_SORT_NAME_DESC</option>
+            <option value="m.emp_code ASC">COM_BIOTIME_SORT_CODE_ASC</option>
+            <option value="m.status ASC">COM_BIOTIME_SORT_STATUS_ASC</option>
+        </field>
+        <field name="limit" type="limitbox" label="JGLOBAL_LIST_LIMIT" default="25" onchange="this.form.submit();" />
+    </fields>
+</form>

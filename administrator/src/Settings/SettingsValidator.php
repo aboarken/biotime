@@ -13,6 +13,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
 
@@ -54,35 +55,30 @@ final class SettingsValidator
         $values = [];
         $text   = static fn (string $name, int $max = 255): string => mb_substr(trim(self::str($input[$name] ?? '')), 0, $max + 1);
 
-        // Server URL and port.
-        $url  = $text('server_url', 500);
-        $port = $text('server_port', 10);
-
-        $urlPort = (int) (parse_url($url, PHP_URL_PORT) ?: 0);
-
-        if ($port !== '' && (!ctype_digit($port) || (int) $port < 1 || (int) $port > 65535 || ($urlPort > 0 && (int) $port !== $urlPort))) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_PORT';
-            $port     = '';
-        }
+        // Server URL, including its port (https://zkb.example.com:5555).
+        $url = rtrim($text('server_url', 500), '/');
 
         try {
-            ClientConfig::buildBaseUrl($url, (int) $port);
-            $values['server_url'] = rtrim($url, '/');
+            $base                 = ClientConfig::buildBaseUrl($url);
+            $values['server_url'] = $url;
         } catch (\InvalidArgumentException) {
             $errors[] = $url === '' ? 'COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED' : 'COM_BIOTIME_SETTINGS_ERR_URL';
+            $base     = '';
         }
 
-        $values['server_port'] = $port;
+        // The separate port field of 0.1.x is gone: the port is part of the URL.
+        $values['server_port'] = '';
 
         // Connect via: another address for the TCP connection, same name for TLS and Host.
         try {
-            $basePort              = (int) $port ?: ($urlPort ?: (str_starts_with(strtolower($url), 'https://') ? 443 : 80));
+            $basePort              = (int) (parse_url($base, PHP_URL_PORT) ?: (str_starts_with(strtolower($url), 'https://') ? 443 : 80));
             $values['connect_via'] = ClientConfig::normalizeConnectVia(self::str($input['connect_via'] ?? ''), $basePort);
         } catch (\InvalidArgumentException) {
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_CONNECT_VIA';
             $values['connect_via'] = '';
         }
-        $https                 = str_starts_with(strtolower($url), 'https://');
+
+        $https = str_starts_with(strtolower($url), 'https://');
 
         // Authentication.
         $method = self::str($input['auth_method'] ?? '');
@@ -204,6 +200,80 @@ final class SettingsValidator
         $values['page_size']    = (string) ($pageSize ?? Settings::DEFAULT_PAGE_SIZE);
         $values['max_pages']    = (string) ($maxPages ?? Settings::DEFAULT_MAX_PAGES);
         $values['detailed_log'] = self::flag($input['detailed_log'] ?? '1') ? '1' : '0';
+
+        $values['cache_minutes'] = (string) max(0, min(Settings::MAX_CACHE_MINUTES, self::int($input['cache_minutes'] ?? null) ?? Settings::DEFAULT_CACHE_MINUTES));
+
+        if (self::int($input['cache_minutes'] ?? null) === null || (int) $input['cache_minutes'] > Settings::MAX_CACHE_MINUTES) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_CACHE';
+        }
+
+        $values['date_format'] = \in_array(self::str($input['date_format'] ?? ''), Settings::DATE_FORMATS, true) ? self::str($input['date_format']) : 'Y-m-d';
+        $values['time_format'] = \in_array(self::str($input['time_format'] ?? ''), Settings::TIME_FORMATS, true) ? self::str($input['time_format']) : 'H:i';
+
+        $zone = trim(self::str($input['server_timezone'] ?? ''));
+
+        if ($zone !== '' && !\in_array($zone, \DateTimeZone::listIdentifiers(), true)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_TIMEZONE';
+            $zone     = '';
+        }
+
+        $values['server_timezone'] = $zone;
+
+        $exports = self::int($input['export_per_hour'] ?? null);
+        $days    = self::int($input['report_max_days'] ?? null);
+
+        if ($exports === null || $exports < 1 || $exports > 1000) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_EXPORTS';
+        }
+
+        if ($days === null || $days < 1 || $days > 366) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_REPORT_DAYS';
+        }
+
+        $values['export_per_hour'] = (string) ($exports ?? 10);
+        $values['report_max_days'] = (string) ($days ?? Settings::DEFAULT_REPORT_DAYS);
+
+        // Employee mapping: custom user field name (lower case, as Joomla stores field names).
+        $matchField = strtolower(trim(self::str($input['match_field'] ?? '')));
+
+        if ($matchField !== '' && !preg_match('/^[a-z0-9][a-z0-9_-]{0,99}$/', $matchField)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_MATCH_FIELD';
+            $matchField = '';
+        }
+
+        $values['match_field'] = $matchField;
+
+        // Employee mapping and modules.
+        foreach (['auto_match', 'module_charts', 'module_exports', 'module_leave'] as $flag) {
+            $values[$flag] = self::flag($input[$flag] ?? '0') ? '1' : '0';
+        }
+
+        // Data sources for calculated attendance and leave (paths, parameter and field names only).
+        foreach (['daily', 'leave'] as $kind) {
+            $raw = [];
+
+            foreach (['path', 'param_emp', 'param_from', 'param_to', 'date_format', 'extra', 'fields', 'duration_unit', 'status_map'] as $name) {
+                $raw[$name] = mb_substr(self::str($input[$kind . '_' . $name] ?? ''), 0, 4000);
+            }
+
+            try {
+                $source = SourceConfig::parse($kind, $raw);
+            } catch (\InvalidArgumentException $e) {
+                $errors[] = 'COM_BIOTIME_SETTINGS_' . strtoupper($kind) . '_' . (\in_array($e->getMessage(), ['ERR_PATH', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP'], true) ? $e->getMessage() : 'ERR_LINE');
+
+                continue;
+            }
+
+            $values[$kind . '_path']          = $source->path;
+            $values[$kind . '_param_emp']     = $source->paramEmp;
+            $values[$kind . '_param_from']    = $source->paramFrom;
+            $values[$kind . '_param_to']      = $source->paramTo;
+            $values[$kind . '_date_format']   = $source->dateFormat;
+            $values[$kind . '_duration_unit'] = $source->durationUnit;
+            $values[$kind . '_extra']         = trim(str_replace("\r", '', $raw['extra']));
+            $values[$kind . '_fields']        = trim(str_replace("\r", '', $raw['fields']));
+            $values[$kind . '_status_map']    = trim(str_replace("\r", '', $raw['status_map']));
+        }
 
         // New settings may mean new credentials or another server: log in afresh.
         $values['token_cache_enc']      = '';

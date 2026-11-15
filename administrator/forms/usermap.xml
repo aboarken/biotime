@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form>
+    <fieldset name="mapping">
+        <field name="joomla_user_id" type="user" label="COM_BIOTIME_MAPPING_JOOMLA_USER" required="true" filter="integer" />
+        <field name="emp_code" type="text" label="COM_BIOTIME_MAPPING_EMP_CODE" description="COM_BIOTIME_MAPPING_EMP_CODE_DESC"
+               required="true" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,29}" maxlength="30" filter="string" />
+    </fieldset>
+</form>

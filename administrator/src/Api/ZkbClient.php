@@ -46,6 +46,26 @@ final class ZkbClient
      */
     private const PATH_EMPLOYEES = '/personnel/api/employees/';
 
+    /**
+     * One employee: /personnel/api/employees/{id}/.
+     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Employee" (detail of the list above).
+     */
+    private const PATH_EMPLOYEE = '/personnel/api/employees/%s/';
+
+    /** Employee list filter by employee code. UNVERIFIED on 9.5 (manual, Employee list parameters). */
+    private const PARAM_EMP_CODE = 'emp_code';
+
+    /**
+     * Punches (transactions), filtered by employee code and a time range ("YYYY-MM-DD HH:MM:SS").
+     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Transaction".
+     */
+    private const PATH_TRANSACTIONS = '/iclock/api/transactions/';
+
+    /** Transaction filters. UNVERIFIED on 9.5 (manual, Transaction list parameters). */
+    private const PARAM_TX_EMP   = 'emp_code';
+    private const PARAM_TX_START = 'start_time';
+    private const PARAM_TX_END   = 'end_time';
+
     /** Paging query parameters. UNVERIFIED on 9.5 (manual, list endpoints). */
     private const PARAM_PAGE      = 'page';
     private const PARAM_PAGE_SIZE = 'page_size';
@@ -261,6 +281,90 @@ final class ZkbClient
         }
 
         return new ListResult($all, $count, $truncated, $pages);
+    }
+
+    /**
+     * Every employee the API user may read, page by page up to the safety maximum. Used for exact
+     * e-mail matching, because the list filters of ZKBioTime may return partial matches.
+     *
+     * @throws ZkbException
+     */
+    public function allEmployees(): ListResult
+    {
+        return $this->listAll(self::PATH_EMPLOYEES);
+    }
+
+    /**
+     * Employees whose code is $code according to the server's filter. Callers compare emp_code
+     * exactly, since a filter may also return partial matches.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws ZkbException
+     */
+    public function employeesByCode(string $code): array
+    {
+        return $this->listAll(self::PATH_EMPLOYEES, [self::PARAM_EMP_CODE => self::empCode($code)], 50)->items;
+    }
+
+    /**
+     * @return array<string, mixed>
+     *
+     * @throws ZkbException
+     */
+    public function employee(string|int $id): array
+    {
+        $data = $this->get(\sprintf(self::PATH_EMPLOYEE, self::id($id)));
+
+        // Some builds wrap single objects in "data".
+        if (isset($data['data']) && \is_array($data['data']) && !array_is_list($data['data'])) {
+            $data = $data['data'];
+        }
+
+        if (array_is_list($data) || !isset($data['emp_code'])) {
+            throw new ZkbException(ZkbException::BAD_RESPONSE, 'Unexpected employee response shape');
+        }
+
+        return $data;
+    }
+
+    /**
+     * Punches of one employee between two server-local times (inclusive).
+     *
+     * @throws ZkbException
+     */
+    public function transactions(string $empCode, \DateTimeInterface $from, \DateTimeInterface $to): ListResult
+    {
+        return $this->listAll(self::PATH_TRANSACTIONS, [
+            self::PARAM_TX_EMP   => self::empCode($empCode),
+            self::PARAM_TX_START => $from->format('Y-m-d H:i:s'),
+            self::PARAM_TX_END   => $to->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    /**
+     * Rows of an administrator-configured read-only source (calculated daily attendance or leave),
+     * filtered to one employee and a date range. The path and parameter names were validated when
+     * the settings were saved and are checked again here.
+     *
+     * @throws ZkbException
+     */
+    public function sourceRows(\BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig $source, string $empCode, \DateTimeInterface $from, \DateTimeInterface $to): ListResult
+    {
+        if (!$source->isConfigured()) {
+            throw new ZkbException(ZkbException::NOT_CONFIGURED, 'Source not configured');
+        }
+
+        if (\in_array($source->path, [self::PATH_JWT_AUTH, self::PATH_TOKEN_AUTH], true)) {
+            throw new \InvalidArgumentException('Invalid source path');
+        }
+
+        $query = $source->extra;
+        $query[$source->paramEmp]  = self::empCode($empCode);
+        $query[$source->paramFrom] = $from->format($source->dateFormat);
+        $query[$source->paramTo]   = $to->format($source->dateFormat);
+
+        return $this->listAll($source->path, $query);
     }
 
     /**

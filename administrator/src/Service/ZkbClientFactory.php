@@ -61,7 +61,7 @@ final class ZkbClientFactory
         try {
             $config = new ClientConfig(
                 $settings->serverUrl(),
-                $settings->serverPort(),
+                0,
                 $settings->timeout(),
                 $settings->connectTimeout(),
                 $settings->verifyTls(),

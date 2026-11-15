@@ -11,6 +11,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 // phpcs:enable PSR1.Files.SideEffects
 
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 
 /**
  * Immutable view of the settings stored in #__biotime_settings (name/value rows).
@@ -20,29 +21,69 @@ use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
  */
 final class Settings
 {
-    public const DEFAULT_PAGE_SIZE = 100;
-    public const DEFAULT_MAX_PAGES = 50;
+    public const DEFAULT_PAGE_SIZE     = 100;
+    public const DEFAULT_MAX_PAGES     = 50;
+    public const DEFAULT_CACHE_MINUTES = 5;
+    public const MAX_CACHE_MINUTES     = 60;
+    public const DEFAULT_REPORT_DAYS   = 93;
+
+    public const DATE_FORMATS = ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd.m.Y', 'd M Y'];
+    public const TIME_FORMATS = ['H:i', 'H:i:s', 'h:i A'];
 
     public const DEFAULTS = [
-        // Connection
-        'server_url'      => '',
-        'server_port'     => '',
-        'auth_method'     => Credentials::METHOD_JWT,
-        'api_username'    => '',
+        // Connection. The port is part of the server URL (https://host:5555).
+        'server_url'       => '',
+        // Read only: port of versions before 0.2.0, merged into the server URL until saved.
+        'server_port'      => '',
+        'auth_method'      => Credentials::METHOD_JWT,
+        'api_username'     => '',
         'api_password_enc' => '',
-        'api_token_enc'   => '',
-        'connect_timeout' => '5',
-        'timeout'         => '30',
-        'verify_tls'      => '1',
-        'ca_bundle'       => '',
-        'tls_pin'         => '',
-        'connect_via'     => '',
+        'api_token_enc'    => '',
+        'connect_timeout'  => '5',
+        'timeout'          => '30',
+        'verify_tls'       => '1',
+        'ca_bundle'        => '',
+        'tls_pin'          => '',
+        'connect_via'      => '',
+        // Employee mapping: the Joomla custom user field holding emp_code, then e-mail as fallback
+        'match_field'      => 'employeeid',
+        'auto_match'       => '1',
+        // Modules within the six pages
+        'module_charts'    => '1',
+        'module_exports'   => '1',
+        'module_leave'     => '1',
+        // Calculated daily attendance and schedules: a read-only ZKBioTime endpoint or saved report
+        'daily_path'          => '',
+        'daily_param_emp'     => 'emp_code',
+        'daily_param_from'    => 'start_date',
+        'daily_param_to'      => 'end_date',
+        'daily_date_format'   => 'Y-m-d',
+        'daily_extra'         => '',
+        'daily_fields'        => '',
+        'daily_duration_unit' => 'minutes',
+        'daily_status_map'    => '',
+        // Leave
+        'leave_path'          => '',
+        'leave_param_emp'     => 'emp_code',
+        'leave_param_from'    => 'start_date',
+        'leave_param_to'      => 'end_date',
+        'leave_date_format'   => 'Y-m-d',
+        'leave_extra'         => '',
+        'leave_fields'        => '',
+        'leave_duration_unit' => 'hours',
+        'leave_status_map'    => '',
         // System
-        'page_size'       => '100',
-        'max_pages'       => '50',
-        'detailed_log'    => '1',
+        'detailed_log'     => '1',
+        'cache_minutes'    => '5',
+        'page_size'        => '100',
+        'max_pages'        => '50',
+        'date_format'      => 'Y-m-d',
+        'time_format'      => 'H:i',
+        'server_timezone'  => '',
+        'export_per_hour'  => '10',
+        'report_max_days'  => '93',
         // Internal: the cached API token (encrypted) and when to renew it. Never in the form.
-        'token_cache_enc' => '',
+        'token_cache_enc'      => '',
         'token_cache_renew_at' => '',
     ];
 
@@ -59,16 +100,28 @@ final class Settings
         return $this->values[$name] ?? self::DEFAULTS[$name] ?? '';
     }
 
+    /**
+     * The server URL including its port. A port stored separately by an older version is merged
+     * in, so existing sites keep working until the settings are saved again.
+     */
     public function serverUrl(): string
     {
-        return $this->get('server_url');
-    }
-
-    public function serverPort(): int
-    {
+        $url  = $this->get('server_url');
         $port = (int) $this->get('server_port');
 
-        return $port >= 1 && $port <= 65535 ? $port : 0;
+        if ($url === '' || $port < 1 || $port > 65535 || parse_url($url, PHP_URL_PORT) !== null) {
+            return $url;
+        }
+
+        $parts = parse_url($url);
+
+        if (!\is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+            return $url;
+        }
+
+        $default = strtolower($parts['scheme']) === 'https' ? 443 : 80;
+
+        return $parts['scheme'] . '://' . $parts['host'] . ($port !== $default ? ':' . $port : '') . ($parts['path'] ?? '');
     }
 
     public function authMethod(): string
@@ -146,6 +199,35 @@ final class Settings
         return $this->get('connect_via');
     }
 
+    /** Name of the Joomla custom user field that holds the employee code; '' = not used. */
+    public function matchField(): string
+    {
+        $name = $this->get('match_field');
+
+        return preg_match('/^[a-z0-9][a-z0-9_-]{0,99}$/', $name) ? $name : '';
+    }
+
+    public function autoMatch(): bool
+    {
+        return $this->get('auto_match') !== '0';
+    }
+
+    /** @param 'charts'|'exports'|'leave' $module */
+    public function moduleEnabled(string $module): bool
+    {
+        return $this->get('module_' . $module) !== '0';
+    }
+
+    /**
+     * Where calculated daily attendance (or leave) is read, as configured by the administrator.
+     *
+     * @param 'daily'|'leave' $kind
+     */
+    public function source(string $kind): SourceConfig
+    {
+        return SourceConfig::fromSettings($this, $kind);
+    }
+
     public function pageSize(): int
     {
         return max(1, min(1000, (int) $this->get('page_size') ?: self::DEFAULT_PAGE_SIZE));
@@ -161,13 +243,58 @@ final class Settings
         return $this->get('detailed_log') !== '0';
     }
 
+    /** Minutes read-only results are kept per user (0 = no cache). */
+    public function cacheMinutes(): int
+    {
+        $value = $this->get('cache_minutes');
+
+        return $value === '' ? self::DEFAULT_CACHE_MINUTES : max(0, min(self::MAX_CACHE_MINUTES, (int) $value));
+    }
+
+    public function cacheTtl(): int
+    {
+        return $this->cacheMinutes() * 60;
+    }
+
+    public function dateFormat(): string
+    {
+        $format = $this->get('date_format');
+
+        return \in_array($format, self::DATE_FORMATS, true) ? $format : 'Y-m-d';
+    }
+
+    public function timeFormat(): string
+    {
+        $format = $this->get('time_format');
+
+        return \in_array($format, self::TIME_FORMATS, true) ? $format : 'H:i';
+    }
+
+    /** IANA time zone of the ZKBioTime server; '' = Joomla's server time zone. */
+    public function serverTimezone(): string
+    {
+        $zone = $this->get('server_timezone');
+
+        return \in_array($zone, \DateTimeZone::listIdentifiers(), true) ? $zone : '';
+    }
+
+    public function exportsPerHour(): int
+    {
+        return max(1, min(1000, (int) $this->get('export_per_hour') ?: 10));
+    }
+
+    public function reportMaxDays(): int
+    {
+        return max(1, min(366, (int) $this->get('report_max_days') ?: self::DEFAULT_REPORT_DAYS));
+    }
+
     public function isHttps(): bool
     {
         return str_starts_with(strtolower($this->serverUrl()), 'https://');
     }
 
     /**
-     * Values safe to show in the form: no ciphertext, no cached token.
+     * Values safe to show in the form: no ciphertext, no cached token, the port inside the URL.
      *
      * @return array<string, string>
      */
@@ -178,6 +305,9 @@ final class Settings
         foreach (self::SECRET_NAMES as $name) {
             unset($data[$name]);
         }
+
+        $data['server_url'] = $this->serverUrl();
+        unset($data['server_port']);
 
         return $data;
     }

@@ -17,43 +17,49 @@ vendor/bin/phpunit
 |---|---|
 | JWT and General Auth Token login, header format, token caching, renewal before expiry, one renewal after "unauthorised", static token, wrong credentials, no secrets in logs or dumps, connection test | `tests/Unit/ZkbClientAuthTest.php` |
 | Error mapping for every kind, GET retry on network and server errors, no retry for login, paging (`next`, `count`, safety maximum, max items, `results` and bare-list fallbacks), path/query/id/emp_code validation, log lines without personal data | `tests/Unit/ZkbClientRequestTest.php` |
-| URL and port, Connect via, timeouts, certificate pin, redaction | `tests/Unit/ConnectionConfigTest.php` |
+| Server URL with port, Connect via, timeouts, certificate pin, redaction | `tests/Unit/ConnectionConfigTest.php` |
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
-| Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form) | `tests/Unit/SettingsValidatorTest.php` |
-| Every `COM_BIOTIME_` string used exists; every error kind has a message naming ZKBioTime and a hint | `tests/Unit/LanguageTest.php` |
-
-Tests for employee matching, ownership/IDOR, per-day schedules, status mapping, month summaries,
-exports and the per-user cache are added with the stages that bring those features.
+| Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form, data sources, no free-form queries, 0.1.x port merged into the URL) | `tests/Unit/SettingsValidatorTest.php` |
+| Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification, administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php` |
+| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; per-day schedules; status mapping; month summaries; nothing calculated without the daily source; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months; exports contain only the user's data (Excel and PDF); profile allow-list | `tests/Unit/AttendanceServiceTest.php` |
+| Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
 
 The GitHub workflow runs PHP lint and these tests on every pull request before building the package.
 
-## 2. Browser check of the administrator pages
+## 2. Browser checks on a real Joomla site
 
-`tests/e2e/admin-settings.mjs` drives a real Joomla 6 site with Playwright. A small stand-in
-server, `tests/e2e/fake-zkbiotime.php` (test fixture only, never deploy it), answers like the
-documented API. It checks: no untranslated strings, the toolbar (Save, Test Connection, Read
-Certificate Pin, Close, Options), validation messages, that no password or ciphertext reaches
-the browser, a successful test, a wrong password, an unreachable server, no horizontal scrolling
-at 390 px, the seven permissions, and that a task without a CSRF token is refused.
+Two Playwright scripts drive a real Joomla 6 site. A small stand-in server,
+`tests/e2e/fake-zkbiotime.php` (test fixture only, never deploy it), answers like the documented
+API with invented fixture data.
 
 ```bash
 php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
 ```
 
-```bash
-BASE_URL=http://127.0.0.1:8090 ADMIN_USER=admin ADMIN_PASS='…' OUT=tests/output node tests/e2e/admin-settings.mjs
-```
+- `tests/e2e/admin-settings.mjs`: Integration Settings (toolbar, validation, no password or
+  ciphertext in the browser, Test Connection success / wrong password / unreachable, Connect via
+  with the Host header kept, 390 px, the seven permissions, CSRF).
 
-It also checks *Connect via*: a server URL whose name does not resolve is reached only through the
-*Connect via* address, and the stand-in server receives the server URL's name in the Host header
-(set `FAKE_LOG` to the stand-in's log file).
+  ```bash
+  BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' FAKE_LOG=/path/to/fake.log OUT=tests/output node tests/e2e/admin-settings.mjs
+  ```
 
-Over TLS (0.1.1, by hand with a self-signed certificate for the internal name): CA bundle and
-certificate pin both connect through *Connect via*, a wrong pin and an untrusted certificate are
-refused, and *Read Certificate Pin* reads the right key.
+- `tests/e2e/portal.mjs`: needs Registered users `sara` (custom field `employeeid` = `FIXTURE1`),
+  `omar` (`omar@example.test`), `shared` (`shared@example.test`) and `nobody`, and the seven
+  permissions allowed for Registered. Checks the data sources in the settings form, the six menu
+  item types, all six pages and day details (status 200, translated, noindex, no other
+  employee's data, schedule per day, late-in / early-out from ZKBioTime, exceptions, chart,
+  profile allow-list), PDF and Excel downloads (only the user's data), CSRF refusal, IDOR
+  attempts, 390 px without horizontal scrolling on every page, e-mail matching, the "could not be
+  matched" page, the User Mappings list, duplicate refusal, manual mapping and Re-match.
 
-For 0.1.0 and 0.1.1 this passed on Joomla 6.2.0 / PHP 8.3 with PostgreSQL 16 and with MariaDB 10.11:
-install, install over itself (update), and uninstall (tables and files removed).
+  ```bash
+  BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' USER_PASS='…' OUT=tests/output node tests/e2e/portal.mjs
+  ```
+
+0.2.0 passed both on Joomla 6.2.0 / PHP 8.3 with PostgreSQL 16 (fresh install; 74 portal checks)
+and the install, update and uninstall checks on MariaDB 10.11 (update from the published 0.1.1:
+schema 0.2.0, the separate port merged into the server URL, mapping table created).
 
 ## 3. Live checklist on the real ZKBioTime 9.5 server (administrator)
 
@@ -94,11 +100,44 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
-### Later stages (filled in as they are built)
-- Employee matching (single, ambiguous, none; manual mapping by emp_code; duplicates refused)
-- Transactions; month check-in and check-out
-- Daily schedules (different shifts on different days)
-- Statuses; late-in and early-out; absences
-- Reports and exports (only the user's own data)
-- Security: one employee trying to open another's data by changing the URL
-- API failure and token expiry during normal use
+### 0.2.0 – Employee mapping and portal
+
+Preparation
+- [ ] Users → Fields: the `employeeid` field exists for users and **only administrators can edit it**.
+- [ ] Options → Permissions: the seven portal permissions are *Allowed* for Registered.
+- [ ] Menus: one menu item of each of the six types.
+- [ ] Integration Settings → Daily Attendance Source: path, parameters and field names from
+      `/api/docs/`; status names. Record the endpoint and field names in `docs/API-MAPPING.md`.
+- [ ] Leave Source, if ZKBioTime offers leave in its API.
+
+Employee matching
+- [ ] A user with `employeeid` filled in is matched to that employee (User Mappings: Active, Automatic).
+- [ ] A user without the field is matched by e-mail; a user whose e-mail two employees share is *Ambiguous*; an unknown e-mail is *Not found*. Both see the "could not be matched" page.
+- [ ] Map an unmatched user by employee code (New); try to map a second user to the same employee (refused).
+- [ ] Change a matched user's `employeeid` → the mapping is *Suspended*; Confirm restores it.
+- [ ] Re-match deletes the mapping; the next visit matches again.
+
+Attendance (compare every value with ZKBioTime for the same employee and month)
+- [ ] My Attendance: check-in and check-out per day; all punches with device and area.
+- [ ] Daily schedules: a month where the employee has **different shifts on different days**; each date shows its own schedule, start and end.
+- [ ] Statuses: present, late, early, absent, leave, holiday, rest day as ZKBioTime calculates them.
+- [ ] Late-in and early-out durations equal ZKBioTime's; worked hours and overtime too.
+- [ ] Absences and days without punches are shown as ZKBioTime classifies them.
+- [ ] Attendance Calendar: colours and labels; day details; keyboard (Tab/Enter) and a phone.
+- [ ] My Schedules: month and week views; rest days and holidays.
+- [ ] Attendance Reports: a month and a 93-day range; PDF and Excel contain the same values and only this employee.
+- [ ] My Profile: the allowed fields only.
+
+Security
+- [ ] Logged in as employee A, change URLs (`month`, `date`, add `emp_code=`/`employee_id=` of employee B): only A's data is ever shown.
+- [ ] A user without permissions gets "You are not authorised" (403); a guest is sent to login.
+- [ ] `administrator/logs/com_biotime.php`: one line per page; no passwords, tokens, names or e-mail addresses.
+
+API failure and token expiry
+- [ ] Stop ZKBioTime: pages show "ZKBioTime could not be reached", the rest of the page still works; start it again.
+- [ ] Wait past the token lifetime: pages keep working (token renewed once).
+- [ ] Cache time 0 and 5: "Updated hh:mm" changes as expected; a month loads in a few seconds with a warm cache.
+
+Joomla
+- [ ] Update from 0.1.x: settings kept; a separate port is now part of the Server URL.
+- [ ] Uninstall on a test site: `#__biotime_settings`, `#__biotime_audit` and `#__biotime_usermap` removed.

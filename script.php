@@ -104,6 +104,7 @@ return new class () implements ServiceProviderInterface {
                     $db = Factory::getContainer()->get(DatabaseInterface::class);
 
                     $trashed = $this->trashObsoleteMenuItems($db);
+                    $this->mergeServerPort($db);
                     $this->deleteObsoleteSettings($db);
 
                     $app = Factory::getApplication();
@@ -172,6 +173,52 @@ return new class () implements ServiceProviderInterface {
                     }
 
                     return $count;
+                }
+
+                /**
+                 * 0.2.0: the port is part of the server URL. A port stored separately by 0.1.x is
+                 * moved into the URL (https://host:5555) and the old row removed.
+                 */
+                private function mergeServerPort(DatabaseInterface $db): void
+                {
+                    try {
+                        $rows = $db->setQuery(
+                            $db->createQuery()
+                                ->select($db->quoteName(['name', 'value']))
+                                ->from($db->quoteName('#__biotime_settings'))
+                                ->whereIn($db->quoteName('name'), ['server_url', 'server_port'], ParameterType::STRING)
+                        )->loadAssocList('name', 'value');
+
+                        $url  = trim((string) ($rows['server_url'] ?? ''));
+                        $port = (int) ($rows['server_port'] ?? 0);
+
+                        if ($port < 1 || $port > 65535) {
+                            return;
+                        }
+
+                        $parts = parse_url($url);
+
+                        if ($url !== '' && \is_array($parts) && !isset($parts['port']) && !empty($parts['scheme']) && !empty($parts['host'])) {
+                            $default = strtolower($parts['scheme']) === 'https' ? 443 : 80;
+                            $merged  = $parts['scheme'] . '://' . $parts['host'] . ($port !== $default ? ':' . $port : '') . rtrim($parts['path'] ?? '', '/');
+
+                            $db->setQuery(
+                                $db->createQuery()
+                                    ->update($db->quoteName('#__biotime_settings'))
+                                    ->set($db->quoteName('value') . ' = :url')
+                                    ->where($db->quoteName('name') . ' = ' . $db->quote('server_url'))
+                                    ->bind(':url', $merged)
+                            )->execute();
+                        }
+
+                        $db->setQuery(
+                            $db->createQuery()
+                                ->delete($db->quoteName('#__biotime_settings'))
+                                ->where($db->quoteName('name') . ' = ' . $db->quote('server_port'))
+                        )->execute();
+                    } catch (\Throwable) {
+                        // Not critical: Settings::serverUrl() merges the old port at run time too.
+                    }
                 }
 
                 private function deleteObsoleteSettings(DatabaseInterface $db): void

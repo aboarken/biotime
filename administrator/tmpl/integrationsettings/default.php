@@ -69,6 +69,16 @@ $stored = static fn (bool $set): string => Text::_($set ? 'COM_BIOTIME_SETTINGS_
         <?php echo $this->form->renderFieldset('tls'); ?>
     </fieldset>
 
+    <?php foreach (['mapping', 'modules', 'daily', 'leave'] as $set) : ?>
+        <fieldset class="options-form">
+            <legend><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_' . strtoupper($set)); ?></legend>
+            <?php if (\in_array($set, ['daily', 'leave'], true)) : ?>
+                <p class="small"><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_' . strtoupper($set) . '_HELP'); ?></p>
+            <?php endif; ?>
+            <?php echo $this->form->renderFieldset($set); ?>
+        </fieldset>
+    <?php endforeach; ?>
+
     <fieldset class="options-form">
         <legend><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_SYSTEM'); ?></legend>
         <?php echo $this->form->renderFieldset('system'); ?>
