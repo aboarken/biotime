@@ -108,6 +108,12 @@ final class SourceConfig
             throw new \InvalidArgumentException('ERR_PATH');
         }
 
+        // The punch and employee lists hold no calculated attendance or leave: the portal reads
+        // them itself.
+        if ($path !== '' && \BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient::isBuiltInPath($path)) {
+            throw new \InvalidArgumentException('ERR_BUILTIN');
+        }
+
         $params = [];
 
         foreach (['param_emp' => 'emp_code', 'param_from' => 'start_date', 'param_to' => 'end_date'] as $name => $default) {

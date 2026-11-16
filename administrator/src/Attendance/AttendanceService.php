@@ -402,11 +402,14 @@ final class AttendanceService
     }
 
     /**
-     * Check-in and check-out from one day's punches (in time order), exactly as recorded:
-     *  - when punches carry a state: the first check-in punch and the last check-out punch;
-     *    break punches are ignored, and a check-out is never shown as check-in;
-     *  - without states: the first and last punch when there are at least two; a single punch
-     *    of unknown state is shown under neither (it stays in the punch list as incomplete).
+     * Check-in and check-out from one day's punches (in time order), exactly as recorded, when
+     * ZKBioTime's calculated times are not available. Punches whose state is unknown (e.g. state
+     * 255 "Unknown", as many terminals record) are used only where no explicit punch exists:
+     *  - check-in: the first check-in punch; else the first unknown punch that has a later punch;
+     *  - check-out: the last check-out punch after the check-in; else the last unknown punch after
+     *    the check-in;
+     *  - break punches are ignored; a check-out is never shown as check-in; a single punch of
+     *    unknown state is shown under neither (it stays in the punch list as incomplete).
      *
      * @param list<Punch> $punches
      *
@@ -414,26 +417,45 @@ final class AttendanceService
      */
     public static function checkTimes(array $punches): array
     {
-        $typed = array_filter($punches, static fn (Punch $p): bool => $p->direction() !== null);
+        $punches = array_values($punches);
+        $last    = \count($punches) - 1;
+        $inIdx   = null;
 
-        if ($typed !== []) {
-            $in  = null;
-            $out = null;
+        foreach ($punches as $i => $punch) {
+            if ($punch->direction() === Punch::IN) {
+                $inIdx = $i;
 
-            foreach ($punches as $punch) {
-                if ($in === null && $punch->direction() === Punch::IN) {
-                    $in = $punch->time;
-                }
-
-                if ($punch->direction() === Punch::OUT && ($in === null || $punch->time >= $in)) {
-                    $out = $punch->time;
-                }
+                break;
             }
-
-            return [$in, $out];
         }
 
-        return \count($punches) >= 2 ? [$punches[0]->time, $punches[\count($punches) - 1]->time] : [null, null];
+        if ($inIdx === null) {
+            foreach ($punches as $i => $punch) {
+                if ($punch->direction() === null && $i < $last) {
+                    $inIdx = $i;
+
+                    break;
+                }
+            }
+        }
+
+        $outIdx = null;
+
+        foreach ([Punch::OUT, null] as $wanted) {
+            for ($i = $last; $i >= 0 && $outIdx === null; $i--) {
+                if ($punches[$i]->direction() !== $wanted || ($inIdx !== null && $i <= $inIdx) || ($wanted === null && $inIdx === null)) {
+                    continue;
+                }
+
+                $outIdx = $i;
+            }
+
+            if ($outIdx !== null) {
+                break;
+            }
+        }
+
+        return [$inIdx !== null ? $punches[$inIdx]->time : null, $outIdx !== null ? $punches[$outIdx]->time : null];
     }
 
     /** "YYYY-MM-DD HH:MM[:SS]" (or with T), kept as the server recorded it: never shifted. */

@@ -325,6 +325,13 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame([null, '17:00:00'], AttendanceService::checkTimes([$p('17:00:00', null, '1')]), 'code 1 = check-out when there is no text');
         self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'تسجيل دخول', '0')]), 'unknown text falls back to the code');
         self::assertSame([null, null], AttendanceService::checkTimes([$p('09:00:00', null)]), 'single punch of unknown state: neither');
+
+        // As recorded on the real server: "Check In" (state 0) and "Unknown" (state 255).
+        self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('15:30:00', 'Unknown', '255')]), 'unknown after check-in is the check-out');
+        self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Unknown', '255'), $p('15:30:00', 'Unknown', '255')]));
+        self::assertSame(['07:50:00', '17:00:00'], AttendanceService::checkTimes([$p('07:50:00', 'Unknown', '255'), $p('12:00:00', 'Unknown', '255'), $p('17:00:00', 'Check Out', '1')]), 'an explicit check-out wins');
+        self::assertSame([null, null], AttendanceService::checkTimes([$p('15:30:00', 'Unknown', '255')]), 'a lone unknown punch: neither');
+        self::assertSame(['07:50:00', null], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('12:00:00', 'Break Out', '2')]), 'a break is not a check-out');
         self::assertSame(['08:00:00', '17:00:00'], AttendanceService::checkTimes([$p('08:00:00', null), $p('17:00:00', null)]), 'unknown states: first and last');
 
         // Through the whole service: the day shows only a check-out and says check-in is missing.

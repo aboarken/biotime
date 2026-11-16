@@ -78,6 +78,16 @@ check(/Daily Attendance Source is saved/.test(await admin.locator('#system-messa
 check(await admin.inputValue('#jform_daily_path') === '/att/api/fixture_daily/', 'settings show the saved daily source');
 await admin.fill('#jform_api_password', 'Fixture-Pass-123');
 
+// The punch list cannot be saved as a source.
+await admin.goto(`${BASE}/administrator/index.php?option=com_biotime&view=endpoints`, { waitUntil: 'networkidle' });
+await admin.fill('#biotime-path', '/iclock/api/transactions/');
+await admin.fill('#biotime-pf', 'start_time');
+await admin.fill('#biotime-pt', 'end_time');
+await admin.selectOption('#biotime-df', 'Y-m-d H:i:s');
+await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('button:has-text("Check")')]);
+check(/already reads this endpoint/.test(await admin.innerText('body')) && (await admin.locator('button:has-text("Save as Daily Attendance Source")').count()) === 0, 'punch list: shown but cannot be saved as a source');
+await admin.goto(settingsUrl, { waitUntil: 'networkidle' });
+
 // Invalid source refused.
 await admin.fill('#jform_daily_extra', 'q = SELECT * FROM users');
 await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('#toolbar-apply button, button.button-apply')]);
@@ -150,6 +160,11 @@ await sara.goto(pageUrl(`view=day&date=${ym}-09`), { waitUntil: 'networkidle' })
 const facts = await sara.locator('dl.biotime-facts').innerText();
 check(/Check-In\s*—/.test(facts) && /Check-Out\s*17:10/.test(facts), `check-out alone shown under Check-Out (${facts.replace(/\s+/g, ' ').slice(0, 200)})`);
 check(/Missing check-in/.test(await sara.innerText('body')), 'check-out alone: missing check-in exception');
+
+// "Check In" then "Unknown" (state 255), as the real terminals record.
+await sara.goto(pageUrl(`view=day&date=${ym}-12`), { waitUntil: 'networkidle' });
+const facts12 = await sara.locator('dl.biotime-facts').innerText();
+check(/Check-In\s*07:45/.test(facts12) && /Check-Out\s*15:20/.test(facts12), `Check In + Unknown punches give check-in and check-out (${facts12.replace(/\s+/g, ' ').slice(0, 120)})`);
 
 await sara.goto(pageUrl(`view=day&date=${ym}-03`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');

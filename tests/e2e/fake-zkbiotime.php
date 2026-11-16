@@ -132,6 +132,9 @@ if ($path === '/iclock/api/transactions/') {
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 15:30:00", 'punch_state_display' => 'Check Out', 'terminal_alias' => 'Main Gate'],
         // A day with only a check-out punch (and no calculated row): must show under Check-Out.
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-09 17:10:00", 'punch_state' => '1', 'punch_state_display' => 'Check Out', 'terminal_alias' => 'Main Gate'],
+        // As the real terminals record: "Check In" (0) then "Unknown" (255): 07:45 in, 15:20 out.
+        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-12 07:45:00", 'punch_state' => 0, 'punch_state_display' => 'Check In', 'terminal_alias' => 'Main Gate'],
+        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-12 15:20:00", 'punch_state' => 255, 'punch_state_display' => 'Unknown', 'terminal_alias' => 'Main Gate'],
         // Another employee's punch, as if the server ignored the filter: the portal must hide it.
         ['emp_code' => 'FIXTURE2', 'punch_time' => "$ym-04 06:06:06", 'punch_state_display' => 'OTHER-EMPLOYEE-PUNCH'],
     ];

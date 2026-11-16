@@ -455,6 +455,16 @@ final class ZkbClient
     }
 
     /**
+     * Paths the portal already reads for its own purpose (login, employees, punches). They hold no
+     * calculated attendance or leave, so they cannot be chosen as a data source.
+     */
+    public static function isBuiltInPath(string $path): bool
+    {
+        return \in_array($path, [self::PATH_JWT_AUTH, self::PATH_TOKEN_AUTH, self::PATH_EMPLOYEES, self::PATH_TRANSACTIONS], true)
+            || str_starts_with($path, self::PATH_EMPLOYEES);
+    }
+
+    /**
      * Validate a numeric ZKBioTime id (from ZKBioTime or from a URL) before it goes into a path or query.
      *
      * @throws \InvalidArgumentException
