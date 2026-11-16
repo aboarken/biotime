@@ -66,7 +66,7 @@ The installer refuses to install with a clear message when PHP, Joomla or OpenSS
 ## Installation and updates
 
 1. Download `com_biotime.zip` from the latest release on the
-   [Releases page](https://github.com/aboarken/biotime/releases).
+   [Releases page](https://github.com/aboarken/joomla-biotime/releases).
 2. Joomla Administrator → **System → Install → Extensions** → upload the package.
 3. Open **Components → ZKBioTime → Integration Settings**.
 
