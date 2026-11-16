@@ -119,7 +119,7 @@ final class LanguageTest extends TestCase
         }
 
         foreach (['DAILY', 'LEAVE'] as $kind) {
-            foreach (['ERR_PATH', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP', 'ERR_LINE'] as $err) {
+            foreach (['ERR_PATH', 'ERR_BUILTIN', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP', 'ERR_LINE'] as $err) {
                 $need[] = ['COM_BIOTIME_SETTINGS_' . $kind . '_' . $err, $admin];
             }
 

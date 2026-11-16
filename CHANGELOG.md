@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-11-16
+
+### Fixed
+- **Check-out missing with "Unknown" punches.** Terminals that record punches as *Check In* (state 0) and *Unknown* (state 255), as on the school's server, showed no check-out when calculated times were not available. Unknown punches are now used where no explicit punch exists: check-in = the first check-in punch (else the first unknown punch that has a later punch), check-out = the last check-out punch after it (else the last unknown punch after it). A lone check-out is still never shown as check-in; a lone unknown punch is shown under neither and listed as incomplete.
+
+### Changed
+- The punch list (`/iclock/api/transactions/`) and the employee list can no longer be saved as the Daily Attendance or Leave Source: the portal already reads them, and they hold no calculated attendance. Find Endpoints says so instead of offering to save them.
+- `docs/API-MAPPING.md`: the transaction fields seen on the real server are recorded.
+
 ## [0.3.1] - 2026-11-15
 
 ### Fixed

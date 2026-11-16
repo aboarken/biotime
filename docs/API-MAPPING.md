@@ -66,8 +66,15 @@ instead of guessed. The client makes the first real connection tell us what is d
 
 Verified 2026-11-15 on the real server: `GET /iclock/api/transactions/` with `page`, `page_size`,
 `emp_code`, `start_time`, `end_time` answered HTTP 200 with the rows under `data` (16 punches for
-November, 38 for October for one employee). The state fields (`punch_state_display`,
-`punch_state`) are still to be confirmed from a sample row.
+November, 38 for October for one employee).
+
+Fields seen in the rows (Find Endpoints check, 2026-11-15): `id`, `emp`, `emp_code`, `first_name`,
+`last_name`, `department`, `position` (text), `punch_time` (date and time), `punch_state` (0, 255),
+`punch_state_display` ("Check In", "Unknown"), `verify_type` (1, 15), `verify_type_display`
+("Fingerprint", "Face"), `work_code`, `gps_location`, `area_alias`, `terminal_sn`,
+`terminal_alias`, `temperature`, `is_mask`, `upload_time`. The portal reads only `emp_code`,
+`punch_time`, `punch_state_display`, `punch_state`, `terminal_alias` and `area_alias`.
+State 255 ("Unknown") is common: see the check-in/check-out rule in `AttendanceService::checkTimes()`.
 
 
 | | |

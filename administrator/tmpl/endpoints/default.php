@@ -187,6 +187,9 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
         <?php endif; ?>
 
         <h3 class="h5"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_STEP3'); ?></h3>
+        <?php if (\BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient::isBuiltInPath((string) $check['path'])) : ?>
+            <div class="alert alert-info"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_BUILTIN_NOTE'); ?></div>
+        <?php else : ?>
         <form method="post" action="<?php echo $action; ?>">
             <input type="hidden" name="task" value="endpoints.save">
             <input type="hidden" name="kind" value="<?php echo $e($kind); ?>">
@@ -217,5 +220,6 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
             <p class="small text-muted mt-2"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_REVIEW'); ?></p>
             <button class="btn btn-success" type="submit"><?php echo Text::_($kind === 'leave' ? 'COM_BIOTIME_ENDPOINTS_USE_LEAVE' : 'COM_BIOTIME_ENDPOINTS_USE_DAILY'); ?></button>
         </form>
+        <?php endif; ?>
     <?php endif; ?>
 </div>

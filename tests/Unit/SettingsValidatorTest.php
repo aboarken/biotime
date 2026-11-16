@@ -265,6 +265,8 @@ final class SettingsValidatorTest extends TestCase
         yield 'unknown field' => [['daily_fields' => 'salary = pay'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_FIELDS'];
         yield 'sql in extra' => [['daily_extra' => 'q = SELECT * FROM x'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_EXTRA'];
         yield 'paging in extra' => [['daily_extra' => 'page = 2'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_EXTRA'];
+        yield 'punch list as daily source' => [['daily_path' => '/iclock/api/transactions/', 'daily_fields' => "emp_code = emp_code\ndate = punch_time"], 'COM_BIOTIME_SETTINGS_DAILY_ERR_BUILTIN'];
+        yield 'employee list as leave source' => [['leave_path' => '/personnel/api/employees/', 'leave_fields' => "emp_code = emp_code\nstart = hire_date"], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_BUILTIN'];
         yield 'bad param' => [['daily_param_emp' => 'Emp Code'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_PARAM'];
         yield 'bad status' => [['daily_status_map' => 'Late = tardy'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_STATUS_MAP'];
         yield 'bad leave status' => [['leave_status_map' => 'OK = present'], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_STATUS_MAP'];

@@ -259,7 +259,7 @@ final class SettingsValidator
             try {
                 $source = SourceConfig::parse($kind, $raw);
             } catch (\InvalidArgumentException $e) {
-                $errors[] = 'COM_BIOTIME_SETTINGS_' . strtoupper($kind) . '_' . (\in_array($e->getMessage(), ['ERR_PATH', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP'], true) ? $e->getMessage() : 'ERR_LINE');
+                $errors[] = 'COM_BIOTIME_SETTINGS_' . strtoupper($kind) . '_' . (\in_array($e->getMessage(), ['ERR_PATH', 'ERR_BUILTIN', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP'], true) ? $e->getMessage() : 'ERR_LINE');
 
                 continue;
             }
