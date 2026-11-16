@@ -1,8 +1,8 @@
 /**
  * Filter bars of the portal pages (forms marked data-bt-filters) have no Search button:
  *  - choosing an option in a list (month, year, status, health, location) applies it at once;
- *  - a date (typed as DD/MM/YYYY) is applied with Enter, or when the field is left with a whole
- *    date in it (or emptied).
+ *  - a date is applied when it is chosen in the date picker (datepicker.js) or cleared; without
+ *    JavaScript it is typed as DD/MM/YYYY.
  * A filter change always starts again at page 1 (the form does not send "page").
  * Without JavaScript the bar's own "Show" button (hidden by this script) submits it.
  *
@@ -45,7 +45,8 @@
       });
     });
 
-    form.querySelectorAll('input').forEach((input) => {
+    // Date picker fields (datepicker.js) use Enter to open the calendar.
+    form.querySelectorAll('input:not([data-bt-datepicker])').forEach((input) => {
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.isComposing) {
           event.preventDefault();

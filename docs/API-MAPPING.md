@@ -92,7 +92,7 @@ State 255 ("Unknown") is common: see the check-in/check-out rule in `AttendanceS
 | Method and path | `GET /iclock/api/transactions/` — `ZkbClient::PATH_TRANSACTIONS` |
 | Parameters | `emp_code` (the mapped employee), `start_time` and `end_time` (`YYYY-MM-DD HH:MM:SS`, first and last second of the month), `page`, `page_size` |
 | Fields read | `emp_code` (ownership check), `punch_time`, `punch_state_display` (state text), `punch_state` (state code, used only without text: 0/4 in, 1/5 out, 2/3 break, ZKTeco convention), `terminal_alias` (device), `area_alias` (area), `verify_type_display` (how the employee was verified, e.g. Fingerprint, Face), `terminal_sn` (device serial number) |
-| Used for | All punches of a day; check-in = first check-in punch and check-out = last check-out punch **only** when the daily source does not provide them (break punches ignored; without states: first and last of two or more punches); the time between check-in and check-out; the day's status (below); days with punches; duplicate, incomplete and missing check-in/out exceptions; My Dashboard's averages and the devices used |
+| Used for | All punches of a day; check-in = first punch before 12:00 and check-out = last punch from 12:00 on (the time of day decides, not the recorded state; 0.4.3) **only** when the daily source does not provide them; the time between check-in and check-out; the day's status (below); days with punches; duplicate, incomplete and missing check-in/out exceptions; My Dashboard's averages and the devices used |
 | Source | BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 9.1 (the URI cell there is misspelt `transctions`; its request examples and the real server use `transactions`). Documented filters: `page`, `page_size`, `emp_code`, `terminal_sn`, `start_time`, `end_time`; `punch_state` is a string (`"0"`) |
 
 ## Day statuses (from the punches) — portal rule
@@ -103,7 +103,7 @@ Without a calculated status from a daily source, each day's status is told from 
 | Status | When |
 |---|---|
 | Present | any punch was recorded; when the check-in or the check-out is missing the day is also tagged **Missing Punch** (counted as present and as a missing-punch day) |
-| Checked In | today, checked in, not checked out yet |
+| Checked In / Checked Out | today, after the check-in / after the check-out |
 | Weekend | a weekend day (Integration Settings → *Weekend days*, default Friday and Saturday) **without** punches. A weekend day with a punch is treated like any other day, so it shows Present instead |
 | Absent | a past working day without any punch |
 | — | today or a future working day without punches |

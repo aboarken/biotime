@@ -12,6 +12,7 @@ namespace BiotimePortal\Component\Biotime\Site\View\Dashboard;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
 use BiotimePortal\Component\Biotime\Site\Model\DashboardModel;
 use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
@@ -43,8 +44,8 @@ final class HtmlView extends BaseHtmlView
     /** Today, when the month shown is the current month. */
     public ?Day $todayDay = null;
 
-    /** @var array<string, int> device name => punches this month, most used first */
-    public array $devices = [];
+    /** The month's punches per device, by fingerprint and face. */
+    public PunchStats $punchStats;
 
     public function display($tpl = null): void
     {
@@ -64,16 +65,8 @@ final class HtmlView extends BaseHtmlView
         $days = array_filter($this->period->days, fn (Day $d): bool => $d->date <= $this->today && ($d->hasData() || $d->status !== null));
         $this->recent = \array_slice(array_reverse(array_values($days)), 0, 7);
 
-        foreach ($this->period->days as $day) {
-            foreach ($day->punches as $punch) {
-                if ($punch->device !== null) {
-                    $this->devices[$punch->device] = ($this->devices[$punch->device] ?? 0) + 1;
-                }
-            }
-        }
-
-        // Every device used in the selected month, most used first.
-        arsort($this->devices);
+        // Every device used in the selected month (most used first), by fingerprint and face.
+        $this->punchStats = PunchStats::of($this->period->days);
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
         $model->logPage('dashboard', \sprintf('%04d-%02d', $this->year, $this->month));

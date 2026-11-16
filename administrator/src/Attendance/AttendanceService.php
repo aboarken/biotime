@@ -41,6 +41,9 @@ final class AttendanceService
     public const TX_SN       = 'terminal_sn';
     public const TX_VERIFY_CODE = 'verify_type';
 
+    /** Punches from this time of day on are check-outs; earlier punches are check-ins. */
+    public const CHECK_OUT_FROM = '12:00:00';
+
     /** The first year the portal offers (year lists, month navigation). */
     public const FIRST_YEAR = 2025;
 
@@ -268,7 +271,8 @@ final class AttendanceService
      *  - present:    any punch was recorded: the employee was there. When the check-in or the
      *                check-out is missing the day also carries the "Missing Punch" tag
      *                (Day::missingPunch());
-     *  - checked_in: today, checked in and not checked out yet;
+     *  - checked_in:  today, checked in and not checked out yet;
+     *  - checked_out: today, checked out (the day's check-out is recorded);
      *  - weekend:    a weekend day without punches (a weekend day with punches is treated like any
      *                other day, so the weekend tag disappears);
      *  - absent:     a past working day without any punch;
@@ -286,7 +290,17 @@ final class AttendanceService
             };
         }
 
-        return $date === $today && $checkIn !== null && $checkOut === null ? Day::STATUS_CHECKED_IN : 'present';
+        if ($date === $today) {
+            if ($checkOut !== null) {
+                return Day::STATUS_CHECKED_OUT;
+            }
+
+            if ($checkIn !== null) {
+                return Day::STATUS_CHECKED_IN;
+            }
+        }
+
+        return 'present';
     }
 
     /**
@@ -461,14 +475,12 @@ final class AttendanceService
 
     /**
      * Check-in and check-out from one day's punches (in time order), exactly as recorded, when
-     * ZKBioTime's calculated times are not available. Punches whose state is unknown (e.g. state
-     * 255 "Unknown", as many terminals record) are used only where no explicit punch exists:
-     *  - check-in: the first check-in punch; else the first (earliest) unknown punch, even when it
-     *    is the only punch of the day (the check-out is then missing);
-     *  - check-out: the last check-out punch after the check-in; else the last unknown punch after
-     *    the check-in;
-     *  - break punches are ignored; a check-out is never shown as check-in (a lone check-out
-     *    punch gives a check-out and a missing check-in).
+     * ZKBioTime's calculated times are not available. The time of day decides, whatever state the
+     * device recorded:
+     *  - check-in:  the first punch before 12:00 (CHECK_OUT_FROM);
+     *  - check-out: the last punch at 12:00 or later;
+     *  - a day with punches only in the morning has no check-out, a day with punches only from
+     *    12:00 has no check-in ("Missing Punch").
      *
      * @param list<Punch> $punches
      *
@@ -476,45 +488,17 @@ final class AttendanceService
      */
     public static function checkTimes(array $punches): array
     {
-        $punches = array_values($punches);
-        $last    = \count($punches) - 1;
-        $inIdx   = null;
+        $in = $out = null;
 
-        foreach ($punches as $i => $punch) {
-            if ($punch->direction() === Punch::IN) {
-                $inIdx = $i;
-
-                break;
+        foreach ($punches as $punch) {
+            if ($punch->time < self::CHECK_OUT_FROM) {
+                $in ??= $punch->time;
+            } else {
+                $out = $punch->time;
             }
         }
 
-        if ($inIdx === null) {
-            foreach ($punches as $i => $punch) {
-                if ($punch->direction() === null) {
-                    $inIdx = $i;
-
-                    break;
-                }
-            }
-        }
-
-        $outIdx = null;
-
-        foreach ([Punch::OUT, null] as $wanted) {
-            for ($i = $last; $i >= 0 && $outIdx === null; $i--) {
-                if ($punches[$i]->direction() !== $wanted || ($inIdx !== null && $i <= $inIdx) || ($wanted === null && $inIdx === null)) {
-                    continue;
-                }
-
-                $outIdx = $i;
-            }
-
-            if ($outIdx !== null) {
-                break;
-            }
-        }
-
-        return [$inIdx !== null ? $punches[$inIdx]->time : null, $outIdx !== null ? $punches[$outIdx]->time : null];
+        return [$in, $out];
     }
 
     /** "YYYY-MM-DD HH:MM[:SS]" (or with T), kept as the server recorded it: never shifted. */

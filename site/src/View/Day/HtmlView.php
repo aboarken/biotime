@@ -51,7 +51,7 @@ final class HtmlView extends BaseHtmlView
 
         $this->preparePage($model, 'day', 'COM_BIOTIME_DAY_TITLE');
         $this->pageHeading = Text::sprintf('COM_BIOTIME_DAY_HEADING', $this->f->weekday($day->weekday()), $this->f->date($day->date));
-        $this->setDocumentTitle($this->pageHeading);
+        $this->setPortalTitle($this->pageHeading);
         $model->logPage('day', $day->date);
 
         parent::display($tpl);
