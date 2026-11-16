@@ -16,17 +16,13 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
  */
 final class Punch
 {
-    public const IN    = 'in';
-    public const OUT   = 'out';
-    public const BREAK = 'break';
-
     public const VERIFY_FINGERPRINT = 'fingerprint';
     public const VERIFY_FACE        = 'face';
     public const VERIFY_OTHER       = 'other';
 
     /**
      * @param ?string $state     the state text ZKBioTime shows (e.g. "Check In")
-     * @param ?string $stateCode ZKBioTime's punch state code, used only when there is no text
+     * @param ?string $stateCode ZKBioTime's punch state code (kept for display; the time of day decides check-in and check-out)
      * @param ?string $verify    how the employee was verified (e.g. "Fingerprint", "Face")
      * @param ?string $sn        serial number of the device
      * @param ?string $verifyCode ZKBioTime's verify type code, used only when there is no text
@@ -65,38 +61,6 @@ final class Punch
             $text === '' && $this->verifyCode === '1'                     => self::VERIFY_FINGERPRINT,
             $text === '' && $this->verifyCode === '15'                    => self::VERIFY_FACE,
             default                                                       => self::VERIFY_OTHER,
-        };
-    }
-
-    /**
-     * Whether this punch is a check-in, a check-out or a break punch, as ZKBioTime recorded it;
-     * null when unknown. Overtime in/out count as in/out. The state text decides; the code only
-     * when there is no text (ZKTeco codes 0/4 = in, 1/5 = out, 2/3 = break). UNVERIFIED: the 9.5
-     * manual does not list the codes; the real server shows 0 = "Check In", 255 = "Unknown".
-     */
-    public function direction(): ?string
-    {
-        if ($this->state !== null) {
-            $s = mb_strtolower($this->state);
-
-            return match (true) {
-                (bool) preg_match('/break|rest|lunch/', $s)               => self::BREAK,
-                (bool) preg_match('/(^|[^a-z])(out|off|exit|leave)/', $s) => self::OUT,
-                (bool) preg_match('/(^|[^a-z])(in|on|entry|enter)/', $s)  => self::IN,
-                default                                                  => self::fromCode($this->stateCode),
-            };
-        }
-
-        return self::fromCode($this->stateCode);
-    }
-
-    private static function fromCode(?string $code): ?string
-    {
-        return match ($code) {
-            '0', '4' => self::IN,
-            '1', '5' => self::OUT,
-            '2', '3' => self::BREAK,
-            default  => null,
         };
     }
 

@@ -12,7 +12,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Discovery;
 
 /**
  * Describes sample rows of an endpoint by field name and kind of value (date, time, number, ...),
- * never by the values themselves, and suggests the Daily Attendance or Leave field names.
+ * never by the values themselves, and suggests the Daily Attendance field names.
  *
  * Only values of status-like fields (e.g. "Late", "Absent", "Approved") are listed, so the
  * administrator can map them; names, codes, e-mails and other personal values are never shown.
@@ -67,7 +67,7 @@ final class FieldInspector
     /**
      * Suggested "portal field = ZKBioTime field" lines, by field names and kinds.
      *
-     * @param 'daily'|'leave' $kind
+     * @param 'daily' $kind
      * @param array<string, array{type: string, values: list<string>}> $fields
      *
      * @return array<string, string> portal field => field path
@@ -88,15 +88,7 @@ final class FieldInspector
             'overtime'      => [['/overtime/', '/(^|[._])ot($|_)/'], ['number', 'time']],
             'break'         => [['/break/'], ['text', 'time', 'number']],
             'status'        => [['/(^|[._])(att_status|status|state|result)$/', '/status/'], ['text']],
-            'leave'         => [['/leave/'], ['text']],
-        ] : [
-            'emp_code' => [['/(^|\.)emp_code$/', '/emp_code/', '/(employee|emp)\.(code|pin)$/'], ['text', 'number']],
-            'start'    => [['/(^|_)(start|from|begin)(_date|_time)?$/', '/start|begin|from/'], ['date', 'datetime']],
-            'end'      => [['/(^|_)(end|to|finish)(_date|_time)?$/', '/end|finish/'], ['date', 'datetime']],
-            'type'     => [['/(leave_type|category|type)(_name)?$/', '/type|category/'], ['text']],
-            'duration' => [['/(days|hours|duration|length)$/', '/days|hours|duration/'], ['number', 'text', 'time']],
-            'status'   => [['/(approval|approve|audit)(_status)?$/', '/status|state|approv/'], ['text', 'number']],
-        ];
+        ] : [];
 
         $used = [];
         $out  = [];
@@ -126,7 +118,7 @@ final class FieldInspector
     /**
      * Suggested status lines for the values found, by keywords; "other" when unclear.
      *
-     * @param 'daily'|'leave' $kind
+     * @param 'daily' $kind
      * @param list<string>    $values
      *
      * @return array<string, string> ZKBioTime text => portal status
@@ -143,18 +135,14 @@ final class FieldInspector
                     (bool) preg_match('/absen/', $v)                         => 'absent',
                     (bool) preg_match('/early|leave early/', $v)             => 'early',
                     (bool) preg_match('/late/', $v)                          => 'late',
-                    (bool) preg_match('/leave|vacation|sick/', $v)           => 'leave',
+                    (bool) preg_match('/leave|vacation|sick/', $v)           => 'other',
                     (bool) preg_match('/holiday/', $v)                       => 'holiday',
                     (bool) preg_match('/weekend|rest|off|day off/', $v)      => 'rest',
                     (bool) preg_match('/miss|incomplete|no (in|out)/', $v)   => 'incomplete',
                     (bool) preg_match('/normal|present|on ?time|ok|attend/', $v) => 'present',
                     default                                                  => 'other',
                 }
-                : match (true) {
-                    (bool) preg_match('/approv|accept|pass/', $v) => 'approved',
-                    (bool) preg_match('/reject|refus|deny|denied|fail/', $v) => 'rejected',
-                    default => 'pending',
-                };
+                : 'other';
         }
 
         return $out;

@@ -198,6 +198,7 @@ $days = array_sum(array_column($bar, 1));
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_NOTE'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -208,7 +209,8 @@ $days = array_sum(array_column($bar, 1));
                             <td><?php echo $check($day, 'in'); ?></td>
                             <td><?php echo $check($day, 'out'); ?></td>
                             <td><?php echo $e($f->duration($day->span())); ?></td>
-                            <td><?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?></td>
+                            <td><?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f, 'tag' => false]); ?></td>
+                            <td><?php if ($day->missingPunch()) : ?><span class="bt-badge bt-tone-amber"><span aria-hidden="true">!</span><?php echo Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span><?php else : ?><span class="bt-check-none">—</span><?php endif; ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>

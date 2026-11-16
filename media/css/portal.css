@@ -398,18 +398,6 @@
   margin-bottom: 0;
 }
 
-.com-biotime .bt-panel-foot {
-  padding: 0.75rem 1.125rem;
-  font-size: 0.875rem;
-  background: var(--bt-card-hover);
-  border-top: 1px solid var(--bt-card-line);
-}
-
-.com-biotime .bt-action {
-  font-weight: 600;
-  text-decoration: none;
-}
-
 .com-biotime .bt-empty,
 .com-biotime .bt-note {
   color: var(--bt-text-muted);
@@ -499,8 +487,7 @@
 }
 
 /* Status badges and count pills */
-.com-biotime .bt-badge,
-.com-biotime .bt-pill {
+.com-biotime .bt-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -523,13 +510,6 @@
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
-.com-biotime .bt-pill {
-  min-width: 2.25rem;
-  padding: 0.125rem 0.625rem;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .com-biotime .bt-dot {
   display: inline-block;
   width: 0.5rem;
@@ -543,46 +523,6 @@
   flex-wrap: wrap;
   gap: 0.375rem;
   align-items: center;
-}
-
-/* Lists */
-.com-biotime .bt-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.com-biotime .bt-list > li {
-  margin: 0;
-  padding: 0;
-}
-
-.com-biotime .bt-list-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.625rem 1.125rem;
-  color: inherit;
-  text-decoration: none;
-  border-top: 1px solid var(--bt-card-line);
-}
-
-.com-biotime .bt-list > li:first-child > .bt-list-row {
-  border-top: 0;
-}
-
-.com-biotime a.bt-list-row:hover,
-.com-biotime a.bt-list-row:focus-visible {
-  color: inherit;
-  text-decoration: none;
-  background: var(--bt-card-hover);
-}
-
-.com-biotime .bt-list-value {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 /* Tiles (Monthly Overview) */
@@ -652,8 +592,7 @@
   min-width: 0;
 }
 
-.com-biotime .bt-today dt,
-.com-biotime .bt-fields dt {
+.com-biotime .bt-today dt {
   margin: 0 0 0.25rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -671,19 +610,6 @@
 
 .com-biotime .bt-today dd .bt-badge {
   font-size: 0.875rem;
-}
-
-.com-biotime .bt-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 1rem 1.5rem;
-  margin: 0;
-  padding: 1.125rem;
-}
-
-.com-biotime .bt-fields dd {
-  margin: 0;
-  font-weight: 500;
 }
 
 /* Check-in and check-out: an arrow and a fixed colour each, the device below */

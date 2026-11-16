@@ -25,12 +25,12 @@ are respected.
 | Menu item type | What the user sees |
 |---|---|
 | **My Dashboard** | **Today**: check-in, check-out, the time between them and the status. The month's figures: days attended (of the working days so far), days absent, incomplete days, attendance rate, average check-in (and the earliest), average check-out (and the latest), average and total time between check-in and check-out, weekend days worked, punches; a Monthly Overview chart with the same figures as a table; the devices used most; Recent Activity (last 7 days, with the day name). Devices You Used shows each device used in the month with its fingerprint, face and total punches, and a total row. Every figure links to My Attendance with the matching filter. |
-| **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, the status and all punches of the day (time, state, verification, device, area). Weekend rows and today are shaded. Filter by month and year, status (attended, present, incomplete, absent, weekend, weekend worked, leave, exceptions, with or without punches) or a date. |
+| **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, the status and all punches of the day (time, state, verification, device, area). Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, exceptions, with or without punches) or a date. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
 
 Day details (one day: check-in, check-out, time between, status, every punch with how it was
-counted, exceptions, leave) open from the Dashboard, Attendance and Calendar pages; they are not a
+counted, exceptions) open from the Dashboard, Attendance and Calendar pages; they are not a
 menu item type.
 
 **Design.** The pages use the same design as the ServiceDesk Plus portal: summary cards, panels,
@@ -65,10 +65,10 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 ### Administrator pages
 
 - **Integration Settings**: connection, credentials (encrypted), employee mapping, modules,
-  data sources for calculated attendance and leave, system settings; **Test Connection**,
+  the data source for calculated attendance, system settings; **Test Connection**,
   **Read Certificate Pin**, **Close**, **Options**.
 - **Find Endpoints**: reads the API list from ZKBioTime, checks an endpoint (field names, kinds of
-  values and status texts only) and saves it as the Daily Attendance or Leave Source.
+  values and status texts only) and saves it as the Daily Attendance Source.
   **Run Diagnostics** runs every check in one click and gives a report to copy (paths, results,
   field names and kinds only).
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
@@ -116,9 +116,8 @@ employee only ever sees their own records.
 | TLS | Verify TLS certificate, CA bundle file, Certificate pin | Verification is on by default. |
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. |
-| Modules | Charts, Leave information | Turn parts of the pages off. |
+| Modules | Charts | Turn the Monthly Overview bar on My Dashboard off. |
 | Daily Attendance Source | API path, parameters, field names, status names | Where ZKBioTime's calculated attendance and per-day schedules are read; see *Calculated attendance* below. |
-| Leave Source | API path, parameters, field names, approval names | Where leave records are read, if your ZKBioTime offers them. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
 | | Date format, Time format | How the portal shows dates and times. |
@@ -195,7 +194,7 @@ worked hours or overtime. Joomla never calculates those itself.
 If your ZKBioTime does offer such an endpoint (BioTime Cloud or a later build; **Run
 Diagnostics** in Find Endpoints tells you), the portal reads them
 from an endpoint **you choose** from your server's `/api/docs/` page (or a saved ZKBioTime
-report endpoint), under **Integration Settings → Daily Attendance Source** and **Leave Source**:
+report endpoint), under **Integration Settings → Daily Attendance Source**:
 
 - **API path**, e.g. the path listed on `/api/docs/`;
 - the names of the **employee**, **start date** and **end date** parameters (the portal fills in
@@ -219,14 +218,14 @@ report endpoint), under **Integration Settings → Daily Attendance Source** and
   ```
 
   (The ZKBioTime names above are an example only: use the names your `/api/docs/` shows.)
-- **status names**, one per line `ZKBioTime text = present | late | early | absent | leave |
+- **status names**, one per line `ZKBioTime text = present | late | early | absent |
   holiday | rest | incomplete | other`, which decide colour and label.
 
 **Easiest way: Find Endpoints** (*Components → ZKBioTime → Find Endpoints*, or the button on
 Integration Settings). It reads the list of endpoints from your ZKBioTime, checks the one you
 select with an employee code and dates, shows its field names, kinds of values and status texts
-(never personal values), suggests all the lines above, and saves them as the Daily Attendance or
-Leave Source after you review them. If your ZKBioTime publishes no readable API list, type the
+(never personal values), suggests all the lines above, and saves them as the Daily Attendance
+Source after you review them. If your ZKBioTime publishes no readable API list, type the
 path from `/api/docs/` there.
 
 **Not sure which endpoint?** Click **Run Diagnostics** at the top of Find Endpoints, then
@@ -260,7 +259,7 @@ Biometric Devices menu items into My Punches and moves its permission to *View M
 
 ## Cache and performance
 
-Each data type (punches, calculated attendance, leave) is read once per user and month and
+Each data type (punches, calculated attendance) is read once per user and month and
 kept in the user's own session for the cache time (default 5 minutes), so My Dashboard, My
 Attendance, the Calendar and day details share it. The device list is kept the same way. Pages show
 "Updated hh:mm". With cache time 0 every page reads ZKBioTime again, which makes the Dashboard
@@ -272,7 +271,7 @@ API calls per page load, for one month (cold cache; a warm cache makes **0** cal
 |---|---|
 | Any page, first visit of a user | Employee code field: 1 (employee list filtered by code). E-mail: one per page of the employee list. Then 0 while the mapping is active (1 per day to re-verify). |
 | Login | 1 per token lifetime (the token is cached on the server, encrypted). |
-| Dashboard, My Attendance, Calendar, day details | punches (+ daily source + leave source when set) = **1** on 9.5, at most 3 (more only when a month has more rows than the page size). |
+| Dashboard, My Attendance, Calendar, day details | punches (+ daily source when set) = **1** on 9.5, at most 2 (more only when a month has more rows than the page size). |
 | My Punches | 1 per month of the year up to today (cached like the other pages). |
 
 ## Security

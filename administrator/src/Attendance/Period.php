@@ -13,14 +13,13 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 
 /**
  * Attendance of one employee for a date range (a month or a report period). Each data type
- * (punches, daily calculated attendance, leave) is read on its own: when one fails, its error
+ * (punches, daily calculated attendance) is read on its own: when one fails, its error
  * kind is set and the others are still shown.
  */
 final class Period
 {
     /**
      * @param list<Day>         $days      every date of the range, oldest first
-     * @param list<LeaveRecord> $leave
      * @param array<string, ?string> $errors    data type => ZkbException kind (or null)
      * @param array<string, bool>    $truncated data type => cut off at the safety maximum
      */
@@ -28,9 +27,7 @@ final class Period
         public readonly string $from,
         public readonly string $to,
         public readonly array $days,
-        public readonly array $leave,
         public readonly SourceConfig $daily,
-        public readonly SourceConfig $leaveSource,
         public readonly array $errors,
         public readonly array $truncated,
         public readonly ?int $fetchedAt,

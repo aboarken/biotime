@@ -1,0 +1,1 @@
+-- No schema changes in 0.4.4 (script.php deletes the leave settings rows).

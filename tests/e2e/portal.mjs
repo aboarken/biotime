@@ -41,9 +41,7 @@ await admin.fill('#jform_api_password', 'Fixture-Pass-123');
 await admin.fill('#jform_daily_path', '');
 await admin.fill('#jform_daily_fields', '');
 await admin.fill('#jform_daily_status_map', '');
-await admin.fill('#jform_leave_path', '/att/api/fixture_leave/');
-await admin.fill('#jform_leave_fields', 'emp_code = emp_code\nstart = start\nend = end\ntype = category\nduration = days\nstatus = approval');
-await admin.fill('#jform_leave_status_map', 'Approved = approved');
+check(await admin.locator('#jform_leave_path, #jform_module_leave').count() === 0, 'no Leave Source or Leave switch any more');
 await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('#toolbar-apply button, button.button-apply')]);
 const saved = await admin.locator('#system-message-container').innerText();
 check(/Settings saved/.test(saved), `settings with data sources saved (${saved.replace(/\s+/g, ' ').slice(0, 160)})`);
@@ -178,6 +176,7 @@ check((await sara.locator('.bt-bar').count()) === 1 && (await sara.locator('.bt-
 check((await sara.locator('.bt-stat').count()) >= 8 && (await sara.locator('.bt-panel').count()) >= 3, 'dashboard: cards and panels in the portal design');
 check(await sara.locator('form[data-bt-filters] .bt-toolbar-submit').isHidden(), 'filter bar: applied on change (no Show button with JavaScript)');
 check(/Today:/.test(text), 'dashboard: today card');
+check(/NOTE/i.test(await sara.locator('.bt-panel:has-text("Recent Activity") thead').innerText()), 'dashboard: Recent Activity has a Note column');
 check(/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard: recent activity and updated time');
 
 // A day with only a check-out punch: the time is under Check-Out, never Check-In.

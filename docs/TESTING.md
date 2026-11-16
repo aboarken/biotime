@@ -21,7 +21,7 @@ vendor/bin/phpunit
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
 | Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form, data sources, no free-form queries, 0.1.x port merged into the URL) | `tests/Unit/SettingsValidatorTest.php` |
 | Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification, administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php` |
-| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; day statuses from the punches (present with or without a missing punch, checked in, absent, weekend; a lone punch is the check-in; punches outside the month asked for are skipped; My Punches counts by fingerprint / face, month and device; a weekend day with punches loses the weekend tag; configurable weekend days); month summaries (present / absent / incomplete days, rate, average check-in and check-out, time in–out); punch details (verify type, device, serial, area); calculated values when a daily source is set; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
+| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; day statuses from the punches (present with or without a missing punch, checked in, absent, weekend; check-in before 12:00 and check-out from 12:00; punches outside the month asked for are skipped; My Punches counts by fingerprint / face, month and device; a weekend day with punches loses the weekend tag; configurable weekend days); month summaries (present / absent / missing-punch days, rate, average check-in and check-out, time in–out); punch details (verify type, device, serial, area); calculated values when a daily source is set; exceptions; cache per user and employee; one failing part does not hide the others; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
 | Find Endpoints: OpenAPI and CoreJSON descriptions, list endpoints only, attendance first, the order the description forms are tried, parameter suggestions, field inspection without personal values, field and status suggestions that form a valid source, login paths refused | `tests/Unit/DiscoveryTest.php` |
 | Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
 
@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.4.4 – Clean-up
+- [ ] After the update: *Integration Settings* has no Leave Source section and no Leave information switch; Find Endpoints offers only *Save as Daily Attendance Source*.
+- [ ] My Dashboard → Recent Activity: a **Note** column shows *! Missing Punch* for days with a missing check-in or check-out.
+
 ### 0.4.3 – Check-in before 12:00, check-out from 12:00, date picker
 - [ ] A day whose only punch is in the afternoon shows it under **Check-Out** (check-in *Missing*); a morning punch recorded as "Check Out" shows under **Check-In**.
 - [ ] Today shows Checked In (↘) after the morning punch and Checked Out (↗) after an afternoon punch; both are in the calendar legend.
@@ -126,15 +130,6 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Year lists start at 2025; dates show as DD/MM/YYYY.
 - [ ] My Punches: compare a month's fingerprint and face counts with ZKBioTime's transactions for the same employee.
 
-### 0.4.0 – Biometric Devices, weekend and absence
-- [ ] After the update: *Menus* — items of My Schedules, Attendance Reports and My Profile are in the trash; *Options → Permissions* lists four portal permissions.
-- [ ] Integration Settings → System: *Weekend days* shows Friday and Saturday ticked.
-- [ ] Add a **Biometric Devices** menu item, allow *View Biometric Devices* for the IT group: every device with its name, area and health; compare the last activity with ZKBioTime's device list. Turn on *Show technical details* on the menu item: serial number, IP and firmware appear.
-- [ ] Turn a device off for 15 minutes: it shows *Delayed*; note what ZKBioTime's own device list shows.
-- [ ] My Attendance for a month: past working days without punches are *Absent*; Fridays and Saturdays *Weekend*; a Saturday with a punch shows its check-in/check-out and no Weekend tag; a day with only one punch is *Incomplete* with *Missing* under the other time.
-- [ ] My Dashboard: today's check-in and check-out; the month's figures match My Attendance.
-- [ ] Send one sample row of `/iclock/api/terminals/?page=1&page_size=1` (IP and serial replaced) so the field names in `docs/API-MAPPING.md` can be marked as seen on the real server.
-
 ### 0.3.0 – Find Endpoints and punch states
 - [ ] *Find Endpoints → Read the API list*: the list appears (or the message says none is readable; note which).
 - [ ] Select the daily attendance (time card) endpoint, check it with a real employee code and one week: compare the field names and status texts with ZKBioTime, then save it.
@@ -145,11 +140,10 @@ passwords, tokens or personal data) with the pull request.
 
 Preparation
 - [ ] Users → Fields: the `employeeid` field exists for users and **only administrators can edit it**.
-- [ ] Options → Permissions: the seven portal permissions are *Allowed* for Registered.
-- [ ] Menus: one menu item of each of the six types.
-- [ ] Integration Settings → Daily Attendance Source: path, parameters and field names from
-      `/api/docs/`; status names. Record the endpoint and field names in `docs/API-MAPPING.md`.
-- [ ] Leave Source, if ZKBioTime offers leave in its API.
+- [ ] Options → Permissions: the four portal permissions are *Allowed* for Registered.
+- [ ] Menus: one menu item of each of the four types.
+- [ ] Integration Settings → Daily Attendance Source (only if ZKBioTime offers calculated
+      attendance): path, parameters and field names from `/api/docs/`.
 
 Employee matching
 - [ ] A user with `employeeid` filled in is matched to that employee (User Mappings: Active, Automatic).
@@ -160,14 +154,7 @@ Employee matching
 
 Attendance (compare every value with ZKBioTime for the same employee and month)
 - [ ] My Attendance: check-in and check-out per day; all punches with device and area.
-- [ ] Daily schedules: a month where the employee has **different shifts on different days**; each date shows its own schedule, start and end.
-- [ ] Statuses: present, late, early, absent, leave, holiday, rest day as ZKBioTime calculates them.
-- [ ] Late-in and early-out durations equal ZKBioTime's; worked hours and overtime too.
-- [ ] Absences and days without punches are shown as ZKBioTime classifies them.
 - [ ] Attendance Calendar: colours and labels; day details; keyboard (Tab/Enter) and a phone.
-- [ ] My Schedules: month and week views; rest days and holidays.
-- [ ] Attendance Reports: a month and a 93-day range; PDF and Excel contain the same values and only this employee.
-- [ ] My Profile: the allowed fields only.
 
 Security
 - [ ] Logged in as employee A, change URLs (`month`, `date`, add `emp_code=`/`employee_id=` of employee B): only A's data is ever shown.

@@ -111,16 +111,12 @@ final class LanguageTest extends TestCase
 
 
 
-        foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig::LEAVE_STATUSES as $st) {
-            $need[] = ['COM_BIOTIME_LEAVE_' . strtoupper($st), $site];
-        }
-
-        foreach (['PUNCHES', 'DAILY', 'LEAVE'] as $part) {
+        foreach (['PUNCHES', 'DAILY'] as $part) {
             $need[] = ['COM_BIOTIME_PART_' . $part, $site];
             $need[] = ['COM_BIOTIME_NOTE_PART_MISSING_' . $part, $site];
         }
 
-        foreach (['DAILY', 'LEAVE'] as $kind) {
+        foreach (['DAILY'] as $kind) {
             foreach (['ERR_PATH', 'ERR_BUILTIN', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP', 'ERR_LINE'] as $err) {
                 $need[] = ['COM_BIOTIME_SETTINGS_' . $kind . '_' . $err, $admin];
             }

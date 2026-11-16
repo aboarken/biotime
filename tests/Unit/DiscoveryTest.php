@@ -199,14 +199,4 @@ final class DiscoveryTest extends TestCase
         self::assertSame('late', $source->status('LATE'));
     }
 
-    public function testLeaveSuggestions(): void
-    {
-        $fields = FieldInspector::inspect([
-            ['emp_code' => 'E1', 'start_time' => '2026-11-10 08:00:00', 'end_time' => '2026-11-11 17:00:00', 'category' => 'Annual', 'days' => 2, 'approval_status' => 'Approved'],
-            ['emp_code' => 'E1', 'start_time' => '2026-11-20 08:00:00', 'end_time' => '2026-11-20 17:00:00', 'category' => 'Sick', 'days' => 1, 'approval_status' => 'Rejected'],
-        ]);
-
-        self::assertSame(['emp_code' => 'emp_code', 'start' => 'start_time', 'end' => 'end_time', 'type' => 'category', 'duration' => 'days', 'status' => 'approval_status'], FieldInspector::suggestFields('leave', $fields));
-        self::assertSame(['Approved' => 'approved', 'Rejected' => 'rejected', 'Waiting' => 'pending'], FieldInspector::suggestStatuses('leave', ['Approved', 'Rejected', 'Waiting']));
-    }
 }

@@ -14,8 +14,8 @@ use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
 
 /**
  * A read-only ZKBioTime endpoint (or saved report) chosen by the administrator for calculated daily
- * attendance and schedules ("daily") or for leave ("leave"), with the names of its query parameters
- * and of the fields the portal reads.
+ * attendance ("daily"), with the names of its query parameters and of the fields the portal reads.
+ * (A leave source existed until 0.4.3; leave is no longer shown.)
  *
  * Only a path, parameter names, fixed key=value parameters and field names can be configured:
  * never SQL, never a free-form query. Every value is checked against a strict pattern.
@@ -25,15 +25,10 @@ final class SourceConfig
     /** Fields the portal can read from the daily source. emp_code and date are required. */
     public const DAILY_FIELDS = [
         'emp_code', 'date', 'schedule', 'sched_start', 'sched_end', 'break', 'schedule_note',
-        'check_in', 'check_out', 'late', 'early', 'worked', 'overtime', 'status', 'leave',
+        'check_in', 'check_out', 'late', 'early', 'worked', 'overtime', 'status',
     ];
 
-    /** Fields the portal can read from the leave source. emp_code and start are required. */
-    public const LEAVE_FIELDS = ['emp_code', 'start', 'end', 'type', 'duration', 'status'];
-
-    public const DAILY_STATUSES = ['present', 'late', 'early', 'absent', 'leave', 'holiday', 'rest', 'incomplete', 'other'];
-
-    public const LEAVE_STATUSES = ['approved', 'pending', 'rejected'];
+    public const DAILY_STATUSES = ['present', 'late', 'early', 'absent', 'holiday', 'rest', 'incomplete', 'other'];
 
     public const DATE_FORMATS = ['Y-m-d', 'Y-m-d H:i:s'];
 
@@ -64,7 +59,7 @@ final class SourceConfig
     }
 
     /**
-     * @param 'daily'|'leave' $kind
+     * @param 'daily' $kind
      */
     public static function fromSettings(Settings $settings, string $kind): self
     {
@@ -91,14 +86,14 @@ final class SourceConfig
     /**
      * Validate raw settings values. Throws with a language-key suffix as message on the first error.
      *
-     * @param 'daily'|'leave'       $kind
+     * @param 'daily'               $kind
      * @param array<string, string> $raw
      *
      * @throws \InvalidArgumentException  message: ERR_PATH, ERR_PARAM, ERR_EXTRA, ERR_FIELDS, ERR_FIELDS_REQUIRED, ERR_STATUS_MAP
      */
     public static function parse(string $kind, array $raw): self
     {
-        if (!\in_array($kind, ['daily', 'leave'], true)) {
+        if ($kind !== 'daily') {
             throw new \InvalidArgumentException('ERR_KIND');
         }
 
@@ -108,7 +103,7 @@ final class SourceConfig
             throw new \InvalidArgumentException('ERR_PATH');
         }
 
-        // The punch and employee lists hold no calculated attendance or leave: the portal reads
+        // The punch and employee lists hold no calculated attendance: the portal reads
         // them itself.
         if ($path !== '' && \BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient::isBuiltInPath($path)) {
             throw new \InvalidArgumentException('ERR_BUILTIN');
@@ -143,7 +138,7 @@ final class SourceConfig
             throw new \InvalidArgumentException('ERR_EXTRA');
         }
 
-        $allowed = $kind === 'daily' ? self::DAILY_FIELDS : self::LEAVE_FIELDS;
+        $allowed = self::DAILY_FIELDS;
         $fields  = [];
 
         foreach (self::lines($raw['fields'] ?? '') as [$key, $value]) {
@@ -154,13 +149,13 @@ final class SourceConfig
             $fields[$key] = $value;
         }
 
-        $required = $kind === 'daily' ? ['emp_code', 'date'] : ['emp_code', 'start'];
+        $required = ['emp_code', 'date'];
 
         if ($path !== '' && array_diff($required, array_keys($fields)) !== []) {
             throw new \InvalidArgumentException('ERR_FIELDS_REQUIRED');
         }
 
-        $statuses  = $kind === 'daily' ? self::DAILY_STATUSES : self::LEAVE_STATUSES;
+        $statuses  = self::DAILY_STATUSES;
         $statusMap = [];
 
         foreach (self::lines($raw['status_map'] ?? '') as [$key, $value]) {

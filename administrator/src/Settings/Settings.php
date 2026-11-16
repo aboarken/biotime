@@ -49,7 +49,6 @@ final class Settings
         'auto_match'       => '1',
         // Modules within the portal pages
         'module_charts'    => '1',
-        'module_leave'     => '1',
         // Weekend days, ISO weekdays (1 = Monday … 7 = Sunday), comma-separated: Friday and Saturday
         'weekend_days'     => '5,6',
         // Calculated daily attendance and schedules: a read-only ZKBioTime endpoint or saved report
@@ -62,16 +61,6 @@ final class Settings
         'daily_fields'        => '',
         'daily_duration_unit' => 'minutes',
         'daily_status_map'    => '',
-        // Leave
-        'leave_path'          => '',
-        'leave_param_emp'     => 'emp_code',
-        'leave_param_from'    => 'start_date',
-        'leave_param_to'      => 'end_date',
-        'leave_date_format'   => 'Y-m-d',
-        'leave_extra'         => '',
-        'leave_fields'        => '',
-        'leave_duration_unit' => 'hours',
-        'leave_status_map'    => '',
         // System
         'detailed_log'     => '1',
         'cache_minutes'    => '5',
@@ -210,16 +199,16 @@ final class Settings
         return $this->get('auto_match') !== '0';
     }
 
-    /** @param 'charts'|'leave' $module */
+    /** @param 'charts' $module */
     public function moduleEnabled(string $module): bool
     {
         return $this->get('module_' . $module) !== '0';
     }
 
     /**
-     * Where calculated daily attendance (or leave) is read, as configured by the administrator.
+     * Where calculated daily attendance is read, as configured by the administrator.
      *
-     * @param 'daily'|'leave' $kind
+     * @param 'daily' $kind
      */
     public function source(string $kind): SourceConfig
     {

@@ -59,10 +59,17 @@ return new class () implements ServiceProviderInterface {
                     'lib',
                     // 0.4.2: the device list went with Biometric Devices.
                     'src/Devices',
+                    // 0.4.4: leave is no longer read.
+                    'src/Attendance/LeaveRecord.php',
                 ];
 
                 /** Settings rows of removed options. */
-                private const OBSOLETE_SETTINGS = ['module_exports', 'export_per_hour', 'report_max_days'];
+                private const OBSOLETE_SETTINGS = [
+                    'module_exports', 'export_per_hour', 'report_max_days',
+                    // 0.4.4: the Leave Source and the Leave information switch.
+                    'module_leave', 'leave_path', 'leave_param_emp', 'leave_param_from', 'leave_param_to',
+                    'leave_date_format', 'leave_extra', 'leave_fields', 'leave_duration_unit', 'leave_status_map',
+                ];
 
                 /** Front-end views that no longer exist; menu items pointing to them are trashed. */
                 private const OBSOLETE_VIEWS = ['schedules', 'reports', 'profile'];
