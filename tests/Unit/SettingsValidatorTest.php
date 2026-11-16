@@ -77,6 +77,17 @@ final class SettingsValidatorTest extends TestCase
         self::assertSame([1, 7], (new Settings(['weekend_days' => '7,1']))->weekendDays());
     }
 
+    public function testStoredPasswordIsNotKeptForANewServerAddress(): void
+    {
+        $current = new Settings($this->validator()->validate($this->input(), new Settings()));
+        $same    = $this->input(['api_password' => '']);
+
+        self::assertSame([], $this->errors($same, $current), 'same address: the stored password is kept');
+        self::assertContains('COM_BIOTIME_SETTINGS_ERR_REENTER_PASSWORD', $this->errors(['server_url' => 'https://attacker.example.com'] + $same, $current));
+        self::assertContains('COM_BIOTIME_SETTINGS_ERR_REENTER_PASSWORD', $this->errors(['connect_via' => 'attacker.example.com'] + $same, $current));
+        self::assertSame([], $this->errors(['server_url' => 'https://zkb2.example.com'] + $this->input(), $current), 'typed again: fine');
+    }
+
     public function testValidSettingsAreStoredWithEncryptedPassword(): void
     {
         $values = $this->validator()->validate($this->input(), new Settings());

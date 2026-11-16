@@ -75,9 +75,6 @@ final class DbUserCacheTest extends TestCase
 
         $cache->purge();
         self::assertSame(1, $this->rows());
-
-        $cache->clear($alice);
-        self::assertSame(0, $this->rows());
     }
 
     public function testCacheTimeZeroWritesNothingAndErrorsNeverBreakAPage(): void

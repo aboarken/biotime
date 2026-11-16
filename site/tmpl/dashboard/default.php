@@ -67,10 +67,10 @@ $days = array_sum(array_column($bar, 1));
         <?php else : ?>
             <span></span>
         <?php endif; ?>
-        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'dashboard', 'year' => $this->year, 'month' => $this->month, 'f' => $f]); ?>
+        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'dashboard', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f]); ?>
     </div>
 
-    <?php echo LayoutHelper::render('biotime.toolbar', ['view' => 'dashboard', 'year' => $this->year, 'month' => $this->month, 'f' => $f]); ?>
+    <?php echo LayoutHelper::render('biotime.toolbar', ['view' => 'dashboard', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f]); ?>
     <?php echo $this->notices($this->period); ?>
 
     <?php if ($t !== null) : ?>

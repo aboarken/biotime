@@ -12,7 +12,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 
 
 /**
- * Attendance of one employee for a date range (a month or a report period). Each data type
+ * Attendance of one employee for a date range (a month or a year). Each data type
  * (punches, daily calculated attendance) is read on its own: when one fails, its error
  * kind is set and the others are still shown.
  */

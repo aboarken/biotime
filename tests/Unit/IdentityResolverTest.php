@@ -186,6 +186,36 @@ final class IdentityResolverTest extends TestCase
         self::assertSame(UserMapping::STATUS_SUSPENDED, $this->resolver()->resolve(5, 'a@x.com')->status);
     }
 
+    public function testAnEmployeeCodeFieldTheUserCanEditIsNotTrusted(): void
+    {
+        $this->fields->values[5]   = 'E1';
+        $this->fields->editableBy  = [5];
+
+        $identity = $this->resolver()->resolve(5, 'someone@x.com');
+
+        self::assertFalse($identity->isMatched());
+        self::assertSame(UserMapping::STATUS_NOT_FOUND, $identity->status);
+        self::assertSame([], $this->zkb->queries('/personnel/api/employees/'), 'ZKBioTime is not even asked');
+    }
+
+    public function testAMatchFoundOnlyAfterAnEmailChangeWaitsForAnAdministrator(): void
+    {
+        // First visit: no employee has this e-mail.
+        self::assertSame(UserMapping::STATUS_NOT_FOUND, $this->resolver()->resolve(7, 'nobody@x.com')->status);
+
+        // The user changes their Joomla e-mail to a colleague's (Joomla does not verify it).
+        $this->now = $this->now->modify('+1 minute');
+        $identity  = $this->resolver()->resolve(7, 'alice@example.com');
+
+        self::assertFalse($identity->isMatched());
+        self::assertSame(UserMapping::STATUS_SUSPENDED, $identity->status);
+        self::assertSame(UserMapping::STATUS_SUSPENDED, $this->repo->find(7)?->status);
+        self::assertContains('identity.suspended', $this->audit->actions());
+
+        // A user who had that e-mail from the start (verified at registration) is matched directly.
+        self::assertTrue($this->resolver()->resolve(8, 'alice.b@example.com')->isMatched());
+    }
+
     /** A failed daily re-verification is not retried on every page load (each try waits for ZKBioTime). */
     public function testFailedReverificationIsRetriedAfterAnHourNotOnEveryPage(): void
     {

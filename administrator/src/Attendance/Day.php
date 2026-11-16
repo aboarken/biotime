@@ -36,13 +36,12 @@ final class Day
 
     public const EX_MISSING_IN    = 'missing_check_in';
     public const EX_MISSING_OUT   = 'missing_check_out';
-    public const EX_INCOMPLETE    = 'incomplete';
     public const EX_DUPLICATE     = 'duplicate';
     public const EX_LATE          = 'late';
     public const EX_EARLY         = 'early';
     public const EX_NO_SCHEDULE   = 'missing_schedule';
 
-    public const EXCEPTIONS = [self::EX_MISSING_IN, self::EX_MISSING_OUT, self::EX_INCOMPLETE, self::EX_DUPLICATE, self::EX_LATE, self::EX_EARLY, self::EX_NO_SCHEDULE];
+    public const EXCEPTIONS = [self::EX_MISSING_IN, self::EX_MISSING_OUT, self::EX_DUPLICATE, self::EX_LATE, self::EX_EARLY, self::EX_NO_SCHEDULE];
 
     /** Seconds within which two punches count as a duplicate. */
     public const DUPLICATE_SECONDS = 60;
@@ -148,7 +147,7 @@ final class Day
      * Read-only exceptions from the values above. Nothing is corrected.
      *
      * @param bool $dailyConfigured the administrator configured a daily source
-     * @param bool $isPast          the day is over (no "missing check-out" or "incomplete" before that)
+     * @param bool $isPast          the day is over (no "missing check-out" before that)
      */
     public function detectExceptions(bool $dailyConfigured, bool $isPast): void
     {
@@ -160,11 +159,6 @@ final class Day
 
         if ($isPast && $this->checkIn !== null && $this->checkOut === null) {
             $ex[] = self::EX_MISSING_OUT;
-        }
-
-        // A single punch whose state is unknown: neither check-in nor check-out can be told.
-        if ($isPast && \count($this->punches) === 1 && !$this->hasRow && $this->checkIn === null && $this->checkOut === null) {
-            $ex[] = self::EX_INCOMPLETE;
         }
 
         for ($i = 1; $i < \count($this->punches); $i++) {

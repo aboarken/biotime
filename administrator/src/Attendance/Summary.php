@@ -20,7 +20,6 @@ final class Summary
     /**
      * @param int     $workingDays    days so far that are not weekend, holiday or rest days (plus weekend days worked)
      * @param int     $presentDays    days with attendance (check-in and/or check-out)
-     * @param int     $completeDays   days with both check-in and check-out
      * @param int     $missingPunchDays present days with a check-in or a check-out missing
      * @param int     $absentDays     past working days without any punch
      * @param int     $weekendDays    weekend days without punches
@@ -36,10 +35,8 @@ final class Summary
     public function __construct(
         public readonly int $workingDays,
         public readonly int $presentDays,
-        public readonly int $completeDays,
         public readonly int $missingPunchDays,
         public readonly int $absentDays,
-        public readonly int $holidays,
         public readonly int $weekendDays,
         public readonly int $weekendWorked,
         public readonly ?int $rate,
@@ -50,8 +47,7 @@ final class Summary
         public readonly ?string $avgCheckIn,
         public readonly ?string $avgCheckOut,
         public readonly ?string $firstCheckIn,
-        public readonly ?string $lastCheckOut,
-        public readonly int $exceptionCount
+        public readonly ?string $lastCheckOut
     ) {
     }
 
@@ -74,10 +70,8 @@ final class Summary
         return new self(
             $working,
             $present,
-            $count(static fn (Day $d): bool => $d->checkIn !== null && $d->checkOut !== null),
             $count(static fn (Day $d): bool => $d->missingPunch()),
             $count(static fn (Day $d): bool => $d->status === 'absent'),
-            $count(static fn (Day $d): bool => $d->status === 'holiday'),
             $count(static fn (Day $d): bool => $d->status === Day::STATUS_WEEKEND),
             $count(static fn (Day $d): bool => $d->workedOnWeekend()),
             $working > 0 ? (int) round(100 * min($present, $working) / $working) : null,
@@ -88,8 +82,7 @@ final class Summary
             self::averageTime($ins),
             self::averageTime($outs),
             $ins === [] ? null : min($ins),
-            $outs === [] ? null : max($outs),
-            array_sum(array_map(static fn (Day $d): int => \count($d->exceptions), $days))
+            $outs === [] ? null : max($outs)
         );
     }
 

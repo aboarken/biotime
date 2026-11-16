@@ -29,7 +29,7 @@ final class HtmlView extends BaseHtmlView
     public const PAGE_SIZE = 31;
 
     /** Status filter values. */
-    public const FILTERS = ['attended', 'present', 'checked_in', 'missingpunch', 'absent', 'weekend', 'weekendworked', 'holiday', 'exceptions', 'punches', 'nopunches'];
+    public const FILTERS = ['attended', 'present', 'missingpunch', 'absent', 'weekend', 'weekendworked', 'exceptions', 'punches', 'nopunches'];
 
     public Period $period;
 

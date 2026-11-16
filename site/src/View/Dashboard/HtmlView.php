@@ -61,7 +61,7 @@ final class HtmlView extends BaseHtmlView
         $this->today         = $model->attendance()->today();
         $this->todayDay      = $this->period->day($this->today);
 
-        // The last 7 days up to today that have something to say (punches, absent, leave).
+        // The last 7 days up to today that have something to say (punches or absent).
         $days = array_filter($this->period->days, fn (Day $d): bool => $d->date <= $this->today && ($d->hasData() || $d->status !== null));
         $this->recent = \array_slice(array_reverse(array_values($days)), 0, 7);
 

@@ -118,15 +118,6 @@ final class DbUserCache implements UserCacheInterface
     }
 
     /** Deletes all of the user's entries (the prefix is not needed for that). */
-    public function clear(Identity $identity, string $prefix = ''): void
-    {
-        try {
-            $this->delete($this->db->quoteName('user_id') . ' = :uid', [':uid' => [$identity->joomlaUserId, ParameterType::INTEGER]]);
-        } catch (\Throwable $e) {
-            $this->logger->warning('ZKBioTime cache could not be cleared: ' . $e::class);
-        }
-    }
-
     /** Delete every expired entry. */
     public function purge(?int $now = null): void
     {

@@ -32,8 +32,7 @@ devices (`/iclock/api/terminals/`), employees, departments, areas, positions
 (`/personnel/api/…`) and transactions (`/iclock/api/transactions/`). **It documents no API for
 calculated attendance, time cards, schedules, reports or leave**, and the real server has none
 either (Diagnostics, 2026-11-16). So since 0.4.0 the portal pages show only what this API gives:
-punches, check-in and check-out, the device, area and verification of each punch, and the
-devices themselves. Fields only ZKBioTime calculates (schedule, late-in, early-out, worked hours,
+punches, check-in and check-out, and the device, area and verification of each punch. Fields only ZKBioTime calculates (schedule, late-in, early-out, worked hours,
 overtime) are no longer shown. The day's status (Present, with a Missing Punch tag when needed;
 Checked In, Absent, Weekend) is told from the punches and the weekend days set in Integration Settings (see
 *Day statuses* below). The Daily Attendance Source stays **CONFIGURED** (empty by
@@ -92,8 +91,8 @@ State 255 ("Unknown") is common: see the check-in/check-out rule in `AttendanceS
 |---|---|
 | Method and path | `GET /iclock/api/transactions/` — `ZkbClient::PATH_TRANSACTIONS` |
 | Parameters | `emp_code` (the mapped employee), `start_time` and `end_time` (`YYYY-MM-DD HH:MM:SS`, first and last second of the month), `page`, `page_size` |
-| Fields read | `emp_code` (ownership check), `punch_time`, `punch_state_display` (state text), `punch_state` (state code, used only without text: 0/4 in, 1/5 out, 2/3 break, ZKTeco convention), `terminal_alias` (device), `area_alias` (area), `verify_type_display` (how the employee was verified, e.g. Fingerprint, Face), `terminal_sn` (device serial number) |
-| Used for | All punches of a day; check-in = first punch before 12:00 and check-out = last punch from 12:00 on (the time of day decides, not the recorded state; 0.4.3) **only** when the daily source does not provide them; the time between check-in and check-out; the day's status (below); days with punches; duplicate, incomplete and missing check-in/out exceptions; My Dashboard's averages and the devices used |
+| Fields read | `emp_code` (ownership check), `punch_time`, `punch_state_display` (state text), `terminal_alias` (device), `area_alias` (area), `verify_type_display` (how the employee was verified, e.g. Fingerprint, Face), `verify_type` (its code, to count fingerprint and face punches) |
+| Used for | All punches of a day; check-in = first punch before 12:00 and check-out = last punch from 12:00 on (the time of day decides, not the recorded state; 0.4.3) **only** when the daily source does not provide them; the time between check-in and check-out; the day's status (below); days with punches; duplicate and missing check-in/out exceptions (Missing Punch); My Dashboard's averages and the devices used |
 | Source | BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 9.1 (the URI cell there is misspelt `transctions`; its request examples and the real server use `transactions`). Documented filters: `page`, `page_size`, `emp_code`, `terminal_sn`, `start_time`, `end_time`; `punch_state` is a string (`"0"`) |
 
 ## Day statuses (from the punches) — portal rule
@@ -162,6 +161,8 @@ whether they answer and their field names and kinds, and reads nothing from them
 | `late`, `early`, `worked`, `overtime` | Durations (unit set in the settings; `HH:MM` also read) | |
 | `status` | ZKBioTime's calculated status, mapped to present / late / early / absent / holiday / rest / incomplete / other | |
 
+Of these, the portal pages use `check_in`, `check_out` and `status` (0.4.7: the schedule, late,
+early, worked and overtime fields are still accepted in the settings but no page shows them).
 Values not mapped show "—". Joomla never calculates them. Rows whose `emp_code` differs from the
 mapped employee are dropped and logged.
 

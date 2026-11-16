@@ -63,6 +63,8 @@ return new class () implements ServiceProviderInterface {
                     'src/Attendance/LeaveRecord.php',
                     // 0.4.6: replaced by CurlTransport (one connection reused per page load).
                     'src/Api/Transport/JoomlaHttpTransport.php',
+                    // 0.4.7: only the tests used it (the portal caches in the database).
+                    'src/Cache/StoredUserCache.php',
                 ];
 
                 /** Settings rows of removed options. */

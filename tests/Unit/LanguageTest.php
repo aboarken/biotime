@@ -113,7 +113,6 @@ final class LanguageTest extends TestCase
 
         foreach (['PUNCHES', 'DAILY'] as $part) {
             $need[] = ['COM_BIOTIME_PART_' . $part, $site];
-            $need[] = ['COM_BIOTIME_NOTE_PART_MISSING_' . $part, $site];
         }
 
         foreach (['DAILY'] as $kind) {

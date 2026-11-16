@@ -27,6 +27,4 @@ interface UserCacheInterface
      *                            months, which no longer change); ignored when the cache is off
      */
     public function set(Identity $identity, string $key, array $value, ?int $ttl = null): void;
-
-    public function clear(Identity $identity, string $prefix = ''): void;
 }

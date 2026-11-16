@@ -22,9 +22,7 @@ final class Punch
 
     /**
      * @param ?string $state     the state text ZKBioTime shows (e.g. "Check In")
-     * @param ?string $stateCode ZKBioTime's punch state code (kept for display; the time of day decides check-in and check-out)
      * @param ?string $verify    how the employee was verified (e.g. "Fingerprint", "Face")
-     * @param ?string $sn        serial number of the device
      * @param ?string $verifyCode ZKBioTime's verify type code, used only when there is no text
      */
     public function __construct(
@@ -33,19 +31,17 @@ final class Punch
         public readonly ?string $state,
         public readonly ?string $device,
         public readonly ?string $area,
-        public readonly ?string $stateCode = null,
         public readonly ?string $verify = null,
-        public readonly ?string $sn = null,
         public readonly ?string $verifyCode = null
     ) {
     }
 
-    /** @param array{t: string, s?: ?string, c?: ?string, d?: ?string, a?: ?string, v?: ?string, n?: ?string, vc?: ?string} $row */
+    /** @param array{t: string, s?: ?string, d?: ?string, a?: ?string, v?: ?string, vc?: ?string} $row */
     public static function fromCache(array $row): self
     {
         $text = static fn (string $key): ?string => self::known($row[$key] ?? null);
 
-        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $text('s'), $text('d'), $text('a'), $row['c'] ?? null, $text('v'), $text('n'), $row['vc'] ?? null);
+        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $text('s'), $text('d'), $text('a'), $text('v'), $row['vc'] ?? null);
     }
 
     /**
@@ -83,8 +79,6 @@ final class Punch
 
     public function seconds(): int
     {
-        [$h, $m, $s] = array_map('intval', explode(':', $this->time . ':00:00'));
-
-        return $h * 3600 + $m * 60 + $s;
+        return Day::seconds($this->time);
     }
 }

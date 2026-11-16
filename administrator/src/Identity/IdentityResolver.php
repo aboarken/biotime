@@ -79,11 +79,6 @@ final class IdentityResolver
         return $this->memo[$joomlaUserId] ??= $this->doResolve($joomlaUserId, EmailNormalizer::normalize($joomlaEmail), $code);
     }
 
-    public function reset(): void
-    {
-        $this->memo = [];
-    }
-
     private function doResolve(int $userId, string $email, ?string $fieldCode): Identity
     {
         $now     = ($this->clock)();
@@ -119,6 +114,13 @@ final class IdentityResolver
         }
 
         if ($fieldCode !== null) {
+            // The field is only trusted when the user cannot change it themselves.
+            if ($this->fieldReader?->editableBy($userId) === true) {
+                $this->logger->warning(\sprintf('Joomla user %d can edit the employee code field themselves, so it is not used for matching. Allow editing it only for administrators (Users → Fields → the field → Permissions: Edit Custom Field Value), or map the user in User Mappings.', $userId));
+
+                return $this->storeNotMatched($userId, $email, UserMapping::STATUS_NOT_FOUND, $now, 'employee_field_editable_by_user', $fieldCode);
+            }
+
             return $this->lookupCode($userId, $email, $fieldCode, $now);
         }
 
@@ -126,7 +128,11 @@ final class IdentityResolver
             return Identity::notMatched($userId, $mapping->status ?? UserMapping::STATUS_NOT_FOUND);
         }
 
-        return $this->lookup($userId, $email, $now);
+        // A user who was not matched and then changed their Joomla e-mail (which Joomla does not
+        // verify) could choose a colleague's address: such a match waits for an administrator.
+        $hold = $mapping !== null && !$mapping->isActive() && $mapping->email !== '' && $mapping->email !== $email;
+
+        return $this->lookup($userId, $email, $now, $hold);
     }
 
     /**
@@ -161,7 +167,7 @@ final class IdentityResolver
         return $this->map($userId, $email, (string) array_key_first($matches), $code, $now, 'field');
     }
 
-    private function lookup(int $userId, string $email, \DateTimeImmutable $now): Identity
+    private function lookup(int $userId, string $email, \DateTimeImmutable $now, bool $hold = false): Identity
     {
         if (!EmailNormalizer::isUsable($email)) {
             return $this->storeNotMatched($userId, $email, UserMapping::STATUS_NOT_FOUND, $now, 'invalid_email');
@@ -199,11 +205,11 @@ final class IdentityResolver
 
         $employeeId = (string) array_key_first($matches);
 
-        return $this->map($userId, $email, $employeeId, $matches[$employeeId], $now, 'email');
+        return $this->map($userId, $email, $employeeId, $matches[$employeeId], $now, 'email', $hold);
     }
 
     /** Store an automatic mapping unless the employee already belongs to another Joomla user. */
-    private function map(int $userId, string $email, string $employeeId, string $empCode, \DateTimeImmutable $now, string $method): Identity
+    private function map(int $userId, string $email, string $employeeId, string $empCode, \DateTimeImmutable $now, string $method, bool $hold = false): Identity
     {
         $owner = $this->repository->findByEmployeeId($employeeId);
 
@@ -211,6 +217,14 @@ final class IdentityResolver
             $this->logger->warning(\sprintf('Employee %s is already mapped to Joomla user %d; not mapping user %d', $employeeId, $owner->joomlaUserId, $userId));
 
             return $this->storeNotMatched($userId, $email, UserMapping::STATUS_AMBIGUOUS, $now, 'employee_already_mapped:' . $owner->joomlaUserId, $method === 'field' ? $empCode : null);
+        }
+
+        if ($hold) {
+            $this->repository->save(new UserMapping($userId, $employeeId, $empCode, $email, UserMapping::STATUS_SUSPENDED, UserMapping::SOURCE_AUTO, $now, $now));
+            $this->audit->record($userId, 'identity.suspended', AuditLogInterface::RESULT_DENIED, 'email_changed_while_unmatched employee:' . $employeeId);
+            $this->logger->warning(\sprintf('Joomla user %d matched an employee only after changing their e-mail; the mapping waits for an administrator to confirm it in User Mappings', $userId));
+
+            return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
         }
 
         $this->repository->save(new UserMapping($userId, $employeeId, $empCode, $email, UserMapping::STATUS_ACTIVE, UserMapping::SOURCE_AUTO, $now, $now));

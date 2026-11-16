@@ -19,7 +19,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Router\Exception\RouteNotFoundException;
 
 /**
- * Details of one day (sub-page of My Attendance, the Calendar and My Schedules; not a menu item type).
+ * Details of one day (sub-page of My Attendance, the Calendar and the Dashboard; not a menu item type).
  */
 final class HtmlView extends BaseHtmlView
 {

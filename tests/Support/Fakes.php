@@ -11,7 +11,6 @@ use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
-use BiotimePortal\Component\Biotime\Administrator\Cache\StoredUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserFieldReaderInterface;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
@@ -73,14 +72,22 @@ final class MemoryAudit implements AuditLogInterface
 
 final class FixedFieldReader implements UserFieldReaderInterface
 {
-    /** @param array<int, ?string> $values */
-    public function __construct(public array $values = [])
+    /**
+     * @param array<int, ?string> $values
+     * @param list<int>           $editableBy users who may edit the field themselves
+     */
+    public function __construct(public array $values = [], public array $editableBy = [])
     {
     }
 
     public function value(int $joomlaUserId): ?string
     {
         return $this->values[$joomlaUserId] ?? null;
+    }
+
+    public function editableBy(int $joomlaUserId): bool
+    {
+        return \in_array($joomlaUserId, $this->editableBy, true);
     }
 }
 

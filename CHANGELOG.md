@@ -3,6 +3,22 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.7] - 2026-11-16
+
+### Security
+- **Administrator pages need Super User rights for every task.** A user with only *Access Administration Interface* (core.manage) on the component could open the User Mappings, Settings and Diagnostics pages through a task link. Every request to the component's administrator now needs core.admin, as the menu already did.
+- **The employee code field must not be editable by the user.** If the field is shown on the user's own profile and they may edit it, the portal no longer trusts it: the user is *not found* and a warning is logged, so nobody can enter a colleague's code.
+- **A match found only after an e-mail change waits for an administrator.** An unmatched user who changed their e-mail address and is then matched by it is now held as *suspended* until an administrator confirms the mapping.
+- **Saved credentials never follow a new server address.** When the server URL or *Connect via* changes, the stored password or token must be typed again.
+
+### Fixed
+- My Attendance with an old link to the *Checked in* or *Holiday* filter showed an error page; those links now show all days.
+- Months after the current one are no longer read from ZKBioTime (the → arrow stops at the current month, and a later month in a link shows the current month).
+
+### Removed
+- Unused code and strings: the "Incomplete" exception (replaced by Missing Punch in 0.4.3), the punch state code and device serial number (read but never shown), the "Punches" status fallback, the leave colour and symbol, unused figures in the monthly summary, unused helpers in the views, the identity resolver and the rate limiter, the cache *clear* method, and the session cache class (now only in the tests).
+- Outdated text in the README, the API mapping, the testing checklist and the settings help (leave, devices list, schedules shown, "days attended").
+
 ## [0.4.6] - 2026-11-16
 
 ### Changed

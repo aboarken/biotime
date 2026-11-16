@@ -72,14 +72,22 @@ abstract class PortalModel extends BaseModel
             $value = \sprintf('%04d-%02d', $y, $mo);
         }
 
+        $today   = $this->attendance()->today();
+        $current = [(int) substr($today, 0, 4), (int) substr($today, 5, 2)];
+
         if (preg_match('/^(20\d{2}|2100)-(0[1-9]|1[0-2])$/', $value, $m)) {
-            // Months before the first year in the year lists (2025) show January of that year.
-            return (int) $m[1] < \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR ? [\BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR, 1] : [(int) $m[1], (int) $m[2]];
+            $chosen = [(int) $m[1], (int) $m[2]];
+
+            // Between January of the first year in the year lists (2025) and the current month:
+            // later months have no punches yet, and are never read from ZKBioTime.
+            return match (true) {
+                $chosen[0] < \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR => [\BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR, 1],
+                $chosen > $current => $current,
+                default            => $chosen,
+            };
         }
 
-        $today = $this->attendance()->today();
-
-        return [(int) substr($today, 0, 4), (int) substr($today, 5, 2)];
+        return $current;
     }
 
     public function period(): Period

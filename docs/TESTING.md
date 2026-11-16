@@ -50,7 +50,7 @@ php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
   permissions allowed for Registered. Checks the data sources in the settings form, the four menu
   item types (and that My Schedules, Attendance Reports and My Profile are gone), all four pages
   and day details (status 200, translated, noindex, no other employee's data, check-in and
-  check-out with the device, present / incomplete / absent / weekend, no fields the 9.5 API does
+  check-out with the device, present / missing punch / absent / weekend, no fields the 9.5 API does
   not provide, exceptions, chart, today card), My Punches (fingerprint, face, per month and per device;
   year lists from 2025), the date filter typed as DD/MM/YYYY, the removed pages answering 404, IDOR attempts,
   390 px without horizontal scrolling on every page, e-mail matching, the "could not be matched"
@@ -107,9 +107,15 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Remove the API user's personnel permission in ZKBioTime → Test Connection shows a permission error. Restore it.
 - [ ] Stop ZKBioTime (or block the port) → "could not be reached". Start it again.
 - [ ] Joomla: update by installing the same package again (settings kept); uninstall on a test
-      site (tables `#__biotime_settings` and `#__biotime_audit` removed).
+      site (tables `#__biotime_settings`, `#__biotime_audit`, `#__biotime_usermap` and `#__biotime_cache` removed).
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
+
+### 0.4.7 – Security and clean-up
+- [ ] Log in to the administrator as a user with *Access Administration Interface* on the component but not Super User: `index.php?option=com_biotime&task=usermappings.display` answers 403.
+- [ ] Users → Fields → employeeid: set *Editable In* to *Site and administrator* and allow Registered users to edit its value: an unmapped user's next visit is *not found* and the log says the field is editable. Restore the setting.
+- [ ] Integration Settings: change the Server URL without typing the password → "type the password again". Type it → saved.
+- [ ] My Attendance: `&status=checked_in` shows all days (no error); `&month=` a future month shows the current month; the → arrow is hidden on the current month.
 
 ### 0.4.6 – Speed
 - [ ] After the update, the table `#__biotime_cache` exists (*System → Information → Database* or phpMyAdmin) and fills while the portal is used.

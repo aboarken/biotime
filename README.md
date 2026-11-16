@@ -8,7 +8,7 @@ and how many times they punched by fingerprint and face, per month and per devic
 
 ZKBioTime is the single source of truth. Joomla only reads and displays: it never creates,
 edits or corrects attendance data. The pages show only what the ZKBioTime 9.5 API provides
-(punches and devices); the day statuses follow a simple, documented rule on those punches.
+(punches, with the device and verification of each); the day statuses follow a simple, documented rule on those punches.
 
 Which ZKBioTime endpoint supplies each value, and whether it has been verified on a real server,
 is in [docs/API-MAPPING.md](docs/API-MAPPING.md).
@@ -24,7 +24,7 @@ are respected.
 
 | Menu item type | What the user sees |
 |---|---|
-| **My Dashboard** | **Today**: check-in, check-out, the time between them and the status. The month's figures: days attended (of the working days so far), days absent, incomplete days, attendance rate, average check-in (and the earliest), average check-out (and the latest), average and total time between check-in and check-out, weekend days worked, punches; a Monthly Overview chart with the same figures as a table; the devices used most; Recent Activity (last 7 days, with the day name). Devices You Used shows each device used in the month with its fingerprint, face and total punches, and a total row. Every figure links to My Attendance with the matching filter. |
+| **My Dashboard** | **Today**: check-in, check-out, the time between them and the status. The month's figures: days present (of the working days so far), days absent, missing-punch days, attendance rate, average check-in (and the earliest), average check-out (and the latest), average and total time between check-in and check-out, weekend days worked, punches; a Monthly Overview chart with the same figures as a table; the devices used most; Recent Activity (last 7 days, with the day name). Devices You Used shows each device used in the month with its fingerprint, face and total punches, and a total row. Every figure links to My Attendance with the matching filter. |
 | **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, the status and all punches of the day (time, state, verification, device, area). Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, exceptions, with or without punches) or a date. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
@@ -117,7 +117,7 @@ employee only ever sees their own records.
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. |
 | Modules | Charts | Turn the Monthly Overview bar on My Dashboard off. |
-| Daily Attendance Source | API path, parameters, field names, status names | Where ZKBioTime's calculated attendance and per-day schedules are read; see *Calculated attendance* below. |
+| Daily Attendance Source | API path, parameters, field names, status names | Where ZKBioTime's calculated attendance is read (its check-in, check-out and status are used); see *Calculated attendance* below. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
 | | Date format, Time format | How the portal shows dates and times. |
@@ -172,9 +172,12 @@ user's first visit:
 
 > **Important:** users must not be able to edit the `employeeid` field themselves. In the
 > field's settings, allow editing only for administrators (*Users → Fields → employeeid →
-> Permissions / Options*); otherwise a user could enter a colleague's code. When the field (or,
-> for an e-mail match, the e-mail address) changes, the mapping is **suspended** until an
-> administrator confirms it.
+> Permissions / Options*); otherwise a user could enter a colleague's code. Since 0.4.7 the
+> portal checks this: while the field is shown and editable to a (non-administrator) user, that
+> user is *not found* and a warning is logged. When the field (or, for an e-mail match, the
+> e-mail address) changes, the mapping is **suspended** until an administrator confirms it. An
+> unmatched user who changes their e-mail address and is then matched by it is also held as
+> suspended for an administrator (0.4.7).
 
 Unmatched users see "Your account could not be matched to a ZKBioTime employee — please contact
 the System Administrator", not an error. In **User Mappings** an administrator can map them by
@@ -187,13 +190,13 @@ re-verified against ZKBioTime once a day. Every administrative change is recorde
 
 **ZKBioTime 9.5 has no API for these.** Its API manual (BioTime 9.5 API User Manual, ZKTeco
 Middle East, 16 Aug 2024) documents login, devices, personnel and transactions (punches) only,
-and a real 9.5 server confirmed it. On 9.5, leave both sources empty: the portal shows punches,
+and a real 9.5 server confirmed it. On 9.5, leave this source empty: the portal shows punches,
 check-in and check-out and the punch-based day status, and no schedule, late-in, early-out,
 worked hours or overtime. Joomla never calculates those itself.
 
 If your ZKBioTime does offer such an endpoint (BioTime Cloud or a later build; **Run
-Diagnostics** in Find Endpoints tells you), the portal reads them
-from an endpoint **you choose** from your server's `/api/docs/` page (or a saved ZKBioTime
+Diagnostics** in Find Endpoints tells you), the portal can read ZKBioTime's own check-in,
+check-out and day status from an endpoint **you choose** from your server's `/api/docs/` page (or a saved ZKBioTime
 report endpoint), under **Integration Settings → Daily Attendance Source**:
 
 - **API path**, e.g. the path listed on `/api/docs/`;
@@ -287,6 +290,10 @@ API calls per page load, for one month (cold cache; a warm cache makes **0** cal
 
 ## Security
 
+- The administrator pages (settings, user mappings, diagnostics) need **Super User** rights
+  (`core.admin` on the component), for every task, not only the page itself (0.4.7).
+- When the server URL or *Connect via* changes, the stored password or token must be typed
+  again, so saved credentials are never sent to a new address (0.4.7).
 - Every page needs a logged-in Joomla user and its own permission; every read takes the
   server-side mapping. Employee ids, codes or dates in a URL never choose whose data is shown;
   a record that is not the user's gives the same "not found" as a missing one.

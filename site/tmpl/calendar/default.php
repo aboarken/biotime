@@ -31,10 +31,10 @@ $legend = [
         <?php else : ?>
             <span></span>
         <?php endif; ?>
-        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'calendar', 'year' => $this->year, 'month' => $this->month, 'f' => $f]); ?>
+        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'calendar', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f]); ?>
     </div>
 
-    <?php echo LayoutHelper::render('biotime.toolbar', ['view' => 'calendar', 'year' => $this->year, 'month' => $this->month, 'f' => $f]); ?>
+    <?php echo LayoutHelper::render('biotime.toolbar', ['view' => 'calendar', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f]); ?>
     <?php echo $this->notices($this->period); ?>
 
     <section class="bt-panel">
@@ -57,7 +57,7 @@ $legend = [
                             <?php if ($day === null) : ?>
                                 <td class="bt-cal-empty"></td>
                             <?php else :
-                                $status = $day->status ?? ($day->punches !== [] ? 'punched' : null);
+                                $status = $day->status;
                                 $label  = $f->weekday($day->weekday()) . ' ' . $f->date($day->date) . ': ' . ($day->status !== null ? $f->status($day) : '—')
                                     . ($day->missingPunch() ? ', ' . Text::_('COM_BIOTIME_MISSING_PUNCH') : '')
                                     . ($day->checkIn !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_IN') . ' ' . $f->time($day->checkIn) : '')
@@ -68,7 +68,7 @@ $legend = [
                                     <a href="<?php echo $this->url('view=day&date=' . $day->date); ?>" aria-label="<?php echo $e($label); ?>"<?php echo $today ? ' aria-current="date"' : ''; ?>>
                                         <span class="bt-cal-num"><?php echo (int) substr($day->date, 8, 2); ?></span>
                                         <?php if ($status !== null) : ?>
-                                            <span class="bt-cal-status"><span class="bt-cal-sym" aria-hidden="true"><?php echo Ui::symbol($status); ?></span><span class="bt-cal-label"><?php echo in_array($status, ['checked_in', 'checked_out'], true) ? '<span aria-hidden="true">' . Ui::symbol($status) . '</span> ' : ''; ?><?php echo $e($status === 'punched' ? Text::_('COM_BIOTIME_STATUS_PUNCHED') : $f->status($day)); ?></span></span>
+                                            <span class="bt-cal-status"><span class="bt-cal-sym" aria-hidden="true"><?php echo Ui::symbol($status); ?></span><span class="bt-cal-label"><?php echo in_array($status, ['checked_in', 'checked_out'], true) ? '<span aria-hidden="true">' . Ui::symbol($status) . '</span> ' : ''; ?><?php echo $e($f->status($day)); ?></span></span>
                                         <?php endif; ?>
                                         <?php if ($day->checkIn !== null || $day->checkOut !== null || $day->punches !== []) : ?>
                                             <span class="bt-cal-times">
