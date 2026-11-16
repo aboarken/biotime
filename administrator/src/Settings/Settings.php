@@ -77,7 +77,7 @@ final class Settings
         'cache_minutes'    => '5',
         'page_size'        => '100',
         'max_pages'        => '50',
-        'date_format'      => 'Y-m-d',
+        'date_format'      => 'd/m/Y',
         'time_format'      => 'H:i',
         'server_timezone'  => '',
         // Internal: the cached API token (encrypted) and when to renew it. Never in the form.
@@ -258,7 +258,7 @@ final class Settings
     {
         $format = $this->get('date_format');
 
-        return \in_array($format, self::DATE_FORMATS, true) ? $format : 'Y-m-d';
+        return \in_array($format, self::DATE_FORMATS, true) ? $format : 'd/m/Y';
     }
 
     public function timeFormat(): string

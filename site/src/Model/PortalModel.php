@@ -73,7 +73,8 @@ abstract class PortalModel extends BaseModel
         }
 
         if (preg_match('/^(20\d{2}|2100)-(0[1-9]|1[0-2])$/', $value, $m)) {
-            return [(int) $m[1], (int) $m[2]];
+            // Months before the first year in the year lists (2025) show January of that year.
+            return (int) $m[1] < \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR ? [\BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR, 1] : [(int) $m[1], (int) $m[2]];
         }
 
         $today = $this->attendance()->today();

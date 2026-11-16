@@ -29,7 +29,7 @@ final class HtmlView extends BaseHtmlView
     public const PAGE_SIZE = 31;
 
     /** Status filter values. */
-    public const FILTERS = ['attended', 'present', 'checked_in', 'incomplete', 'absent', 'weekend', 'weekendworked', 'leave', 'holiday', 'exceptions', 'punches', 'nopunches'];
+    public const FILTERS = ['attended', 'present', 'checked_in', 'missingpunch', 'absent', 'weekend', 'weekendworked', 'holiday', 'exceptions', 'punches', 'nopunches'];
 
     public Period $period;
 
@@ -55,7 +55,12 @@ final class HtmlView extends BaseHtmlView
         $input = Factory::getApplication()->getInput();
 
         // Search by date: the date's month is shown, filtered to that day.
-        $date = $input->getString('date', '');
+        // Typed as DD/MM/YYYY in the filter bar; links use YYYY-MM-DD.
+        $date = trim($input->getString('date', ''));
+
+        if (preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$#', $date, $m)) {
+            $date = \sprintf('%04d-%02d-%02d', (int) $m[3], (int) $m[2], (int) $m[1]);
+        }
 
         if (preg_match('/^(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $date) && checkdate((int) substr($date, 5, 2), (int) substr($date, 8, 2), (int) substr($date, 0, 4))) {
             $this->date = $date;
@@ -108,6 +113,7 @@ final class HtmlView extends BaseHtmlView
             'punches'       => $d->punches !== [],
             'nopunches'     => $d->punches === [],
             'weekendworked' => $d->workedOnWeekend(),
+            'missingpunch'  => $d->missingPunch(),
             default         => $d->status === $this->status,
         };
     }

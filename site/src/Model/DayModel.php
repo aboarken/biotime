@@ -12,7 +12,6 @@ namespace BiotimePortal\Component\Biotime\Site\Model;
 
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\LeaveRecord;
 use Joomla\CMS\Factory;
 
 /**
@@ -40,13 +39,5 @@ final class DayModel extends PortalModel
         $date = $this->date();
 
         return $date === null ? null : $this->period()->day($date);
-    }
-
-    /** @return list<LeaveRecord> */
-    public function leave(): array
-    {
-        $date = $this->date();
-
-        return $date === null ? [] : array_values(array_filter($this->period()->leave, static fn (LeaveRecord $l): bool => $l->covers($date)));
     }
 }

@@ -20,11 +20,16 @@ final class Punch
     public const OUT   = 'out';
     public const BREAK = 'break';
 
+    public const VERIFY_FINGERPRINT = 'fingerprint';
+    public const VERIFY_FACE        = 'face';
+    public const VERIFY_OTHER       = 'other';
+
     /**
      * @param ?string $state     the state text ZKBioTime shows (e.g. "Check In")
      * @param ?string $stateCode ZKBioTime's punch state code, used only when there is no text
      * @param ?string $verify    how the employee was verified (e.g. "Fingerprint", "Face")
      * @param ?string $sn        serial number of the device
+     * @param ?string $verifyCode ZKBioTime's verify type code, used only when there is no text
      */
     public function __construct(
         public readonly string $date,
@@ -34,14 +39,33 @@ final class Punch
         public readonly ?string $area,
         public readonly ?string $stateCode = null,
         public readonly ?string $verify = null,
-        public readonly ?string $sn = null
+        public readonly ?string $sn = null,
+        public readonly ?string $verifyCode = null
     ) {
     }
 
-    /** @param array{t: string, s?: ?string, c?: ?string, d?: ?string, a?: ?string, v?: ?string, n?: ?string} $row */
+    /** @param array{t: string, s?: ?string, c?: ?string, d?: ?string, a?: ?string, v?: ?string, n?: ?string, vc?: ?string} $row */
     public static function fromCache(array $row): self
     {
-        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $row['s'] ?? null, $row['d'] ?? null, $row['a'] ?? null, $row['c'] ?? null, $row['v'] ?? null, $row['n'] ?? null);
+        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $row['s'] ?? null, $row['d'] ?? null, $row['a'] ?? null, $row['c'] ?? null, $row['v'] ?? null, $row['n'] ?? null, $row['vc'] ?? null);
+    }
+
+    /**
+     * How the employee was verified: fingerprint, face or other (card, password, palm, unknown).
+     * The verify text decides ("Fingerprint", "Face"); the code only when there is no text
+     * (1 = fingerprint, 15 = face, as seen on the real server).
+     */
+    public function verifyKind(): string
+    {
+        $text = mb_strtolower((string) $this->verify);
+
+        return match (true) {
+            str_contains($text, 'face')                                   => self::VERIFY_FACE,
+            str_contains($text, 'finger') || preg_match('/\bfp\b/', $text) === 1 => self::VERIFY_FINGERPRINT,
+            $text === '' && $this->verifyCode === '1'                     => self::VERIFY_FINGERPRINT,
+            $text === '' && $this->verifyCode === '15'                    => self::VERIFY_FACE,
+            default                                                       => self::VERIFY_OTHER,
+        };
     }
 
     /**

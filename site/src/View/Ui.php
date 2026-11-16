@@ -10,11 +10,8 @@ namespace BiotimePortal\Component\Biotime\Site\View;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use BiotimePortal\Component\Biotime\Administrator\Devices\Device;
-
 /**
- * Small helpers shared by the portal templates: the colour ("tone") of each day status and device
- * health, in the portal's own design (media/com_biotime/css/portal.css, .bt-tone-*).
+ * Small helpers shared by the portal templates: the colour ("tone") and symbol of each day status, in the portal's own design (media/com_biotime/css/portal.css, .bt-tone-*).
  */
 final class Ui
 {
@@ -25,6 +22,7 @@ final class Ui
         'late'       => 'amber',
         'early'      => 'amber',
         'incomplete' => 'amber',
+        'missing_punch' => 'amber',
         'absent'     => 'red',
         'leave'      => 'blue',
         'holiday'    => 'purple',
@@ -41,6 +39,7 @@ final class Ui
         'late'       => '⏱',
         'early'      => '↧',
         'incomplete' => '!',
+        'missing_punch' => '!',
         'absent'     => '✕',
         'leave'      => '✈',
         'holiday'    => '★',
@@ -48,13 +47,6 @@ final class Ui
         'weekend'    => '○',
         'punched'    => '•',
         'other'      => '•',
-    ];
-
-    private const HEALTH_TONES = [
-        Device::ONLINE  => 'green',
-        Device::DELAYED => 'amber',
-        Device::OFFLINE => 'red',
-        Device::UNKNOWN => 'muted',
     ];
 
     public static function tone(?string $status): string
@@ -65,11 +57,6 @@ final class Ui
     public static function symbol(?string $status): string
     {
         return self::STATUS_SYMBOLS[$status ?? ''] ?? '•';
-    }
-
-    public static function healthTone(string $health): string
-    {
-        return self::HEALTH_TONES[$health] ?? 'muted';
     }
 
     /** Tone for a count: the given tone when there is something, muted for zero. */

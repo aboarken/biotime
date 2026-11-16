@@ -3,8 +3,8 @@
 
 Employees log in to Joomla and see their own attendance from ZKBioTime: each day's check-in and
 check-out (with the device and how they were verified), the time between them, and whether the
-day was Present, Incomplete, Absent or a Weekend. The people who look after the devices see
-every biometric device with its location and health.
+day was Present (with a Missing Punch tag when one of the two is missing), Absent or a Weekend,
+and how many times they punched by fingerprint and face, per month and per device.
 
 ZKBioTime is the single source of truth. Joomla only reads and displays: it never creates,
 edits or corrects attendance data. The pages show only what the ZKBioTime 9.5 API provides
@@ -27,7 +27,7 @@ are respected.
 | **My Dashboard** | **Today**: check-in, check-out, the time between them and the status. The month's figures: days attended (of the working days so far), days absent, incomplete days, attendance rate, average check-in (and the earliest), average check-out (and the latest), average and total time between check-in and check-out, weekend days worked, punches; a Monthly Overview chart with the same figures as a table; the devices used most; Recent Activity (last 7 days). Every figure links to My Attendance with the matching filter. |
 | **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, the status and all punches of the day (time, state, verification, device, area). Weekend rows and today are shaded. Filter by month and year, status (attended, present, incomplete, absent, weekend, weekend worked, leave, exceptions, with or without punches) or a date. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
-| **Biometric Devices** | Every ZKBioTime device: name and model, location (area), **health** (Online, Delayed, Offline, Unknown), last activity ("5 min ago"), users, fingerprints, faces and punches stored on it; counts per health (click to filter) and a location filter. The menu item option *Show technical details* adds serial number, IP address and firmware. Needs no employee mapping; shows no employee data. |
+| **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
 
 Day details (one day: check-in, check-out, time between, status, every punch with how it was
 counted, exceptions, leave) open from the Dashboard, Attendance and Calendar pages; they are not a
@@ -42,16 +42,18 @@ as an option is chosen. The component styles everything itself
 
 | Status | When |
 |---|---|
-| Present | check-in and check-out recorded |
+| Present | any punch was recorded. When the check-in or the check-out is missing, the day is also tagged **Missing Punch** (and the missing time shows *Missing*); it counts as Present and as a Missing Punch day. |
 | Checked In | today, checked in and not checked out yet |
-| Incomplete | a check-in or a check-out is missing |
 | Absent | a past working day without any punch |
 | Weekend | a weekend day without punches (Friday and Saturday by default, *Integration Settings → System → Weekend days*). A weekend day **with** a check-in or check-out loses the weekend tag and is shown like any other day. |
-| Leave | a working day without punches covered by leave (only with a Leave Source) |
 
-**Check-in** is the first check-in punch of the day and **check-out** the last check-out punch
-after it, exactly as recorded (punches recorded as *Unknown* count when no explicit punch exists;
-break punches are ignored; a check-out is never shown as a check-in).
+**Check-in** is the first check-in punch of the day (else its first punch, even when it is the only
+one) and **check-out** the last check-out punch after it, exactly as recorded (punches recorded as
+*Unknown* count when no explicit punch exists; break punches are ignored; a lone check-out punch
+stays a check-out, with check-in *Missing*).
+
+**Dates** are shown as DD/MM/YYYY by default (*Integration Settings → System → Date format*), and
+the date filter is typed as DD/MM/YYYY. Year lists start at 2025.
 
 **Exceptions** shown read-only (nothing is corrected): missing check-in, missing check-out,
 incomplete punch record, duplicate punch.
@@ -249,10 +251,11 @@ group (or the group your employees are in). Without them users get "You are not 
 | `zkb.dashboard.view` | My Dashboard |
 | `zkb.attendance.view` | My Attendance (and day details) |
 | `zkb.calendar.view` | Attendance Calendar (and day details) |
-| `zkb.devices.view` | Biometric Devices (grant it to the group that looks after the devices; it needs no employee mapping) |
+| `zkb.punches.view` | My Punches |
 
 My Dashboard also opens day details. Updating from 0.3.x moves menu items of the removed My
-Schedules, Attendance Reports and My Profile pages to the trash.
+Schedules, Attendance Reports and My Profile pages to the trash; updating from 0.4.0 or 0.4.1 turns
+Biometric Devices menu items into My Punches and moves its permission to *View My Punches*.
 
 ## Cache and performance
 
@@ -269,7 +272,7 @@ API calls per page load, for one month (cold cache; a warm cache makes **0** cal
 | Any page, first visit of a user | Employee code field: 1 (employee list filtered by code). E-mail: one per page of the employee list. Then 0 while the mapping is active (1 per day to re-verify). |
 | Login | 1 per token lifetime (the token is cached on the server, encrypted). |
 | Dashboard, My Attendance, Calendar, day details | punches (+ daily source + leave source when set) = **1** on 9.5, at most 3 (more only when a month has more rows than the page size). |
-| Biometric Devices | 1 (one per page of devices). |
+| My Punches | 1 per month of the year up to today (cached like the other pages). |
 
 ## Security
 
@@ -300,8 +303,7 @@ written to it. With *Detailed logging* off, only warnings and errors are written
 | could not find what was asked for | Server URL must not contain an extra path; check the source paths against `/api/docs/` |
 | sent an answer the portal could not read | The URL may point to a proxy or login page; the log lists the keys received |
 | Your account could not be matched | **User Mappings**: the user's status (Not found / Ambiguous / Suspended) and employee code field |
-| a working day shows Absent although the person was there | No punch was recorded that day (check the device on Biometric Devices), or the day should be a weekend day (*Weekend days*). Public holidays are not known to the portal. |
-| a device shows Delayed or Offline | It has not contacted ZKBioTime recently: check its power and network. |
+| a working day shows Absent although the person was there | No punch was recorded that day (check the device in ZKBioTime), or the day should be a weekend day (*Weekend days*). Public holidays are not known to the portal. |
 
 ## Development
 

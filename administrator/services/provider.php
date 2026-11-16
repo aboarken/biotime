@@ -22,7 +22,6 @@ use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
 use BiotimePortal\Component\Biotime\Administrator\Cache\StoredUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
-use BiotimePortal\Component\Biotime\Administrator\Devices\DeviceService;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserFieldReader;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserMapRepository;
@@ -38,7 +37,6 @@ use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 return new class () implements ServiceProviderInterface {
     private const CACHE_SESSION_KEY = 'com_biotime.cache';
 
-    private const DEVICE_SESSION_KEY = 'com_biotime.devices';
 
     public function register(Container $container): void
     {
@@ -147,24 +145,6 @@ return new class () implements ServiceProviderInterface {
                     $settings->weekendDays()
                 );
             }
-        );
-
-        // Devices are the same for everyone; the list is kept in the user's session for the cache time.
-        $container->share(
-            DeviceService::class,
-            static fn (Container $c): DeviceService => new DeviceService(
-                $client($c),
-                static fn (string $key): ?array => ((array) Factory::getApplication()->getSession()->get(self::DEVICE_SESSION_KEY, []))[$key] ?? null,
-                static function (string $key, array $value): void {
-                    $session = Factory::getApplication()->getSession();
-                    $store   = (array) $session->get(self::DEVICE_SESSION_KEY, []);
-                    $store[$key] = $value;
-                    $session->set(self::DEVICE_SESSION_KEY, $store);
-                },
-                $c->get(SettingsRepository::class)->load()->cacheTtl(),
-                $c->get(JoomlaLogger::class),
-                $zone($c)
-            )
         );
 
         $container->set(
