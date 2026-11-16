@@ -3,6 +3,22 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-11-16
+
+### Added
+- **Biometric Devices** (new menu item type, permission *View Biometric Devices*): every ZKBioTime device from `/iclock/api/terminals/` with its name and model, location (area), **health** (Online: contact within 10 minutes; Delayed: within 24 hours; Offline: longer; Unknown), last activity, and the users, fingerprints, faces and punches stored on it. Counts per health (click to filter) and a location filter. The menu item option *Show technical details* adds serial number, IP address and firmware. Needs no employee mapping and shows no employee data.
+- **Day statuses from the punches**: *Present* (check-in and check-out), *Checked In* (today), *Incomplete* (check-in or check-out missing), *Absent* (a past working day without any punch), *Weekend* (a weekend day without punches) and *Leave*. A weekend day with a check-in or check-out loses the weekend tag.
+- **Weekend days** setting (*Integration Settings → System*), default Friday and Saturday.
+- My Dashboard: a **Today** card (check-in, check-out, time between, status); days attended of the working days so far, days absent, incomplete days, attendance rate, average check-in (with the earliest) and check-out (with the latest), average and total time between check-in and check-out, weekend days worked, punches, and the devices used most.
+- Every punch now also shows how the employee was verified (`verify_type_display`, e.g. Fingerprint, Face); the device serial number is read too.
+
+### Changed
+- **Check-in and check-out are clearer** on every page: each has its own arrow and colour, the device and verification it was recorded with, and *Missing* when the day has the other one only. The calendar shows both times in each day. The day details mark which punch counted as check-in and check-out.
+- My Dashboard, My Attendance, the Attendance Calendar and day details show **only what the ZKBioTime 9.5 API provides**: the schedule, scheduled start and end, break, late-in, early-out, worked hours and overtime are no longer shown. My Attendance shows a whole month on one page.
+
+### Removed
+- **My Schedules**, **Attendance Reports** (with the PDF and Excel downloads) and **My Profile**: ZKBioTime 9.5 has no schedule or report API. Their menu items are moved to the trash on update, their files are deleted, and the permissions *View My Schedules*, *View Attendance Reports*, *Export Attendance Reports* and *View My Profile* are gone. The settings *Exports*, *Exports per user and hour* and *Longest report range* are removed. The bundled TCPDF library is no longer needed and is removed (smaller package).
+
 ## [0.3.4] - 2026-11-16
 
 ### Changed

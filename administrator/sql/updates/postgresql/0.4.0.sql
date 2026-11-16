@@ -1,0 +1,1 @@
+-- No schema changes in 0.4.0 (removed settings rows are deleted by script.php).

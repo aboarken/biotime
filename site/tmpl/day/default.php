@@ -13,20 +13,13 @@ use Joomla\CMS\Layout\LayoutHelper;
 
 $f   = $this->f;
 $d   = $this->day;
-$row = static fn (string $key, string $value): array => [Text::_($key), $value];
-$facts = [
-    $row('COM_BIOTIME_COL_SCHEDULE', $f->text($d->schedule)),
-    $row('COM_BIOTIME_COL_SCHED_START', $f->time($d->schedStart)),
-    $row('COM_BIOTIME_COL_SCHED_END', $f->time($d->schedEnd)),
-    $row('COM_BIOTIME_COL_BREAK', $f->text($d->break)),
-    $row('COM_BIOTIME_COL_CHECK_IN', $f->time($d->checkIn)),
-    $row('COM_BIOTIME_COL_CHECK_OUT', $f->time($d->checkOut)),
-    $row('COM_BIOTIME_COL_LATE', $f->duration($d->late)),
-    $row('COM_BIOTIME_COL_EARLY', $f->duration($d->early)),
-    $row('COM_BIOTIME_COL_WORKED', $f->duration($d->worked)),
-    $row('COM_BIOTIME_COL_OVERTIME', $f->duration($d->overtime)),
-    $row('COM_BIOTIME_COL_LEAVE', $f->text($d->leave)),
-];
+$check = fn (string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $d, 'f' => $f, 'type' => $type, 'device' => true]);
+$dir   = static fn ($p): string => match ($p->direction()) {
+    'in'    => Text::_('COM_BIOTIME_DIRECTION_IN'),
+    'out'   => Text::_('COM_BIOTIME_DIRECTION_OUT'),
+    'break' => Text::_('COM_BIOTIME_DIRECTION_BREAK'),
+    default => '—',
+};
 ?>
 <div class="com-biotime biotime-day">
     <h1 class="h2 mb-3"><?php echo $this->escape($this->pageHeading); ?></h1>
@@ -36,21 +29,29 @@ $facts = [
         <?php if ($this->canCalendar) : ?><a class="btn btn-sm btn-outline-secondary" href="<?php echo $this->monthUrl('calendar', $this->year, $this->month); ?>">‹ <?php echo Text::_('COM_BIOTIME_BACK_CALENDAR'); ?></a><?php endif; ?>
     </p>
 
-    <?php echo LayoutHelper::render('biotime.notices', ['period' => $this->period, 'zone' => $this->zone, 'updated' => $this->updatedText($this->period->fetchedAt)]); ?>
+    <?php echo $this->notices($this->period); ?>
 
-    <p><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?>: <?php echo LayoutHelper::render('biotime.status', ['day' => $d, 'f' => $f]); ?></p>
-
-    <dl class="row biotime-facts">
-        <?php foreach ($facts as [$label, $value]) : ?>
-            <dt class="col-6 col-sm-4 col-lg-3"><?php echo $this->escape($label); ?></dt>
-            <dd class="col-6 col-sm-8 col-lg-9"><?php echo $this->escape($value); ?></dd>
-        <?php endforeach; ?>
-    </dl>
-    <?php if ($d->checkFromPunches) : ?>
-        <p class="small text-muted"><?php echo Text::_('COM_BIOTIME_CHECK_FROM_PUNCHES'); ?></p>
-    <?php endif; ?>
-    <?php if ($d->scheduleNote !== null) : ?>
-        <p><span class="badge text-bg-warning"><?php echo $this->escape($d->scheduleNote); ?></span></p>
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="small text-muted"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></div>
+            <div class="fs-4 fw-semibold"><?php echo $check('in'); ?></div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="small text-muted"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></div>
+            <div class="fs-4 fw-semibold"><?php echo $check('out'); ?></div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="small text-muted"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></div>
+            <div class="fs-4 fw-semibold"><?php echo $this->escape($f->duration($d->span())); ?></div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="small text-muted"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></div>
+            <div><?php echo LayoutHelper::render('biotime.status', ['day' => $d, 'f' => $f]); ?></div>
+            <?php if ($d->workedOnWeekend()) : ?><div class="small text-muted mt-1"><?php echo Text::_('COM_BIOTIME_WORKED_ON_WEEKEND'); ?></div><?php endif; ?>
+        </div></div></div>
+    </div>
+    <?php if ($d->leave !== null) : ?>
+        <p><?php echo Text::_('COM_BIOTIME_COL_LEAVE'); ?>: <?php echo $this->escape($d->leave); ?></p>
     <?php endif; ?>
 
     <?php if ($d->exceptions !== []) : ?>
@@ -72,6 +73,8 @@ $facts = [
                     <th scope="col">#</th>
                     <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_TIME'); ?></th>
                     <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_PUNCH_STATE'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DIRECTION'); ?></th>
+                    <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_VERIFY'); ?></th>
                     <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DEVICE'); ?></th>
                     <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_AREA'); ?></th>
                 </tr></thead>
@@ -81,6 +84,8 @@ $facts = [
                         <th scope="row"><?php echo $i + 1; ?></th>
                         <td><?php echo $this->escape($f->time($p->time)); ?></td>
                         <td><?php echo $this->escape($f->text($p->state)); ?></td>
+                        <td><?php echo $this->escape($dir($p)); ?><?php if ($p->time === $d->checkIn) : ?> <span class="badge text-bg-success"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></span><?php elseif ($p->time === $d->checkOut) : ?> <span class="badge text-bg-primary"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></span><?php endif; ?></td>
+                        <td><?php echo $this->escape($f->text($p->verify)); ?></td>
                         <td><?php echo $this->escape($f->text($p->device)); ?></td>
                         <td><?php echo $this->escape($f->text($p->area)); ?></td>
                     </tr>

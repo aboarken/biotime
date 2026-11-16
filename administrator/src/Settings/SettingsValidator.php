@@ -219,19 +219,14 @@ final class SettingsValidator
 
         $values['server_timezone'] = $zone;
 
-        $exports = self::int($input['export_per_hour'] ?? null);
-        $days    = self::int($input['report_max_days'] ?? null);
+        // Weekend days: ISO weekdays 1–7 (none is allowed: every day is then a working day).
+        $weekend = $input['weekend_days'] ?? '';
+        $weekend = \is_array($weekend) ? array_map(static fn ($v): string => \is_scalar($v) ? (string) $v : '', $weekend) : self::str($weekend);
+        $values['weekend_days'] = implode(',', Settings::parseWeekdays($weekend));
 
-        if ($exports === null || $exports < 1 || $exports > 1000) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_EXPORTS';
+        if (\count(Settings::parseWeekdays($weekend)) === 7) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_WEEKEND';
         }
-
-        if ($days === null || $days < 1 || $days > 366) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_REPORT_DAYS';
-        }
-
-        $values['export_per_hour'] = (string) ($exports ?? 10);
-        $values['report_max_days'] = (string) ($days ?? Settings::DEFAULT_REPORT_DAYS);
 
         // Employee mapping: custom user field name (lower case, as Joomla stores field names).
         $matchField = strtolower(trim(self::str($input['match_field'] ?? '')));
@@ -244,7 +239,7 @@ final class SettingsValidator
         $values['match_field'] = $matchField;
 
         // Employee mapping and modules.
-        foreach (['auto_match', 'module_charts', 'module_exports', 'module_leave'] as $flag) {
+        foreach (['auto_match', 'module_charts', 'module_leave'] as $flag) {
             $values[$flag] = self::flag($input[$flag] ?? '0') ? '1' : '0';
         }
 

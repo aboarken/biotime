@@ -16,11 +16,10 @@ use Joomla\CMS\Extension\MVCComponent;
 use Psr\Container\ContainerInterface;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
-use BiotimePortal\Component\Biotime\Administrator\Export\ExportService;
+use BiotimePortal\Component\Biotime\Administrator\Devices\DeviceService;
 use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
-use BiotimePortal\Component\Biotime\Administrator\Profile\ProfileService;
 use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
 use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
 use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
@@ -81,14 +80,9 @@ final class BiotimeComponent extends MVCComponent implements RouterServiceInterf
         return $this->service(AttendanceService::class);
     }
 
-    public function getProfileService(): ProfileService
+    public function getDeviceService(): DeviceService
     {
-        return $this->service(ProfileService::class);
-    }
-
-    public function getExportService(): ExportService
-    {
-        return $this->service(ExportService::class);
+        return $this->service(DeviceService::class);
     }
 
     public function getLogger(): JoomlaLogger

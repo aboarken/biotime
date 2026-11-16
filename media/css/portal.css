@@ -9,6 +9,8 @@
   --biotime-early: #997404;
   --biotime-leave: #0b5ed7;
   --biotime-grey: #5c636a;
+  --biotime-in: #146c43;
+  --biotime-out: #0a58ca;
   overflow-wrap: anywhere;
 }
 
@@ -39,6 +41,26 @@
 .com-biotime .biotime-status-other,
 .com-biotime .biotime-status-punched { color: #212529; border-style: dashed; }
 .com-biotime .biotime-status-none { border: 0; background: transparent; }
+.com-biotime .biotime-status-weekend { color: #41464b; background: #e9ecef; border-color: #adb5bd; }
+.com-biotime .biotime-status-checked_in { color: #fff; background: var(--biotime-in); border-color: var(--biotime-in); }
+.com-biotime .biotime-status-incomplete { color: #212529; background: #fff3cd; border-color: var(--biotime-early); }
+
+/* Check-in and check-out: an arrow, a label for screen readers and a fixed colour each. */
+.com-biotime .biotime-check { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.com-biotime .biotime-check-in { color: var(--biotime-in); }
+.com-biotime .biotime-check-out { color: var(--biotime-out); }
+.com-biotime .biotime-check-missing { color: var(--biotime-absent); font-weight: 600; font-size: 0.875em; }
+.com-biotime .biotime-row-weekend > * { background-color: rgba(108, 117, 125, 0.06); }
+.com-biotime .biotime-row-today > * { box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.06); }
+
+/* Device health */
+.com-biotime .biotime-health-online { color: #fff; background: var(--biotime-present); border-color: var(--biotime-present); }
+.com-biotime .biotime-health-delayed { color: #212529; background: #ffda6a; border-color: var(--biotime-early); }
+.com-biotime .biotime-health-offline { color: #fff; background: var(--biotime-absent); border-color: var(--biotime-absent); }
+.com-biotime .biotime-health-unknown { color: #212529; border-style: dashed; }
+.com-biotime .biotime-health-card-online { border-left: 4px solid var(--biotime-present); }
+.com-biotime .biotime-health-card-delayed { border-left: 4px solid #e0a800; }
+.com-biotime .biotime-health-card-offline { border-left: 4px solid var(--biotime-absent); }
 
 /* Neutral grey buttons that stay grey whatever the template does to .btn-secondary. */
 .com-biotime .biotime-btn-neutral {
@@ -60,8 +82,12 @@
 .com-biotime .biotime-cal .biotime-status { display: block; white-space: normal; font-size: 0.75rem; padding: 0.1em 0.2em; overflow-wrap: normal; word-break: normal; hyphens: auto; }
 .com-biotime .biotime-cal-today { box-shadow: inset 0 0 0 2px #0d6efd; }
 .com-biotime .biotime-cal-ex { position: absolute; top: 0.2rem; right: 0.35rem; font-weight: 700; color: var(--biotime-absent); }
+.com-biotime .biotime-cal-weekendday { background: #f8f9fa; }
+.com-biotime .biotime-cal-times { display: block; font-size: 0.75rem; line-height: 1.25; margin-top: 0.15rem; }
+.com-biotime .biotime-cal-times .biotime-check, .com-biotime .biotime-cal-times .text-muted { display: block; }
 @media (max-width: 575.98px) {
-  .com-biotime .biotime-cal .biotime-status { font-size: 0.62rem; letter-spacing: -0.01em; }
+  .com-biotime .biotime-cal-times { font-size: 0.62rem; }
+  .com-biotime .biotime-cal .biotime-status { font-size: 0.56rem; letter-spacing: -0.02em; padding: 0.1em 0.1em; overflow-wrap: anywhere; }
   /* The symbol is decorative (the text label stays): it makes room for the word on phones. */
   .com-biotime .biotime-cal .biotime-status [aria-hidden="true"] { display: none; }
   .com-biotime .biotime-cal a { min-height: 3.75rem; padding: 0.15rem; }
@@ -75,7 +101,9 @@
 .com-biotime .biotime-bar-absent { fill: var(--biotime-absent); }
 .com-biotime .biotime-bar-early { fill: #e0a800; }
 .com-biotime .biotime-bar-leave { fill: var(--biotime-leave); }
-.com-biotime .biotime-bar-holiday, .com-biotime .biotime-bar-rest { fill: var(--biotime-grey); }
+.com-biotime .biotime-bar-holiday, .com-biotime .biotime-bar-rest, .com-biotime .biotime-bar-weekend { fill: var(--biotime-grey); }
+.com-biotime .biotime-bar-incomplete { fill: #e0a800; }
+.com-biotime .biotime-bar-weekendworked { fill: var(--biotime-out); }
 
 .com-biotime .biotime-punches summary { cursor: pointer; font-size: 0.85rem; }
 .com-biotime .biotime-exception { font-weight: 400; }

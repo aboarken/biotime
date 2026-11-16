@@ -33,7 +33,8 @@ final class Period
         public readonly SourceConfig $leaveSource,
         public readonly array $errors,
         public readonly array $truncated,
-        public readonly ?int $fetchedAt
+        public readonly ?int $fetchedAt,
+        public readonly string $today = '9999-12-31'
     ) {
     }
 
@@ -50,7 +51,7 @@ final class Period
 
     public function summary(): Summary
     {
-        return Summary::of($this->days, $this->daily);
+        return Summary::of($this->days, $this->today);
     }
 
     public function error(string $type): ?string

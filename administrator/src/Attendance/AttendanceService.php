@@ -18,8 +18,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Reads one employee's attendance. Every method takes the resolved Identity: the employee is never
- * chosen by request input. Each data type is fetched once per month and cached per user, so the
- * Dashboard, My Attendance, the Calendar, My Schedules and Reports share it.
+ * chosen by request input. Each data type is fetched once per month and cached per user, so
+ * My Dashboard, My Attendance, the Attendance Calendar and day details share it.
  *
  * Ownership: rows whose employee code differs from the identity's (or is missing) are dropped and
  * a warning is logged, in case ZKBioTime ignored the employee filter.
@@ -37,6 +37,11 @@ final class AttendanceService
     public const TX_STATE_CODE = 'punch_state';
     public const TX_DEVICE   = 'terminal_alias';
     public const TX_AREA     = 'area_alias';
+    public const TX_VERIFY   = 'verify_type_display';
+    public const TX_SN       = 'terminal_sn';
+
+    /** ISO weekdays (1 = Monday … 7 = Sunday) that are weekend days by default: Friday and Saturday. */
+    public const DEFAULT_WEEKEND = [5, 6];
 
     public const TYPE_PUNCHES = 'punches';
     public const TYPE_DAILY   = 'daily';
@@ -52,6 +57,7 @@ final class AttendanceService
      * @param \Closure(): ZkbClient                 $clientFactory
      * @param \DateTimeZone                         $serverZone  ZKBioTime server time zone; times are shown as recorded
      * @param (\Closure(): \DateTimeImmutable)|null $clock
+     * @param list<int>                             $weekendDays ISO weekdays without work (default Friday, Saturday)
      */
     public function __construct(
         private readonly \Closure $clientFactory,
@@ -61,7 +67,8 @@ final class AttendanceService
         private readonly UserCacheInterface $cache,
         private readonly LoggerInterface $logger,
         private readonly \DateTimeZone $serverZone,
-        ?\Closure $clock = null
+        ?\Closure $clock = null,
+        private readonly array $weekendDays = self::DEFAULT_WEEKEND
     ) {
         $this->clock = $clock ?? static fn (): \DateTimeImmutable => new \DateTimeImmutable('now');
     }
@@ -75,6 +82,12 @@ final class AttendanceService
     public function serverZone(): \DateTimeZone
     {
         return $this->serverZone;
+    }
+
+    /** @return list<int> ISO weekdays that are weekend days */
+    public function weekendDays(): array
+    {
+        return $this->weekendDays;
     }
 
     public function dailySource(): SourceConfig
@@ -95,7 +108,7 @@ final class AttendanceService
     }
 
     /**
-     * Every day from $from to $to (inclusive); callers limit the length (Reports: settings maximum).
+     * Every day from $from to $to (inclusive); callers limit the length.
      */
     public function range(Identity $identity, \DateTimeImmutable $from, \DateTimeImmutable $to): Period
     {
@@ -208,6 +221,14 @@ final class AttendanceService
                 $fromPunches          = true;
             }
 
+            $weekend = \in_array((int) $d->format('N'), $this->weekendDays, true);
+            $status  = isset($row['status']) ? $this->daily->status($row['status']) : null;
+            $derived = $status === null;
+
+            if ($derived) {
+                $status = self::dayStatus($date, $today, $weekend, $checkIn, $checkOut, $p !== [], $leaveText !== null);
+            }
+
             $day = new Day(
                 $date,
                 $p,
@@ -224,16 +245,49 @@ final class AttendanceService
                 isset($row['early']) ? (int) $row['early'] : null,
                 isset($row['worked']) ? (int) $row['worked'] : null,
                 isset($row['overtime']) ? (int) $row['overtime'] : null,
-                isset($row['status']) ? $this->daily->status($row['status']) : null,
+                $status,
                 $row['status'] ?? null,
-                $leaveText
+                $leaveText,
+                $weekend,
+                $derived
             );
 
             $day->detectExceptions($this->daily->isConfigured(), $date < $today);
             $days[] = $day;
         }
 
-        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $leave, $this->daily, $this->leave, $errors, $truncated, $fetched);
+        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $leave, $this->daily, $this->leave, $errors, $truncated, $fetched, $today);
+    }
+
+    /**
+     * The status of a day without ZKBioTime's calculated status, told from the punches only:
+     *  - leave:      a leave record covers the (working) day and there are no punches;
+     *  - present:    check-in and check-out were both recorded;
+     *  - checked_in: today, checked in and not checked out yet;
+     *  - incomplete: punches, but the check-in or the check-out is missing;
+     *  - weekend:    a weekend day without punches (a weekend day with punches is treated like any
+     *                other day, so the weekend tag disappears);
+     *  - absent:     a past working day without any punch;
+     *  - null:       today or a future working day without punches (nothing to say yet).
+     */
+    public static function dayStatus(string $date, string $today, bool $weekend, ?string $checkIn, ?string $checkOut, bool $hasPunches, bool $onLeave): ?string
+    {
+        $punched = $hasPunches || $checkIn !== null || $checkOut !== null;
+
+        if (!$punched) {
+            return match (true) {
+                $weekend       => Day::STATUS_WEEKEND,
+                $onLeave       => 'leave',
+                $date < $today => 'absent',
+                default        => null,
+            };
+        }
+
+        if ($checkIn !== null && $checkOut !== null) {
+            return 'present';
+        }
+
+        return $date === $today && $checkIn !== null ? Day::STATUS_CHECKED_IN : 'incomplete';
     }
 
     /**
@@ -329,7 +383,7 @@ final class AttendanceService
     /**
      * @param array<mixed> $item
      *
-     * @return array{t: string, s: ?string, d: ?string, a: ?string}|null
+     * @return array{t: string, s: ?string, c: ?string, d: ?string, a: ?string, v: ?string, n: ?string}|null
      */
     private static function normalisePunch(array $item): ?array
     {
@@ -345,7 +399,7 @@ final class AttendanceService
 
         $code = isset($item[self::TX_STATE_CODE]) && is_scalar($item[self::TX_STATE_CODE]) && preg_match('/^\d{1,3}$/', (string) $item[self::TX_STATE_CODE]) ? (string) $item[self::TX_STATE_CODE] : null;
 
-        return ['t' => $time, 's' => $text(self::TX_STATE), 'c' => $code, 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA)];
+        return ['t' => $time, 's' => $text(self::TX_STATE), 'c' => $code, 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA), 'v' => $text(self::TX_VERIFY), 'n' => $text(self::TX_SN)];
     }
 
     /**

@@ -23,6 +23,8 @@ final class Punch
     /**
      * @param ?string $state     the state text ZKBioTime shows (e.g. "Check In")
      * @param ?string $stateCode ZKBioTime's punch state code, used only when there is no text
+     * @param ?string $verify    how the employee was verified (e.g. "Fingerprint", "Face")
+     * @param ?string $sn        serial number of the device
      */
     public function __construct(
         public readonly string $date,
@@ -30,14 +32,16 @@ final class Punch
         public readonly ?string $state,
         public readonly ?string $device,
         public readonly ?string $area,
-        public readonly ?string $stateCode = null
+        public readonly ?string $stateCode = null,
+        public readonly ?string $verify = null,
+        public readonly ?string $sn = null
     ) {
     }
 
-    /** @param array{t: string, s?: ?string, c?: ?string, d?: ?string, a?: ?string} $row */
+    /** @param array{t: string, s?: ?string, c?: ?string, d?: ?string, a?: ?string, v?: ?string, n?: ?string} $row */
     public static function fromCache(array $row): self
     {
-        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $row['s'] ?? null, $row['d'] ?? null, $row['a'] ?? null, $row['c'] ?? null);
+        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $row['s'] ?? null, $row['d'] ?? null, $row['a'] ?? null, $row['c'] ?? null, $row['v'] ?? null, $row['n'] ?? null);
     }
 
     /**

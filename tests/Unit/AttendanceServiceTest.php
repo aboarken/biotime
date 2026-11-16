@@ -10,11 +10,7 @@ use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Punch;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
-use BiotimePortal\Component\Biotime\Administrator\Export\ExportService;
-use BiotimePortal\Component\Biotime\Administrator\Export\PdfWriter;
-use BiotimePortal\Component\Biotime\Administrator\Export\XlsxWriter;
 use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
-use BiotimePortal\Component\Biotime\Administrator\Profile\ProfileService;
 use BiotimePortal\Component\Biotime\Administrator\Support\Formatter;
 use BiotimePortal\Component\Biotime\Tests\Support\ArrayLogger;
 use BiotimePortal\Component\Biotime\Tests\Support\Fakes;
@@ -23,7 +19,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Month data: ownership checks (rows of other employees are dropped), per-day schedules, status
- * mapping, summaries, exceptions, cache, independent failures, exports and profile.
+ * mapping, day statuses from punches (present, incomplete, absent, weekend), summaries, exceptions,
+ * cache and independent failures.
  */
 final class AttendanceServiceTest extends TestCase
 {
@@ -148,42 +145,122 @@ final class AttendanceServiceTest extends TestCase
         self::assertCount(30, $period->days);
     }
 
-    public function testSummaryCountsOnlyWhatZkbioTimeReturned(): void
+    public function testWithoutACalculatedSourceStatusesComeFromThePunches(): void
     {
-        $s = $this->service($this->daily())->month($this->alice, 2026, 11)->summary();
-
-        self::assertSame(2, $s->presentDays);
-        self::assertSame(1, $s->lateCount);
-        self::assertSame(15, $s->lateMinutes);
-        self::assertSame(1, $s->earlyCount);
-        self::assertSame(180, $s->earlyMinutes);
-        self::assertSame(1, $s->absentDays);
-        self::assertSame(1, $s->restDays);
-        self::assertSame(885, $s->workedMinutes);
-        self::assertSame(1, $s->overtimeMinutes);
-        self::assertSame(3, $s->workingDays);
-        self::assertSame(3, $s->punchDays);
-    }
-
-    public function testWithoutACalculatedSourceNothingIsCalculated(): void
-    {
+        // Today is Friday 2026-11-20 (Asia/Riyadh); Friday and Saturday are weekend days.
         $period = $this->service()->month($this->alice, 2026, 11);
-        $s      = $period->summary();
-
-        self::assertNull($s->workingDays);
-        self::assertNull($s->presentDays);
-        self::assertNull($s->lateMinutes);
-        self::assertNull($s->workedMinutes);
-        self::assertNull($s->overtimeMinutes);
-        self::assertSame(3, $s->punchDays);
 
         $d2 = $period->day('2026-11-02');
-        self::assertSame(['07:58:10', '17:01:00'], [$d2->checkIn, $d2->checkOut], 'first and last punch as recorded');
+        self::assertSame(['07:58:10', '17:01:00'], [$d2->checkIn, $d2->checkOut], 'first check-in and last check-out as recorded');
         self::assertTrue($d2->checkFromPunches);
-        self::assertNull($d2->late);
-        self::assertNull($d2->status);
+        self::assertTrue($d2->statusFromPunches);
+        self::assertSame('present', $d2->status);
+        self::assertSame(542, $d2->span());
         self::assertNull($d2->schedule);
+        self::assertNull($d2->late);
+
+        self::assertSame('incomplete', $period->day('2026-11-04')->status, 'check-in only, day is over');
+        self::assertSame('absent', $period->day('2026-11-05')->status, 'past working day without punches');
+        self::assertSame('absent', $period->day('2026-11-01')->status, 'Sunday is a working day');
+        self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-06')->status, 'Friday');
+        self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-07')->status, 'Saturday');
+        self::assertSame('leave', $period->day('2026-11-10')->status, 'leave instead of absent');
+        self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-20')->status, 'today, a Friday');
+        self::assertNull($period->day('2026-11-23')->status, 'future working day: nothing to say yet');
+        self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-27')->status, 'future weekend');
         self::assertSame([], $this->zkb->queries(self::DAILY_PATH));
+    }
+
+    public function testAPunchOnAWeekendDayRemovesTheWeekendTag(): void
+    {
+        $this->zkb->list('/iclock/api/transactions/', [
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-07 08:00:00', 'punch_state' => '0', 'punch_state_display' => 'Check In'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-07 12:30:00', 'punch_state' => '255', 'punch_state_display' => 'Unknown'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-14 09:00:00', 'punch_state_display' => 'Check In'],
+        ]);
+
+        $period = $this->service()->month($this->alice, 2026, 11);
+        $sat    = $period->day('2026-11-07');
+
+        self::assertTrue($sat->weekend);
+        self::assertTrue($sat->workedOnWeekend());
+        self::assertSame('present', $sat->status);
+        self::assertSame('incomplete', $period->day('2026-11-14')->status, 'a weekend day with only a check-in');
+        self::assertSame(2, $period->summary()->weekendWorked);
+    }
+
+    public function testTodayWithACheckInIsCheckedIn(): void
+    {
+        $this->zkb->list('/iclock/api/transactions/', [['emp_code' => 'E1', 'punch_time' => '2026-11-19 07:40:00', 'punch_state_display' => 'Check In']]);
+
+        $service = new AttendanceService(
+            fn () => Fakes::client($this->zkb),
+            SourceConfig::parse('daily', []),
+            SourceConfig::parse('leave', []),
+            false,
+            Fakes::cache($this->session),
+            $this->log,
+            new \DateTimeZone('Asia/Riyadh'),
+            static fn () => new \DateTimeImmutable('2026-11-19 09:00:00', new \DateTimeZone('Asia/Riyadh')),
+            [5, 6]
+        );
+        $day = $service->month($this->alice, 2026, 11)->day('2026-11-19');
+
+        self::assertSame(Day::STATUS_CHECKED_IN, $day->status);
+        self::assertNotContains(Day::EX_MISSING_OUT, $day->exceptions, 'the day is not over');
+    }
+
+    public function testWeekendDaysAreConfigurable(): void
+    {
+        $service = new AttendanceService(
+            fn () => Fakes::client($this->zkb),
+            SourceConfig::parse('daily', []),
+            SourceConfig::parse('leave', []),
+            false,
+            Fakes::cache($this->session),
+            $this->log,
+            new \DateTimeZone('Asia/Riyadh'),
+            static fn () => new \DateTimeImmutable('2026-11-20 12:00:00', new \DateTimeZone('UTC')),
+            [6, 7]
+        );
+        $period = $service->month($this->alice, 2026, 11);
+
+        self::assertSame('absent', $period->day('2026-11-06')->status, 'Friday is a working day here');
+        self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-08')->status, 'Sunday');
+    }
+
+    public function testSummaryIsCountedFromThePunches(): void
+    {
+        $s = $this->service()->month($this->alice, 2026, 11)->summary();
+
+        self::assertSame(15, $s->workingDays, '20 days so far minus 5 weekend days');
+        self::assertSame(3, $s->presentDays);
+        self::assertSame(2, $s->completeDays);
+        self::assertSame(1, $s->incompleteDays);
+        self::assertSame(10, $s->absentDays);
+        self::assertSame(2, $s->leaveDays);
+        self::assertSame(5, $s->weekendDays);
+        self::assertSame(0, $s->weekendWorked);
+        self::assertSame(20, $s->rate);
+        self::assertSame(6, $s->punchCount);
+        self::assertSame(3, $s->punchDays);
+        self::assertSame(887, $s->spanMinutes);
+        self::assertSame(444, $s->avgSpanMinutes);
+        self::assertSame('08:24:23', $s->avgCheckIn);
+        self::assertSame('16:00:30', $s->avgCheckOut);
+        self::assertSame('07:58:10', $s->firstCheckIn);
+        self::assertSame('17:01:00', $s->lastCheckOut);
+    }
+
+    public function testPunchDetailsIncludeHowAndWhere(): void
+    {
+        $this->zkb->list('/iclock/api/transactions/', [
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-02 07:58:10', 'punch_state_display' => 'Check In', 'verify_type_display' => 'Face', 'terminal_alias' => 'Gate A', 'terminal_sn' => 'CQZ7232', 'area_alias' => 'HQ'],
+        ]);
+
+        $p = $this->service()->month($this->alice, 2026, 11)->day('2026-11-02')->punches[0];
+
+        self::assertSame(['Face', 'Gate A', 'CQZ7232', 'HQ'], [$p->verify, $p->device, $p->sn, $p->area]);
     }
 
     public function testExceptionsAreDetectedButNothingIsCorrected(): void
@@ -251,62 +328,6 @@ final class AttendanceServiceTest extends TestCase
         self::assertCount(10, $period->days);
         self::assertCount(2, $this->zkb->queries('/iclock/api/transactions/'));
         self::assertSame('2026-10-25', $period->from);
-    }
-
-    public function testExportContainsOnlyTheUsersOwnRecords(): void
-    {
-        $service = $this->service($this->daily());
-        $f       = new Formatter('Y-m-d', 'H:i', static fn (string $k): string => $k);
-        $export  = new ExportService($service, new XlsxWriter(), new PdfWriter(sys_get_temp_dir()));
-
-        [$xlsx, $mime, $name] = $export->export($this->alice, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30'), 'xlsx', $f, 'Alice A');
-        self::assertSame('attendance-E1-20261101-20261130.xlsx', $name);
-        self::assertStringContainsString('spreadsheetml', $mime);
-
-        $file = tempnam(sys_get_temp_dir(), 'x');
-        file_put_contents($file, $xlsx);
-        $zip = new \ZipArchive();
-        $zip->open($file);
-        $days = (string) $zip->getFromName('xl/worksheets/sheet2.xml');
-        $zip->close();
-        unlink($file);
-
-        self::assertStringContainsString('Late Shift', $days);
-        self::assertStringContainsString('07:58', $days);
-        self::assertStringNotContainsString('BOB', $days);
-        self::assertStringNotContainsString('03:33', $days);
-
-        [$pdf] = $export->export($this->alice, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30'), 'pdf', $f, 'محمد');
-        self::assertStringStartsWith('%PDF-', $pdf);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $export->export($this->alice, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30'), 'csv', $f, '');
-    }
-
-    public function testProfileShowsOnlyAllowListedFields(): void
-    {
-        $this->zkb->on('/personnel/api/employees/11/', static fn () => [200, [
-            'id' => 11, 'emp_code' => 'E1', 'first_name' => 'Alice', 'last_name' => 'A', 'email' => 'a@x.com', 'hire_date' => '2020-01-05',
-            'department' => ['dept_name' => 'Finance'], 'position' => ['position_name' => 'Clerk'], 'area' => [['area_name' => 'HQ'], ['area_name' => 'Jeddah']],
-            'card_no' => '99887766', 'ssn' => '1234567890', 'device_password' => 'pw-123', 'fingerprint' => 'TEMPLATE', 'national' => 'ID-777',
-        ]]);
-
-        $profile = (new ProfileService(fn () => Fakes::client($this->zkb), Fakes::cache($this->session), $this->log))->profile($this->alice);
-
-        self::assertSame(['Finance', 'Clerk', 'HQ, Jeddah', '2020-01-05'], [$profile['department'], $profile['position'], $profile['area'], $profile['hire_date']]);
-        $text = serialize($profile) . serialize($this->session);
-
-        foreach (['99887766', '1234567890', 'pw-123', 'TEMPLATE', 'ID-777'] as $secret) {
-            self::assertStringNotContainsString($secret, $text);
-        }
-    }
-
-    public function testProfileOfAnotherEmployeeIsNotFound(): void
-    {
-        $this->zkb->on('/personnel/api/employees/11/', static fn () => [200, ['id' => 11, 'emp_code' => 'E2', 'first_name' => 'Bob']]);
-
-        $this->expectExceptionObject(new \BiotimePortal\Component\Biotime\Administrator\Api\ZkbException('not_found', 'Employee record does not match the mapping'));
-        (new ProfileService(fn () => Fakes::client($this->zkb), Fakes::cache($this->session), $this->log))->profile($this->alice);
     }
 
     /** A check-out punch is never shown as check-in (reported on a real site). */

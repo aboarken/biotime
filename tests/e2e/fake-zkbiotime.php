@@ -143,6 +143,19 @@ if ($path === '/iclock/api/transactions/') {
     return true;
 }
 
+if ($path === '/iclock/api/terminals/') {
+    // As in the BioTime 9.5 API manual's example answer; last activity relative to now.
+    $page([
+        ['id' => 1, 'sn' => 'FIXTURE-SN-1', 'alias' => 'Main Gate', 'terminal_name' => 'SpeedFace-V5L', 'ip_address' => '10.0.0.21', 'fw_ver' => 'ZAM180-1.0.9',
+            'area' => ['area_code' => 'HQ', 'area_name' => 'Head Office'], 'last_activity' => date('Y-m-d H:i:s', time() - 60),
+            'user_count' => 412, 'fp_count' => 380, 'face_count' => 401, 'transaction_count' => 15234, 'comm_key' => 'FIXTURE-SECRET'],
+        ['id' => 2, 'sn' => 'FIXTURE-SN-2', 'alias' => 'Side Door', 'area_name' => 'Head Office', 'last_activity' => date('Y-m-d H:i:s', time() - 7200)],
+        ['id' => 3, 'sn' => 'FIXTURE-SN-3', 'alias' => 'Old Gym', 'area' => ['area_name' => 'Sports Hall'], 'last_activity' => date('Y-m-d H:i:s', time() - 9 * 86400)],
+    ]);
+
+    return true;
+}
+
 if ($path === '/att/api/fixture_daily/') {
     $rows = [
         ['employee' => ['emp_code' => 'FIXTURE1'], 'att_date' => "$ym-02", 'timetable' => 'Day Shift', 'check_in_time' => '08:00', 'check_out_time' => '17:00', 'clock_in' => '07:58', 'clock_out' => '17:02', 'late' => 0, 'early' => 0, 'work_time' => 540, 'ot' => 2, 'att_status' => 'Normal'],
