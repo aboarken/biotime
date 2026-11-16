@@ -167,14 +167,16 @@ await sara.goto(pageUrl(`view=dashboard&month=${ym}`), { waitUntil: 'networkidle
 text = await sara.innerText('body');
 check(/Days Attended/.test(text) && /Days Absent/.test(text) && /Average Check-In/.test(text), 'dashboard: summary cards');
 check(!/Late-In|Worked Hours|Overtime/.test(text), 'dashboard: no fields ZKBioTime 9.5 does not provide');
-check((await sara.locator('svg.biotime-chart').count()) === 1, 'dashboard: chart');
+check((await sara.locator('.bt-bar').count()) === 1 && (await sara.locator('.bt-tile').count()) >= 4, 'dashboard: overview bar and tiles');
+check((await sara.locator('.bt-stat').count()) >= 8 && (await sara.locator('.bt-panel').count()) >= 3, 'dashboard: cards and panels in the portal design');
+check(await sara.locator('form[data-bt-filters] .bt-toolbar-submit').isHidden(), 'filter bar: applied on change (no Show button with JavaScript)');
 check(/Today:/.test(text), 'dashboard: today card');
 check(/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard: recent activity and updated time');
 
 // A day with only a check-out punch: the time is under Check-Out, never Check-In.
 await sara.goto(pageUrl(`view=day&date=${ym}-09`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
-check(/Check-In\s*Missing/.test(text) && /Check-Out\s*↗?\s*17:10/.test(text), `check-out alone shown under Check-Out (${text.replace(/\s+/g, ' ').slice(0, 200)})`);
+check(/Check-In\s*Missing/i.test(text) && /Check-Out\s*↗?\s*17:10/i.test(text), `check-out alone shown under Check-Out (${text.replace(/\s+/g, ' ').slice(0, 200)})`);
 check(/Incomplete/.test(text), 'check-out alone: incomplete day');
 
 // "Check In" then "Unknown" (state 255), as the real terminals record.

@@ -33,6 +33,11 @@ Day details (one day: check-in, check-out, time between, status, every punch wit
 counted, exceptions, leave) open from the Dashboard, Attendance and Calendar pages; they are not a
 menu item type.
 
+**Design.** The pages use the same design as the ServiceDesk Plus portal: summary cards, panels,
+tables and coloured status pills, month navigation in the heading, and filters that apply as soon
+as an option is chosen. The component styles everything itself
+(`media/com_biotime/css/portal.css`), so the pages look the same on any site template.
+
 **Day statuses** (from the punches, see [docs/API-MAPPING.md](docs/API-MAPPING.md#day-statuses-from-the-punches--portal-rule)):
 
 | Status | When |

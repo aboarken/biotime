@@ -1,109 +1,931 @@
+/* ZKBioTime portal: the portal's own design on top of the site template. */
+
 /*
- * ZKBioTime portal: minimal styles on top of the site template (Bootstrap 5).
- * Statuses always combine colour with a text label (and a decorative symbol).
+ * Design
+ * ------
+ * Cards, panels, tables, badges, filters and buttons with their own look (the same design as the
+ * ServiceDesk Plus portal), so every portal page is the same on any site template. Fonts and link
+ * colours still come from the template. Statuses always combine colour with a text label.
  */
 .com-biotime {
-  --biotime-present: #198754;
-  --biotime-late: #c25e00;
-  --biotime-absent: #b02a37;
-  --biotime-early: #997404;
-  --biotime-leave: #0b5ed7;
-  --biotime-grey: #5c636a;
-  --biotime-in: #146c43;
-  --biotime-out: #0a58ca;
+  --bt-primary: #17426f;
+  --bt-primary-hover: #0f2f51;
+  --bt-card-bg: var(--bs-body-bg, #fff);
+  --bt-card-border: #e5e7eb;
+  --bt-card-line: #eef0f3;
+  --bt-card-hover: #f8fafc;
+  --bt-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --bt-card-shadow-hover: 0 8px 20px rgba(16, 24, 40, 0.1);
+  --bt-text-muted: #6b7280;
+  --bt-focus: 0 0 0 3px rgba(23, 66, 111, 0.2);
+  --bt-in: #15803d;
+  --bt-out: #1d4ed8;
   overflow-wrap: anywhere;
 }
 
-/* Wide tables scroll inside their own container, never the page. */
-.com-biotime .table-responsive { max-width: 100%; }
-.com-biotime .biotime-table th, .com-biotime .biotime-table td { white-space: nowrap; }
-.com-biotime .biotime-narrow { max-width: 36rem; }
+/* Tones: --bt-tone is the strong colour, --bt-tone-soft its light background. */
+.com-biotime .bt-tone-blue { --bt-tone: #17426f; --bt-tone-soft: #e8eef6; }
+.com-biotime .bt-tone-amber { --bt-tone: #b45309; --bt-tone-soft: #fffbeb; }
+.com-biotime .bt-tone-purple { --bt-tone: #7c3aed; --bt-tone-soft: #f5f3ff; }
+.com-biotime .bt-tone-green { --bt-tone: #15803d; --bt-tone-soft: #f0fdf4; }
+.com-biotime .bt-tone-red { --bt-tone: #dc2626; --bt-tone-soft: #fef2f2; }
+.com-biotime .bt-tone-teal { --bt-tone: #0f766e; --bt-tone-soft: #f0fdfa; }
+.com-biotime .bt-tone-slate { --bt-tone: #475569; --bt-tone-soft: #f1f5f9; }
+.com-biotime .bt-tone-muted { --bt-tone: #6b7280; --bt-tone-soft: #f3f4f6; }
 
-/* Status badges */
-.com-biotime .biotime-status {
-  display: inline-block;
-  padding: 0.1em 0.5em;
-  border-radius: 0.35rem;
-  border: 1px solid currentColor;
-  font-size: 0.875em;
-  line-height: 1.4;
-  white-space: nowrap;
-  background: #fff;
-}
-.com-biotime .biotime-status-present { color: #fff; background: var(--biotime-present); border-color: var(--biotime-present); }
-.com-biotime .biotime-status-late { color: #fff; background: var(--biotime-late); border-color: var(--biotime-late); }
-.com-biotime .biotime-status-absent { color: #fff; background: var(--biotime-absent); border-color: var(--biotime-absent); }
-.com-biotime .biotime-status-early { color: #212529; background: #ffda6a; border-color: var(--biotime-early); }
-.com-biotime .biotime-status-leave { color: #fff; background: var(--biotime-leave); border-color: var(--biotime-leave); }
-.com-biotime .biotime-status-holiday,
-.com-biotime .biotime-status-rest { color: #fff; background: var(--biotime-grey); border-color: var(--biotime-grey); }
-.com-biotime .biotime-status-incomplete,
-.com-biotime .biotime-status-other,
-.com-biotime .biotime-status-punched { color: #212529; border-style: dashed; }
-.com-biotime .biotime-status-none { border: 0; background: transparent; }
-.com-biotime .biotime-status-weekend { color: #41464b; background: #e9ecef; border-color: #adb5bd; }
-.com-biotime .biotime-status-checked_in { color: #fff; background: var(--biotime-in); border-color: var(--biotime-in); }
-.com-biotime .biotime-status-incomplete { color: #212529; background: #fff3cd; border-color: var(--biotime-early); }
-
-/* Check-in and check-out: an arrow, a label for screen readers and a fixed colour each. */
-.com-biotime .biotime-check { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
-.com-biotime .biotime-check-in { color: var(--biotime-in); }
-.com-biotime .biotime-check-out { color: var(--biotime-out); }
-.com-biotime .biotime-check-missing { color: var(--biotime-absent); font-weight: 600; font-size: 0.875em; }
-.com-biotime .biotime-row-weekend > * { background-color: rgba(108, 117, 125, 0.06); }
-.com-biotime .biotime-row-today > * { box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.06); }
-
-/* Device health */
-.com-biotime .biotime-health-online { color: #fff; background: var(--biotime-present); border-color: var(--biotime-present); }
-.com-biotime .biotime-health-delayed { color: #212529; background: #ffda6a; border-color: var(--biotime-early); }
-.com-biotime .biotime-health-offline { color: #fff; background: var(--biotime-absent); border-color: var(--biotime-absent); }
-.com-biotime .biotime-health-unknown { color: #212529; border-style: dashed; }
-.com-biotime .biotime-health-card-online { border-left: 4px solid var(--biotime-present); }
-.com-biotime .biotime-health-card-delayed { border-left: 4px solid #e0a800; }
-.com-biotime .biotime-health-card-offline { border-left: 4px solid var(--biotime-absent); }
-
-/* Neutral grey buttons that stay grey whatever the template does to .btn-secondary. */
-.com-biotime .biotime-btn-neutral {
-  --bs-btn-color: #fff; --bs-btn-bg: #6c757d; --bs-btn-border-color: #6c757d;
-  --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #5c636a; --bs-btn-hover-border-color: #565e64;
-  color: var(--bs-btn-color); background-color: var(--bs-btn-bg); border-color: var(--bs-btn-border-color);
-  white-space: nowrap;
+/* Page heading row: title (and meta line) left, month navigation or action right */
+.com-biotime .bt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin: 0 0 1.25rem;
 }
 
-/* Calendar: 7 equal columns that fit a 390 px phone without page scrolling. */
-.com-biotime .biotime-cal { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 2px; }
-.com-biotime .biotime-cal th { text-align: center; font-size: 0.85rem; }
-.com-biotime .biotime-cal abbr { text-decoration: none; }
-.com-biotime .biotime-cal td { vertical-align: top; padding: 0; border-radius: 0.35rem; border: 1px solid #dee2e6; min-height: 4rem; }
-.com-biotime .biotime-cal-empty { border: 0 !important; }
-.com-biotime .biotime-cal a { display: block; min-height: 4.5rem; padding: 0.25rem; color: inherit; text-decoration: none; position: relative; }
-.com-biotime .biotime-cal a:hover, .com-biotime .biotime-cal a:focus-visible { outline: 3px solid #0d6efd; outline-offset: -3px; }
-.com-biotime .biotime-cal-num { display: block; font-weight: 600; }
-.com-biotime .biotime-cal .biotime-status { display: block; white-space: normal; font-size: 0.75rem; padding: 0.1em 0.2em; overflow-wrap: normal; word-break: normal; hyphens: auto; }
-.com-biotime .biotime-cal-today { box-shadow: inset 0 0 0 2px #0d6efd; }
-.com-biotime .biotime-cal-ex { position: absolute; top: 0.2rem; right: 0.35rem; font-weight: 700; color: var(--biotime-absent); }
-.com-biotime .biotime-cal-weekendday { background: #f8f9fa; }
-.com-biotime .biotime-cal-times { display: block; font-size: 0.75rem; line-height: 1.25; margin-top: 0.15rem; }
-.com-biotime .biotime-cal-times .biotime-check, .com-biotime .biotime-cal-times .text-muted { display: block; }
+.com-biotime .bt-head h1 {
+  margin: 0;
+}
+
+.com-biotime .bt-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 1rem 1rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.com-biotime .bt-back:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+.com-biotime .bt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1.125rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--bt-primary);
+  border: 1px solid var(--bt-primary);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.com-biotime .bt-btn:hover,
+.com-biotime .bt-btn:focus-visible {
+  color: #fff;
+  text-decoration: none;
+  background: var(--bt-primary-hover);
+  border-color: var(--bt-primary-hover);
+}
+
+.com-biotime .bt-btn:focus-visible {
+  outline: 0;
+  box-shadow: var(--bt-focus);
+}
+
+.com-biotime .bt-btn--ghost {
+  color: #374151;
+  background: var(--bt-card-bg);
+  border-color: #d1d5db;
+}
+
+.com-biotime .bt-btn--ghost:hover,
+.com-biotime .bt-btn--ghost:focus-visible {
+  color: #111827;
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.com-biotime .bt-btn--sm {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Month navigation: previous / current month / next */
+.com-biotime .bt-monthnav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.com-biotime .bt-monthnav-title {
+  min-width: 9rem;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/*
+ * Filter bar: fields side by side, applied on change and on Enter (filters.js); no Search button.
+ * Each list is never narrower than its longest option; fields wrap when they do not fit.
+ */
+.com-biotime .bt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.125rem;
+  background: var(--bt-card-bg);
+  border: 1px solid var(--bt-card-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--bt-card-shadow);
+}
+
+.com-biotime .bt-toolbar > div {
+  flex: 1 0 auto;
+  min-width: 150px;
+}
+
+.com-biotime .bt-toolbar select.bt-input {
+  width: 100%;
+  min-width: max-content;
+}
+
+.com-biotime .bt-toolbar .bt-toolbar-submit {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
 @media (max-width: 575.98px) {
-  .com-biotime .biotime-cal-times { font-size: 0.62rem; }
-  .com-biotime .biotime-cal .biotime-status { font-size: 0.56rem; letter-spacing: -0.02em; padding: 0.1em 0.1em; overflow-wrap: anywhere; }
-  /* The symbol is decorative (the text label stays): it makes room for the word on phones. */
-  .com-biotime .biotime-cal .biotime-status [aria-hidden="true"] { display: none; }
-  .com-biotime .biotime-cal a { min-height: 3.75rem; padding: 0.15rem; }
+  .com-biotime .bt-toolbar > div {
+    flex: 1 1 100%;
+  }
+
+  .com-biotime .bt-toolbar select.bt-input {
+    min-width: 0;
+  }
 }
 
-/* Chart */
-.com-biotime .biotime-chart { max-height: 16rem; }
-.com-biotime .biotime-chart-label { font-size: 12px; fill: currentColor; }
-.com-biotime .biotime-bar-present { fill: var(--biotime-present); }
-.com-biotime .biotime-bar-late { fill: var(--biotime-late); }
-.com-biotime .biotime-bar-absent { fill: var(--biotime-absent); }
-.com-biotime .biotime-bar-early { fill: #e0a800; }
-.com-biotime .biotime-bar-leave { fill: var(--biotime-leave); }
-.com-biotime .biotime-bar-holiday, .com-biotime .biotime-bar-rest, .com-biotime .biotime-bar-weekend { fill: var(--biotime-grey); }
-.com-biotime .biotime-bar-incomplete { fill: #e0a800; }
-.com-biotime .biotime-bar-weekendworked { fill: var(--biotime-out); }
+/* Form fields */
+.com-biotime .bt-label {
+  display: block;
+  margin: 0 0 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bt-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
-.com-biotime .biotime-punches summary { cursor: pointer; font-size: 0.85rem; }
-.com-biotime .biotime-exception { font-weight: 400; }
+.com-biotime .bt-input {
+  display: block;
+  width: 100%;
+  min-height: 2.5rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: inherit;
+  background-color: var(--bt-card-bg);
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.com-biotime select.bt-input {
+  padding-right: 2.25rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 14px 10px;
+}
+
+.com-biotime .bt-input:focus {
+  border-color: var(--bt-primary);
+  outline: 0;
+  box-shadow: var(--bt-focus);
+}
+
+/* Summary cards */
+.com-biotime .bt-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.com-biotime .bt-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+  padding: 1rem 1.125rem 1rem 1.375rem;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  background: var(--bt-card-bg);
+  border: 1px solid var(--bt-card-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--bt-card-shadow);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.com-biotime .bt-stat::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  content: "";
+  background: var(--bt-tone);
+}
+
+.com-biotime a.bt-stat:hover,
+.com-biotime a.bt-stat:focus-visible {
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--bt-card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.com-biotime .bt-stat.is-active {
+  border-color: var(--bt-tone);
+  box-shadow: 0 0 0 1px var(--bt-tone), var(--bt-card-shadow);
+}
+
+.com-biotime .bt-stat-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--bt-tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-stat-value small {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-stat-meta {
+  font-size: 0.8125rem;
+  color: var(--bt-text-muted);
+}
+
+/* Panels */
+.com-biotime .bt-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0 0 1.5rem;
+  overflow: hidden;
+  background: var(--bt-card-bg);
+  border: 1px solid var(--bt-card-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--bt-card-shadow);
+}
+
+.com-biotime .bt-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+  margin: 0 0 1.5rem;
+}
+
+.com-biotime .bt-panels > .bt-panel {
+  height: 100%;
+  margin: 0;
+}
+
+.com-biotime .bt-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.875rem 1.125rem;
+  border-bottom: 1px solid var(--bt-card-line);
+}
+
+.com-biotime .bt-panel-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.com-biotime .bt-panel-link {
+  font-size: 0.875rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.com-biotime .bt-panel-link:hover {
+  text-decoration: underline;
+}
+
+.com-biotime .bt-panel-count {
+  font-size: 0.8125rem;
+  color: var(--bt-text-muted);
+  white-space: nowrap;
+}
+
+.com-biotime .bt-panel-body {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 1rem 1.125rem;
+}
+
+.com-biotime .bt-panel-body > :last-child {
+  margin-bottom: 0;
+}
+
+.com-biotime .bt-panel-foot {
+  padding: 0.75rem 1.125rem;
+  font-size: 0.875rem;
+  background: var(--bt-card-hover);
+  border-top: 1px solid var(--bt-card-line);
+}
+
+.com-biotime .bt-action {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.com-biotime .bt-empty,
+.com-biotime .bt-note {
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-note {
+  margin: 0 0 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Tables inside panels */
+.com-biotime .bt-table-wrap {
+  overflow-x: auto;
+}
+
+.com-biotime .bt-table {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-collapse: collapse;
+}
+
+.com-biotime .bt-table th,
+.com-biotime .bt-table td {
+  padding: 0.7rem 1.125rem;
+  text-align: start;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--bt-card-line);
+  box-shadow: none;
+}
+
+.com-biotime .bt-table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bt-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--bt-card-hover);
+  border-top: 0;
+}
+
+.com-biotime .bt-table tbody th {
+  font-weight: 600;
+}
+
+.com-biotime .bt-table tbody tr:hover > * {
+  background: var(--bt-card-hover);
+}
+
+.com-biotime .bt-table a {
+  text-decoration: none;
+}
+
+.com-biotime .bt-table a:hover {
+  text-decoration: underline;
+}
+
+.com-biotime .bt-table .bt-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-table .bt-sub {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--bt-text-muted);
+}
+
+/* Weekend rows are greyed, today has a blue edge */
+.com-biotime .bt-table tr.bt-row-weekend > * {
+  background: #fafbfc;
+}
+
+.com-biotime .bt-table tr.bt-row-today > :first-child {
+  box-shadow: inset 4px 0 0 var(--bt-primary);
+}
+
+/* Status badges and count pills */
+.com-biotime .bt-badge,
+.com-biotime .bt-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--bt-tone);
+  white-space: nowrap;
+  background: var(--bt-tone-soft);
+  border-radius: 999px;
+}
+
+.com-biotime .bt-badge {
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+}
+
+.com-biotime .bt-badge--outline {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.com-biotime .bt-pill {
+  min-width: 2.25rem;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.com-biotime .bt-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+/* Lists */
+.com-biotime .bt-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.com-biotime .bt-list > li {
+  margin: 0;
+  padding: 0;
+}
+
+.com-biotime .bt-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 1.125rem;
+  color: inherit;
+  text-decoration: none;
+  border-top: 1px solid var(--bt-card-line);
+}
+
+.com-biotime .bt-list > li:first-child > .bt-list-row {
+  border-top: 0;
+}
+
+.com-biotime a.bt-list-row:hover,
+.com-biotime a.bt-list-row:focus-visible {
+  color: inherit;
+  text-decoration: none;
+  background: var(--bt-card-hover);
+}
+
+.com-biotime .bt-list-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Tiles (Monthly Overview) */
+.com-biotime .bt-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.com-biotime .bt-tile {
+  display: block;
+  padding: 0.875rem 1rem;
+  color: var(--bt-tone);
+  text-decoration: none;
+  background: var(--bt-tone-soft);
+  border-radius: 0.625rem;
+}
+
+.com-biotime a.bt-tile:hover,
+.com-biotime a.bt-tile:focus-visible {
+  color: var(--bt-tone);
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1px var(--bt-tone);
+}
+
+.com-biotime .bt-tile-value {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-tile-label {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Distribution bar above the tiles (decorative: the tiles carry the numbers) */
+.com-biotime .bt-bar {
+  display: flex;
+  height: 0.625rem;
+  margin: 0 0 1rem;
+  overflow: hidden;
+  background: #f3f4f6;
+  border-radius: 999px;
+}
+
+.com-biotime .bt-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--bt-tone);
+}
+
+/* Today and detail cards: check-in, check-out, time between, status */
+.com-biotime .bt-today {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 1.125rem;
+}
+
+.com-biotime .bt-today > div {
+  min-width: 0;
+}
+
+.com-biotime .bt-today dt,
+.com-biotime .bt-fields dt {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bt-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.com-biotime .bt-today dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.com-biotime .bt-today dd .bt-badge {
+  font-size: 0.875rem;
+}
+
+.com-biotime .bt-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+  padding: 1.125rem;
+}
+
+.com-biotime .bt-fields dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Check-in and check-out: an arrow and a fixed colour each, the device below */
+.com-biotime .bt-check {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.com-biotime .bt-check-in { color: var(--bt-in); }
+.com-biotime .bt-check-out { color: var(--bt-out); }
+
+.com-biotime .bt-check-missing {
+  font-size: 0.8125em;
+  color: #dc2626;
+}
+
+.com-biotime .bt-check-none {
+  color: #9ca3af;
+}
+
+.com-biotime .bt-check-device {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--bt-text-muted);
+  white-space: nowrap;
+}
+
+/* Punches in a row: a small disclosure */
+.com-biotime .bt-punches summary {
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.com-biotime .bt-punches ol {
+  margin: 0.375rem 0 0;
+  padding: 0;
+  font-size: 0.8125rem;
+  color: var(--bt-text-muted);
+  list-style: none;
+}
+
+/* Calendar: 7 equal columns that fit a 390 px phone without page scrolling */
+.com-biotime .bt-cal {
+  width: 100%;
+  margin: 0;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0.375rem;
+}
+
+.com-biotime .bt-cal th {
+  padding: 0.25rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bt-text-muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.com-biotime .bt-cal abbr {
+  text-decoration: none;
+}
+
+.com-biotime .bt-cal td {
+  padding: 0;
+  vertical-align: top;
+  background: var(--bt-card-bg);
+  border: 1px solid var(--bt-card-border);
+  border-radius: 0.625rem;
+}
+
+.com-biotime .bt-cal td.bt-cal-empty {
+  background: transparent;
+  border-color: transparent;
+}
+
+.com-biotime .bt-cal td.bt-cal-day {
+  background: var(--bt-tone-soft, var(--bt-card-bg));
+  border-color: transparent;
+  box-shadow: inset 0 3px 0 var(--bt-tone, transparent);
+}
+
+.com-biotime .bt-cal td.bt-cal-day.bt-tone-muted {
+  background: var(--bt-card-bg);
+  border-color: var(--bt-card-border);
+  box-shadow: none;
+}
+
+.com-biotime .bt-cal a {
+  position: relative;
+  display: block;
+  min-height: 5.25rem;
+  padding: 0.375rem 0.5rem;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 0.625rem;
+}
+
+.com-biotime .bt-cal a:hover,
+.com-biotime .bt-cal a:focus-visible {
+  outline: 2px solid var(--bt-primary);
+  outline-offset: -2px;
+}
+
+.com-biotime .bt-cal-num {
+  display: block;
+  font-weight: 700;
+}
+
+.com-biotime .bt-cal-status {
+  display: block;
+  margin: 0.125rem 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bt-tone);
+  overflow-wrap: anywhere;
+}
+
+.com-biotime .bt-cal-sym {
+  display: none;
+}
+
+.com-biotime .bt-cal-times {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.com-biotime .bt-cal-times .bt-check {
+  display: flex;
+}
+
+.com-biotime .bt-cal-ex {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.45rem;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.com-biotime .bt-cal-today {
+  outline: 2px solid var(--bt-primary);
+  outline-offset: -1px;
+}
+
+@media (max-width: 575.98px) {
+  .com-biotime .bt-cal {
+    border-spacing: 0.125rem;
+  }
+
+  .com-biotime .bt-cal a {
+    min-height: 4rem;
+    padding: 0.25rem 0.2rem;
+  }
+
+  .com-biotime .bt-cal-status,
+  .com-biotime .bt-cal-times {
+    font-size: 0.6rem;
+  }
+
+  /* Phones: the status symbol (explained by the legend) instead of the word. */
+  .com-biotime .bt-cal-status .bt-cal-label {
+    display: none;
+  }
+
+  .com-biotime .bt-cal-status .bt-cal-sym {
+    display: inline;
+    font-size: 0.875rem;
+  }
+
+  .com-biotime .bt-cal-times .bt-check [aria-hidden="true"] {
+    display: none;
+  }
+}
+
+.com-biotime .bt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.875rem 1.125rem;
+  list-style: none;
+  background: var(--bt-card-hover);
+  border-top: 1px solid var(--bt-card-line);
+}
+
+/* Messages in the portal's style */
+.com-biotime .bt-alert {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1.125rem;
+  color: var(--bt-tone);
+  background: var(--bt-tone-soft);
+  border: 0;
+  border-left: 4px solid var(--bt-tone);
+  border-radius: 0.5rem;
+}
+
+.com-biotime .bt-panel .bt-alert {
+  margin: 0;
+}
+
+.com-biotime .bt-alert a {
+  font-weight: 600;
+  color: inherit;
+}
+
+/* Pagination */
+.com-biotime .pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.com-biotime .pagination .page-item {
+  margin: 0;
+}
+
+.com-biotime .pagination .page-link {
+  display: block;
+  margin: 0;
+  padding: 0.4rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--bt-primary);
+  text-decoration: none;
+  background: var(--bt-card-bg);
+  border: 1px solid var(--bt-card-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--bt-card-shadow);
+}
+
+.com-biotime .pagination .page-link:hover {
+  background: var(--bt-card-hover);
+}
+
+.com-biotime .pagination .page-item.disabled .page-link {
+  color: var(--bt-text-muted);
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.com-biotime .pagination .page-item.disabled:not(:first-child):not(:last-child) .page-link {
+  background: transparent;
+  border-color: transparent;
+}
+
+/*
+ * Template independence
+ * ---------------------
+ * A few Bootstrap 5 class names remain (visually-hidden, headings). The rules below give them a
+ * plain look when the site template does not provide them. Every selector is wrapped in :where(),
+ * which has zero specificity, so any style of the installed template wins over these.
+ */
+:where(.com-biotime) :where(*, *::before, *::after) {
+  box-sizing: border-box;
+}
+
+:where(.com-biotime .h2) { font-size: calc(1.325rem + 0.9vw); font-weight: 500; line-height: 1.2; }
+
+@media (min-width: 1200px) {
+  :where(.com-biotime .h2) { font-size: 2rem; }
+}
+
+:where(.com-biotime .visually-hidden) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
