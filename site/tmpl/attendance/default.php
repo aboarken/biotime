@@ -72,7 +72,7 @@ $cards = [
         <?php else : ?>
             <span></span>
         <?php endif; ?>
-        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'attendance', 'year' => $this->year, 'month' => $this->month, 'f' => $f, 'extra' => array_filter(['status' => $this->status])]); ?>
+        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'attendance', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f, 'extra' => array_filter(['status' => $this->status])]); ?>
     </div>
 
     <?php echo LayoutHelper::render('biotime.toolbar', [
@@ -103,7 +103,7 @@ $cards = [
     <section class="bt-panel">
         <div class="bt-panel-head">
             <h2 class="bt-panel-title"><?php echo $e($this->monthTitle()); ?></h2>
-            <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', $this->total)); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status]) : ''; ?></span>
+            <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', $this->total)); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
         </div>
         <?php if ($this->rows === []) : ?>
             <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NO_DAYS'); ?></p>

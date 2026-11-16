@@ -10,11 +10,10 @@
 
 \defined('_JEXEC') or die;
 
-use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use Joomla\CMS\Language\Text;
 
 /**
- * @var array{day: Day, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, type: 'in'|'out', device?: bool, compact?: bool} $displayData
+ * @var array{day: \BiotimePortal\Component\Biotime\Administrator\Attendance\Day, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, type: 'in'|'out', device?: bool, compact?: bool} $displayData
  */
 $day     = $displayData['day'];
 $f       = $displayData['f'];
@@ -24,8 +23,7 @@ $compact = !empty($displayData['compact']);
 $e       = static fn (string $t): string => htmlspecialchars($t, ENT_QUOTES, 'UTF-8');
 $label   = Text::_($in ? 'COM_BIOTIME_COL_CHECK_IN' : 'COM_BIOTIME_COL_CHECK_OUT');
 $punch   = $day->punchAt($time);
-$missing = $time === null && ($day->checkIn !== null || $day->checkOut !== null || $day->punches !== [])
-    && !($day->status === Day::STATUS_CHECKED_IN && !$in);
+$missing = $time === null && $day->missingPunch();
 ?>
 <?php if ($time !== null) : ?>
     <span class="bt-check bt-check-<?php echo $in ? 'in' : 'out'; ?>"<?php echo $compact ? ' title="' . $e($label) . '"' : ''; ?>><span aria-hidden="true"><?php echo $in ? '↘' : '↗'; ?></span><?php if ($compact) : ?><span class="visually-hidden"><?php echo $e($label); ?>:</span><?php endif; ?><?php echo $e($f->time($time)); ?></span>

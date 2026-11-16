@@ -4,18 +4,14 @@
  * @license GNU General Public License version 2 or later
  */
 
-namespace BiotimePortal\Component\Biotime\Administrator\Cache;
+namespace BiotimePortal\Component\Biotime\Tests\Support;
 
-// phpcs:disable PSR1.Files.SideEffects
-\defined('_JEXEC') or die;
-// phpcs:enable PSR1.Files.SideEffects
-
+use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
 
 /**
- * Per-user cache over an array store. In Joomla the store is the user's own session, so entries
- * are never shared between users and disappear at logout. Keys also contain the employee code,
- * so a changed mapping never shows the previous employee's data.
+ * Per-user cache over a plain array, for the tests (the component itself uses DbUserCache).
+ * Keys contain the Joomla user id and the employee code, like DbUserCache.
  */
 final class StoredUserCache implements UserCacheInterface
 {
@@ -70,17 +66,6 @@ final class StoredUserCache implements UserCacheInterface
         }
 
         ($this->save)($store);
-    }
-
-    public function clear(Identity $identity, string $prefix = ''): void
-    {
-        $start = $identity->joomlaUserId . '|';
-
-        ($this->save)(array_filter(
-            ($this->load)(),
-            static fn ($k) => !str_starts_with((string) $k, $start) || ($prefix !== '' && !str_contains((string) $k, '|' . $prefix)),
-            ARRAY_FILTER_USE_KEY
-        ));
     }
 
     private function key(Identity $identity, string $key): string

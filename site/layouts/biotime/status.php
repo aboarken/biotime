@@ -15,14 +15,14 @@ use BiotimePortal\Component\Biotime\Site\View\Ui;
 /** @var array{day: \BiotimePortal\Component\Biotime\Administrator\Attendance\Day, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, tag?: bool} $displayData */
 $day    = $displayData['day'];
 $f      = $displayData['f'];
-$status = $day->status ?? ($day->punches !== [] ? 'punched' : 'none');
+$status = $day->status;
 
-if ($status === 'none') {
+if ($status === null) {
     echo '<span class="bt-check-none">—</span>';
 
     return;
 }
 
-$label = $status === 'punched' ? \Joomla\CMS\Language\Text::_('COM_BIOTIME_STATUS_PUNCHED') : $f->status($day);
+$label = $f->status($day);
 ?>
 <span class="bt-badges"><span class="bt-badge bt-tone-<?php echo Ui::tone($status); ?>"><?php if (in_array($status, ['checked_in', 'checked_out'], true)) : ?><span aria-hidden="true"><?php echo Ui::symbol($status); ?></span><?php else : ?><span class="bt-dot" aria-hidden="true"></span><?php endif; ?><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></span><?php if (($displayData['tag'] ?? true) && $day->missingPunch()) : ?><span class="bt-badge bt-tone-amber"><span aria-hidden="true">!</span><?php echo \Joomla\CMS\Language\Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span><?php endif; ?></span>

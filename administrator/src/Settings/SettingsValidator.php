@@ -142,6 +142,22 @@ final class SettingsValidator
             }
         }
 
+        // A stored password or token is only kept for the address it was entered for: when the
+        // server URL or "connect via" changes, it must be typed again, so stored credentials can
+        // never be sent to a new host by someone who does not know them.
+        $moved = $current->serverUrl() !== ''
+            && (($values['server_url'] ?? '') !== $current->serverUrl() || ($values['connect_via'] ?? '') !== $current->connectVia());
+
+        if ($moved && $password === '' && $hasPassword && $current->hasPassword()) {
+            $errors[]                   = 'COM_BIOTIME_SETTINGS_ERR_REENTER_PASSWORD';
+            $values['api_password_enc'] = '';
+        }
+
+        if ($moved && $token === '' && $hasToken && $current->hasStaticToken()) {
+            $errors[]                = 'COM_BIOTIME_SETTINGS_ERR_REENTER_TOKEN';
+            $values['api_token_enc'] = '';
+        }
+
         $login = $username !== '' && $hasPassword;
 
         if ($method === Credentials::METHOD_JWT && !$login) {

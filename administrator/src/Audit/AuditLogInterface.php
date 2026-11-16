@@ -21,7 +21,7 @@ interface AuditLogInterface
 
     /**
      * @param  int     $userId   Joomla user the action concerns
-     * @param  string  $action   e.g. settings.save, settings.test, mapping.assign, report.export
+     * @param  string  $action   e.g. settings.save, settings.test, mapping.assign, identity.suspended
      * @param  string  $result   ok | denied | error
      * @param  string  $detail   Short, secret-free and personal-data-free text (max 255 chars)
      * @param  int     $actorId  Joomla user who performed the action (administrator), 0 = same as user

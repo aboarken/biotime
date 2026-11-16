@@ -34,11 +34,9 @@ final class AttendanceService
     public const TX_EMP_CODE = 'emp_code';
     public const TX_TIME     = 'punch_time';
     public const TX_STATE    = 'punch_state_display';
-    public const TX_STATE_CODE = 'punch_state';
     public const TX_DEVICE   = 'terminal_alias';
     public const TX_AREA     = 'area_alias';
     public const TX_VERIFY   = 'verify_type_display';
-    public const TX_SN       = 'terminal_sn';
     public const TX_VERIFY_CODE = 'verify_type';
 
     /** Punches from this time of day on are check-outs; earlier punches are check-ins. */
@@ -98,11 +96,6 @@ final class AttendanceService
     public function weekendDays(): array
     {
         return $this->weekendDays;
-    }
-
-    public function dailySource(): SourceConfig
-    {
-        return $this->daily;
     }
 
     public function month(Identity $identity, int $year, int $month): Period
@@ -387,11 +380,9 @@ final class AttendanceService
             ? mb_substr(trim(strip_tags((string) $item[$k])), 0, 100)
             : null;
 
-        $code = isset($item[self::TX_STATE_CODE]) && is_scalar($item[self::TX_STATE_CODE]) && preg_match('/^\d{1,3}$/', (string) $item[self::TX_STATE_CODE]) ? (string) $item[self::TX_STATE_CODE] : null;
-
         $verifyCode = isset($item[self::TX_VERIFY_CODE]) && is_scalar($item[self::TX_VERIFY_CODE]) && preg_match('/^\d{1,3}$/', (string) $item[self::TX_VERIFY_CODE]) ? (string) $item[self::TX_VERIFY_CODE] : null;
 
-        return ['t' => $time, 's' => $text(self::TX_STATE), 'c' => $code, 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA), 'v' => $text(self::TX_VERIFY), 'n' => $text(self::TX_SN), 'vc' => $verifyCode];
+        return ['t' => $time, 's' => $text(self::TX_STATE), 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA), 'v' => $text(self::TX_VERIFY), 'vc' => $verifyCode];
     }
 
     /**

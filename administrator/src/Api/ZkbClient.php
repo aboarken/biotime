@@ -24,8 +24,8 @@ use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportRespons
  * Every endpoint path is named once, in the constants below. VERIFIED means documented in the
  * BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024) and, where noted, seen working on a real 9.5 server; anything else is marked UNVERIFIED
  * here and in docs/API-MAPPING.md. That manual documents no calculated-attendance, schedule,
- * report or leave API: only login, devices, personnel and transactions; the portal reads all
- * of them except departments, areas and positions on their own.
+ * report or leave API: only login, devices, personnel and transactions. The portal reads the
+ * login, employees and transactions.
  */
 final class ZkbClient
 {
@@ -378,7 +378,7 @@ final class ZkbClient
     }
 
     /**
-     * Rows of an administrator-configured read-only source (calculated daily attendance or leave),
+     * Rows of an administrator-configured read-only source (calculated daily attendance),
      * filtered to one employee and a date range. The path and parameter names were validated when
      * the settings were saved and are checked again here.
      *
@@ -514,7 +514,7 @@ final class ZkbClient
 
     /**
      * Paths the portal already reads for its own purpose (login, employees, punches). They hold no
-     * calculated attendance or leave, so they cannot be chosen as a data source.
+     * calculated attendance, so they cannot be chosen as a data source.
      */
     public static function isBuiltInPath(string $path): bool
     {

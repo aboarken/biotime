@@ -25,11 +25,9 @@ final class Ui
         'incomplete' => 'amber',
         'missing_punch' => 'amber',
         'absent'     => 'red',
-        'leave'      => 'blue',
         'holiday'    => 'purple',
         'rest'       => 'slate',
         'weekend'    => 'slate',
-        'punched'    => 'blue',
         'other'      => 'muted',
     ];
 
@@ -43,11 +41,9 @@ final class Ui
         'incomplete' => '!',
         'missing_punch' => '!',
         'absent'     => '✕',
-        'leave'      => '✈',
         'holiday'    => '★',
         'rest'       => '○',
         'weekend'    => '○',
-        'punched'    => '•',
         'other'      => '•',
     ];
 

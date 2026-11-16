@@ -29,22 +29,8 @@ final class RateLimiter
 
     public function allow(int $userId, string $action, int $perHour): bool
     {
-        return $this->allowAny($userId, [$action], $perHour);
-    }
-
-    /**
-     * One shared budget for several actions (e.g. PDF and Excel exports).
-     *
-     * @param  list<string>  $actions
-     */
-    public function allowAny(int $userId, array $actions, int $perHour): bool
-    {
         $since = ($this->clock)()->modify('-1 hour');
-        $used  = 0;
-
-        foreach ($actions as $action) {
-            $used += $this->counter->countSince($userId, $action, $since, [AuditLogInterface::RESULT_OK, AuditLogInterface::RESULT_ERROR]);
-        }
+        $used  = $this->counter->countSince($userId, $action, $since, [AuditLogInterface::RESULT_OK, AuditLogInterface::RESULT_ERROR]);
 
         return $used < max(1, $perHour);
     }

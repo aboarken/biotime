@@ -11,7 +11,7 @@
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
-/** @var array{view: string, year: int, month: int, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, extra?: array<string, string>} $displayData */
+/** @var array{view: string, year: int, month: int, today?: string, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, extra?: array<string, string>} $displayData */
 $view  = $displayData['view'];
 $f     = $displayData['f'];
 $extra = $displayData['extra'] ?? [];
@@ -29,5 +29,9 @@ $link  = static fn (DateTimeImmutable $d): string => Route::_('index.php?option=
         <span class="bt-btn bt-btn--ghost bt-btn--sm" aria-hidden="true" style="visibility: hidden">&larr;</span>
     <?php endif; ?>
     <p class="bt-monthnav-title" aria-current="date"><?php echo $e($name($first)); ?></p>
-    <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($next); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_NEXT_MONTH_LABEL', $name($next))); ?>"><span class="visually-hidden"><?php echo Text::_('COM_BIOTIME_NEXT_MONTH'); ?> </span>&rarr;</a>
+    <?php if (!isset($displayData['today']) || $next->format('Y-m') <= substr($displayData['today'], 0, 7)) : ?>
+        <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($next); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_NEXT_MONTH_LABEL', $name($next))); ?>"><span class="visually-hidden"><?php echo Text::_('COM_BIOTIME_NEXT_MONTH'); ?> </span>&rarr;</a>
+    <?php else : ?>
+        <span class="bt-btn bt-btn--ghost bt-btn--sm" aria-hidden="true" style="visibility: hidden">&rarr;</span>
+    <?php endif; ?>
 </nav>

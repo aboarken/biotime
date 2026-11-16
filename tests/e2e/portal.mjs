@@ -123,7 +123,7 @@ check(/No mapping yet/.test(await admin.innerText('#adminForm')) && (await admin
 
 // ---------------------------------------------------------------- portal
 async function login(username) {
-  const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/index.php?option=com_users&view=login`, { waitUntil: 'networkidle' });
   await page.fill('#username', username);
@@ -170,7 +170,7 @@ check((await sara.inputValue('#bt-date')) === `03/${ym.slice(5, 7)}/${ym.slice(0
 
 await sara.goto(pageUrl(`view=dashboard&month=${ym}`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
-check(/Days Attended/.test(text) && /Days Absent/.test(text) && /Average Check-In/.test(text), 'dashboard: summary cards');
+check(/Days Present/.test(text) && /Days Absent/.test(text) && /Average Check-In/.test(text), 'dashboard: summary cards');
 check(!/Late-In|Worked Hours|Overtime/.test(text), 'dashboard: no fields ZKBioTime 9.5 does not provide');
 check((await sara.locator('.bt-bar').count()) === 1 && (await sara.locator('.bt-tile').count()) >= 4, 'dashboard: overview bar and tiles');
 check((await sara.locator('.bt-stat').count()) >= 8 && (await sara.locator('.bt-panel').count()) >= 3, 'dashboard: cards and panels in the portal design');

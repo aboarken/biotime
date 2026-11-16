@@ -244,7 +244,6 @@ final class AttendanceServiceTest extends TestCase
 
         self::assertSame(15, $s->workingDays, '20 days so far minus 5 weekend days');
         self::assertSame(3, $s->presentDays, 'the missing-punch day counts as present ...');
-        self::assertSame(2, $s->completeDays);
         self::assertSame(1, $s->missingPunchDays, '... and as a missing punch');
         self::assertSame(12, $s->absentDays);
         self::assertSame(5, $s->weekendDays);
@@ -302,7 +301,7 @@ final class AttendanceServiceTest extends TestCase
 
         $p = $this->service()->month($this->alice, 2026, 11)->day('2026-11-02')->punches[0];
 
-        self::assertSame(['Face', 'Gate A', 'CQZ7232', 'HQ'], [$p->verify, $p->device, $p->sn, $p->area]);
+        self::assertSame(['Face', 'Gate A', 'HQ'], [$p->verify, $p->device, $p->area]);
     }
 
     public function testExceptionsAreDetectedButNothingIsCorrected(): void
@@ -408,7 +407,7 @@ final class AttendanceServiceTest extends TestCase
         self::assertNull($day->checkIn);
         self::assertSame('17:05:00', $day->checkOut);
         self::assertContains(Day::EX_MISSING_IN, $day->exceptions);
-        self::assertNotContains(Day::EX_INCOMPLETE, $day->exceptions);
+        self::assertNotContains(Day::EX_MISSING_OUT, $day->exceptions);
     }
 
     public function testValueParsingHelpers(): void

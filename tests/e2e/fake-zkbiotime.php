@@ -4,7 +4,7 @@
  * TEST FIXTURE ONLY: a stand-in for a ZKBioTime server, used by tests/e2e/*.mjs to drive the real
  * Joomla pages and cURL transport without a real server. It answers the forms documented in
  * docs/API-MAPPING.md (all UNVERIFIED until checked on a real 9.5 server) and holds invented
- * fixture data only. The two /att/api/fixture_* paths do not exist in ZKBioTime: they stand in for
+ * fixture data only. The /att/api/fixture_daily/ path does not exist in ZKBioTime: it stands in for
  * whatever endpoint the administrator configures as the daily source. Never deploy it.
  *
  * Run: php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php

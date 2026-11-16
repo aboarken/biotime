@@ -125,11 +125,6 @@ trait PortalViewTrait
         ]);
     }
 
-    public function errorText(?string $kind): string
-    {
-        return $kind === null ? '' : Text::_('COM_BIOTIME_ERROR_' . strtoupper($kind));
-    }
-
     /** "Updated 14:05" in the user's own time zone (this is when the portal read ZKBioTime). */
     public function updatedText(?int $timestamp): string
     {
