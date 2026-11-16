@@ -3,7 +3,7 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.4] - 2026-11-16
 
 ### Changed
 - The GitHub repository was renamed to `aboarken/joomla-biotime`. The manifest's author URL, changelog URL and update server now use `https://github.com/aboarken/joomla-biotime/releases/latest/download/`. Sites on an older version keep working: GitHub redirects the old `aboarken/biotime` URLs, and installing this version stores the new update server address.
