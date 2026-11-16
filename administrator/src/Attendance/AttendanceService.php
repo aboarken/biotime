@@ -28,7 +28,8 @@ final class AttendanceService
 {
     /**
      * Transaction fields read from the transaction list.
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Transaction" (see docs/API-MAPPING.md).
+     * VERIFIED: BioTime 9.5 API User Manual (16 Aug 2024), 9.1 (emp_code, punch_time, punch_state, terminal_alias, area_alias) and the
+     * real server (also punch_state_display); see docs/API-MAPPING.md.
      */
     public const TX_EMP_CODE = 'emp_code';
     public const TX_TIME     = 'punch_time';

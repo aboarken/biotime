@@ -21,47 +21,49 @@ use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportRespons
  * Read-only by design: the only POST it sends is the login that exchanges the API user's
  * credentials for a token. It never creates, changes or deletes ZKBioTime data.
  *
- * Every endpoint path is named once, in the constants below. Paths not yet confirmed on a real
- * ZKBioTime 9.5 server are marked UNVERIFIED here and in docs/API-MAPPING.md.
+ * Every endpoint path is named once, in the constants below. VERIFIED means documented in the
+ * BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024) and, where noted, seen working on a real 9.5 server; anything else is marked UNVERIFIED
+ * here and in docs/API-MAPPING.md. That manual documents no calculated-attendance, schedule,
+ * report or leave API: only login, devices, personnel and transactions.
  */
 final class ZkbClient
 {
     /**
      * JWT login: POST {"username", "password"} -> {"token"}; requests then send "Authorization: JWT <token>".
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Authentication" (to be confirmed on /api/docs/).
+     * VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 1.1; works on the real server (2026-11-15).
      */
     private const PATH_JWT_AUTH = '/jwt-api-token-auth/';
 
     /**
      * General Auth Token login: POST {"username", "password"} -> {"token"}; requests then send
      * "Authorization: Token <token>".
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Authentication" (to be confirmed on /api/docs/).
+     * VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 1.2 and 3.1 (header "Token <token>").
      */
     private const PATH_TOKEN_AUTH = '/api-token-auth/';
 
     /**
      * Employee list (Personnel API), paged with page / page_size.
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Employee" (to be confirmed on /api/personnel_docs/).
-     * Stage 1 only reads one row of it, to count the employees the API user may see.
+     * VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 5.1 (filters page, page_size, emp_code, first_name, last_name, department,
+     * app_status); works on the real server (423 employees, 2026-11-16).
      */
     private const PATH_EMPLOYEES = '/personnel/api/employees/';
 
     /**
      * One employee: /personnel/api/employees/{id}/.
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Employee" (detail of the list above).
+     * VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 5.2.
      */
     private const PATH_EMPLOYEE = '/personnel/api/employees/%s/';
 
-    /** Employee list filter by employee code. UNVERIFIED on 9.5 (manual, Employee list parameters). */
+    /** Employee list filter by employee code. VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 5.1. */
     private const PARAM_EMP_CODE = 'emp_code';
 
     /**
      * Punches (transactions), filtered by employee code and a time range ("YYYY-MM-DD HH:MM:SS").
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Transaction".
+     * VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 9.1; works on the real server (2026-11-15).
      */
     private const PATH_TRANSACTIONS = '/iclock/api/transactions/';
 
-    /** Transaction filters. UNVERIFIED on 9.5 (manual, Transaction list parameters). */
+    /** Transaction filters. VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 9.1 (also page, page_size, terminal_sn). */
     private const PARAM_TX_EMP   = 'emp_code';
     private const PARAM_TX_START = 'start_time';
     private const PARAM_TX_END   = 'end_time';
@@ -71,7 +73,8 @@ final class ZkbClient
      * /api/personnel_docs/. Their machine-readable form depends on the build: OpenAPI/Swagger
      * (?format=openapi) or Django REST framework CoreJSON (?format=corejson) is tried in that
      * order, the next one only when the previous is not found or not readable; the form that
-     * worked is logged. UNVERIFIED on 9.5.
+     * worked is logged. VERIFIED on the real server: CoreJSON only (2026-11-15); the 9.5 manual
+     * links /api/docs/ for the login endpoints.
      */
     private const DOC_PATHS   = ['/api/docs/', '/api/personnel_docs/'];
     private const DOC_FORMATS = ['openapi', 'corejson'];
@@ -90,12 +93,14 @@ final class ZkbClient
      * the 9.5 server under test lists no attendance endpoints at all (not even transactions).
      * Diagnostics only reports whether they answer and which field names they return; nothing is
      * read from them until the administrator saves one as the Daily Attendance Source.
-     * UNVERIFIED on 9.5. Source: BioTimeCloud API User Manual 1.0 (Aug 2023), "Att API":
-     * GET /att/api/totalTimeCardReport/ with page, page_size, start_date, end_date.
+     * Source: BioTimeCloud API User Manual 1.0 (Aug 2023), "Att API": GET
+     * /att/api/totalTimeCardReport/ with page, page_size, start_date, end_date. NOT in the
+     * BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), and not present on the real 9.5 server (web page instead of data, 2026-11-16). Kept
+     * only so Diagnostics shows the same on other servers (BioTime Cloud, later builds).
      */
     private const DIAG_ATT_PATHS = ['/att/api/totalTimeCardReport/'];
 
-    /** Paging query parameters. UNVERIFIED on 9.5 (manual, list endpoints). */
+    /** Paging query parameters. VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 5.1 and 9.1; work on the real server. */
     private const PARAM_PAGE      = 'page';
     private const PARAM_PAGE_SIZE = 'page_size';
 
@@ -746,7 +751,7 @@ final class ZkbClient
             throw new ZkbException(ZkbException::BAD_RESPONSE, 'ZKBioTime returned an unreadable response', $response->status);
         }
 
-        // UNVERIFIED: the manual shows "code" and "msg" in list answers, with code 0 for success.
+        // VERIFIED (BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 3.1, 5.1, 9.1): list answers carry "code" and "msg", code 0 for success.
         // A non-zero code with no data is treated as a refused request.
         if (!array_is_list($decoded) && isset($decoded['code']) && is_numeric($decoded['code']) && (int) $decoded['code'] !== 0
             && !\array_key_exists('data', $decoded) && !\array_key_exists('token', $decoded)) {

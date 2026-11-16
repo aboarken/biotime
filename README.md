@@ -163,9 +163,14 @@ re-verified against ZKBioTime once a day. Every administrative change is recorde
 
 ### 4. Calculated attendance (schedules, statuses, late-in, ...)
 
-ZKBioTime's published API manual documents employees and transactions (punches). Calculated
-attendance — the schedule applied on each date, status, late-in, early-out, worked hours,
-overtime — and leave depend on what your ZKBioTime 9.5 build offers. So the portal reads them
+**ZKBioTime 9.5 has no API for these.** Its API manual (BioTime 9.5 API User Manual, ZKTeco
+Middle East, 16 Aug 2024) documents login, devices, personnel and transactions (punches) only,
+and a real 9.5 server confirmed it. On 9.5, leave both sources empty: the portal shows punches,
+check-in and check-out, and "—" for the schedule, status, late-in, early-out, worked hours,
+overtime and leave. Joomla never calculates them itself.
+
+If your ZKBioTime does offer such an endpoint (BioTime Cloud or a later build; **Run
+Diagnostics** in Find Endpoints tells you), the portal reads them
 from an endpoint **you choose** from your server's `/api/docs/` page (or a saved ZKBioTime
 report endpoint), under **Integration Settings → Daily Attendance Source** and **Leave Source**:
 
