@@ -10,5 +10,5 @@ use Joomla\CMS\Language\Text;
 
 ?>
 <div class="com-biotime">
-    <div class="alert alert-warning" role="alert"><?php echo Text::_('COM_BIOTIME_UNMATCHED'); ?></div>
+    <div class="bt-alert bt-tone-amber" role="alert"><?php echo Text::_('COM_BIOTIME_UNMATCHED'); ?></div>
 </div>

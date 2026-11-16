@@ -3,6 +3,13 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] - 2026-11-16
+
+### Changed
+- **New portal design**, the same as the ServiceDesk Plus portal: summary cards with a coloured edge, white panels with a title row, tables with small upper-case headings, coloured status pills (green present, amber incomplete, red absent, grey weekend, teal checked in, blue leave), a filter bar and month navigation (← month →) in the page heading. The portal styles everything itself, so the pages look the same on any site template.
+- **Filters apply at once**: choosing a month, year, status, health or location (or a date) updates the page; there is no Show button (it is still there without JavaScript).
+- My Dashboard: Monthly Overview as coloured tiles with a bar showing the month at a glance, Devices You Used beside it, and Recent Activity with a "View all" link. My Attendance: the summary cards filter the list. Biometric Devices: the health cards filter the list. The calendar colours each day by its status and, on phones, shows a status symbol explained by the legend.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added

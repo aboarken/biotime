@@ -21,7 +21,7 @@ use Joomla\CMS\Router\Route;
  * Shared by the portal views (Joomla\CMS\MVC\View\HtmlView):
  *  - heading and browser title from the menu item (title, Page Heading, Browser Page Title,
  *    Show Page Heading), as in Joomla core;
- *  - noindex/nofollow, the portal stylesheet;
+ *  - noindex/nofollow, the portal stylesheet and the filter bar script;
  *  - formatter, time zone label, month navigation, "Updated" time and error texts.
  */
 trait PortalViewTrait
@@ -73,6 +73,7 @@ trait PortalViewTrait
         $document->setMetaData('robots', 'noindex, nofollow');
         $document->getWebAssetManager()->getRegistry()->addExtensionRegistryFile('com_biotime');
         $document->getWebAssetManager()->useStyle('com_biotime.portal');
+        $document->getWebAssetManager()->useScript('com_biotime.filters');
     }
 
     public function url(string $query): string
@@ -101,9 +102,10 @@ trait PortalViewTrait
     }
 
     /** Notices shown above attendance data (errors, cut-off lists, how times are read). */
-    public function notices(\BiotimePortal\Component\Biotime\Administrator\Attendance\Period $period): string
+    public function notices(\BiotimePortal\Component\Biotime\Administrator\Attendance\Period $period, bool $rules = true): string
     {
         return \Joomla\CMS\Layout\LayoutHelper::render('biotime.notices', [
+            'rules'   => $rules,
             'period'  => $period,
             'zone'    => $this->zone,
             'updated' => $this->updatedText($period->fetchedAt),

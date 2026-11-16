@@ -60,6 +60,9 @@ final class HtmlView extends BaseHtmlView
         if (preg_match('/^(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $date) && checkdate((int) substr($date, 5, 2), (int) substr($date, 8, 2), (int) substr($date, 0, 4))) {
             $this->date = $date;
             $input->set('month', substr($date, 0, 7));
+            // The filter bar also sends its month and year lists: the chosen date wins.
+            $input->set('y', (int) substr($date, 0, 4));
+            $input->set('mo', (int) substr($date, 5, 2));
         }
 
         $status       = $input->getCmd('status', '');
