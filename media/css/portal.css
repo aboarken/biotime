@@ -226,11 +226,44 @@
 }
 
 /* Summary cards */
+/*
+ * Summary cards. Every card of a page has the same width and height (grid-auto-rows: 1fr).
+ * --6 (My Dashboard: 6 then 4) and --5 (My Attendance: 5 then 3, My Punches: 5) set the number
+ * of cards per row on wide screens; narrower screens show 3, then 2 per row.
+ */
 .com-biotime .bt-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 1rem;
   margin: 0 0 1.5rem;
+}
+
+.com-biotime .bt-stats--6,
+.com-biotime .bt-stats--5 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .com-biotime .bt-stats--6,
+  .com-biotime .bt-stats--5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .com-biotime .bt-stats--6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .com-biotime .bt-stats--5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.com-biotime .bt-stats--6 .bt-stat-value,
+.com-biotime .bt-stats--5 .bt-stat-value {
+  font-size: 1.75rem;
 }
 
 .com-biotime .bt-stat {
@@ -453,6 +486,12 @@
 /* Weekend rows are greyed, today has a blue edge */
 .com-biotime .bt-table tr.bt-row-weekend > * {
   background: #fafbfc;
+}
+
+.com-biotime .bt-table tfoot tr.bt-row-total > * {
+  font-weight: 700;
+  background: var(--bt-card-hover);
+  border-top: 2px solid var(--bt-card-border);
 }
 
 .com-biotime .bt-table tr.bt-row-today > :first-child {
@@ -783,12 +822,20 @@
   display: flex;
 }
 
+.com-biotime .bt-cal-tag {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
 .com-biotime .bt-cal-ex {
   position: absolute;
   top: 0.3rem;
   right: 0.45rem;
   font-weight: 700;
-  color: #dc2626;
+  color: #b45309;
 }
 
 .com-biotime .bt-cal-today {
@@ -812,7 +859,8 @@
   }
 
   /* Phones: the status symbol (explained by the legend) instead of the word. */
-  .com-biotime .bt-cal-status .bt-cal-label {
+  .com-biotime .bt-cal-status .bt-cal-label,
+  .com-biotime .bt-cal-tag {
     display: none;
   }
 

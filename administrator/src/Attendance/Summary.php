@@ -21,7 +21,7 @@ final class Summary
      * @param int     $workingDays    days so far that are not weekend, holiday or rest days (plus weekend days worked)
      * @param int     $presentDays    days with attendance (check-in and/or check-out)
      * @param int     $completeDays   days with both check-in and check-out
-     * @param int     $incompleteDays days with a check-in or a check-out missing
+     * @param int     $missingPunchDays present days with a check-in or a check-out missing
      * @param int     $absentDays     past working days without any punch
      * @param int     $weekendDays    weekend days without punches
      * @param int     $weekendWorked  weekend days with punches
@@ -37,7 +37,7 @@ final class Summary
         public readonly int $workingDays,
         public readonly int $presentDays,
         public readonly int $completeDays,
-        public readonly int $incompleteDays,
+        public readonly int $missingPunchDays,
         public readonly int $absentDays,
         public readonly int $leaveDays,
         public readonly int $holidays,
@@ -76,7 +76,7 @@ final class Summary
             $working,
             $present,
             $count(static fn (Day $d): bool => $d->checkIn !== null && $d->checkOut !== null),
-            $count(static fn (Day $d): bool => $d->status === 'incomplete'),
+            $count(static fn (Day $d): bool => $d->missingPunch()),
             $count(static fn (Day $d): bool => $d->status === 'absent'),
             $count(static fn (Day $d): bool => $d->status === 'leave'),
             $count(static fn (Day $d): bool => $d->status === 'holiday'),

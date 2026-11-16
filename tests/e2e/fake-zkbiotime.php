@@ -125,8 +125,8 @@ $ym = date('Y-m');
 
 if ($path === '/iclock/api/transactions/') {
     $rows = [
-        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-02 07:58:10", 'punch_state_display' => 'Check In', 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
-        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-02 17:02:00", 'punch_state_display' => 'Check Out', 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
+        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-02 07:58:10", 'punch_state_display' => 'Check In', 'verify_type_display' => 'Face', 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
+        ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-02 17:02:00", 'punch_state_display' => 'Check Out', 'verify_type_display' => 'Fingerprint', 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 09:20:00", 'punch_state_display' => 'Check In', 'terminal_alias' => 'Side Door'],
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 09:20:20", 'punch_state_display' => 'Check In', 'terminal_alias' => 'Side Door'],
         ['emp_code' => 'FIXTURE1', 'punch_time' => "$ym-03 15:30:00", 'punch_state_display' => 'Check Out', 'terminal_alias' => 'Main Gate'],
@@ -139,19 +139,6 @@ if ($path === '/iclock/api/transactions/') {
         ['emp_code' => 'FIXTURE2', 'punch_time' => "$ym-04 06:06:06", 'punch_state_display' => 'OTHER-EMPLOYEE-PUNCH'],
     ];
     $page(array_filter($rows, static fn ($r) => str_starts_with($r['punch_time'], substr((string) ($q['start_time'] ?? ''), 0, 7))));
-
-    return true;
-}
-
-if ($path === '/iclock/api/terminals/') {
-    // As in the BioTime 9.5 API manual's example answer; last activity relative to now.
-    $page([
-        ['id' => 1, 'sn' => 'FIXTURE-SN-1', 'alias' => 'Main Gate', 'terminal_name' => 'SpeedFace-V5L', 'ip_address' => '10.0.0.21', 'fw_ver' => 'ZAM180-1.0.9',
-            'area' => ['area_code' => 'HQ', 'area_name' => 'Head Office'], 'last_activity' => date('Y-m-d H:i:s', time() - 60),
-            'user_count' => 412, 'fp_count' => 380, 'face_count' => 401, 'transaction_count' => 15234, 'comm_key' => 'FIXTURE-SECRET'],
-        ['id' => 2, 'sn' => 'FIXTURE-SN-2', 'alias' => 'Side Door', 'area_name' => 'Head Office', 'last_activity' => date('Y-m-d H:i:s', time() - 7200)],
-        ['id' => 3, 'sn' => 'FIXTURE-SN-3', 'alias' => 'Old Gym', 'area' => ['area_name' => 'Sports Hall'], 'last_activity' => date('Y-m-d H:i:s', time() - 9 * 86400)],
-    ]);
 
     return true;
 }

@@ -207,7 +207,7 @@ final class SettingsValidator
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_CACHE';
         }
 
-        $values['date_format'] = \in_array(self::str($input['date_format'] ?? ''), Settings::DATE_FORMATS, true) ? self::str($input['date_format']) : 'Y-m-d';
+        $values['date_format'] = \in_array(self::str($input['date_format'] ?? ''), Settings::DATE_FORMATS, true) ? self::str($input['date_format']) : 'd/m/Y';
         $values['time_format'] = \in_array(self::str($input['time_format'] ?? ''), Settings::TIME_FORMATS, true) ? self::str($input['time_format']) : 'H:i';
 
         $zone = trim(self::str($input['server_timezone'] ?? ''));

@@ -11,7 +11,6 @@ namespace BiotimePortal\Component\Biotime\Site\View\Day;
 // phpcs:enable PSR1.Files.SideEffects
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\LeaveRecord;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
 use BiotimePortal\Component\Biotime\Site\Model\DayModel;
 use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
@@ -30,9 +29,6 @@ final class HtmlView extends BaseHtmlView
 
     public Period $period;
 
-    /** @var list<LeaveRecord> */
-    public array $leave = [];
-
     public bool $canAttendance = false;
 
     public bool $canCalendar = false;
@@ -49,7 +45,6 @@ final class HtmlView extends BaseHtmlView
 
         $this->day    = $day;
         $this->period = $model->period();
-        $this->leave  = $model->leave();
         [$this->year, $this->month] = $model->selectedMonth();
         $this->canAttendance = $model->can('zkb.attendance.view');
         $this->canCalendar   = $model->can('zkb.calendar.view');

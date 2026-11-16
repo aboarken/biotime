@@ -16,9 +16,10 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
  * read-only exceptions. Values ZKBioTime did not provide are null and shown as "—".
  *
  * Status: ZKBioTime's calculated status when a daily source is configured; otherwise the portal
- * tells it from the punches (see AttendanceService::dayStatus()): present, checked in (today),
- * incomplete (check-in or check-out missing), absent (a past working day without any punch),
- * weekend (a weekend day without punches) or leave.
+ * tells it from the punches (see AttendanceService::dayStatus()): present (any punch; with the
+ * "Missing Punch" tag when the check-in or check-out is missing, see missingPunch()), checked in
+ * (today), absent (a past working day without any punch) or weekend (a weekend day without
+ * punches).
  */
 final class Day
 {
@@ -74,6 +75,23 @@ final class Day
         public readonly bool $weekend = false,
         public readonly bool $statusFromPunches = false
     ) {
+    }
+
+    /**
+     * The employee punched but the check-in or the check-out is missing ("Missing Punch"). Not
+     * today while checked in: the check-out may still come.
+     */
+    public function missingPunch(): bool
+    {
+        if ($this->punches === [] && $this->checkIn === null && $this->checkOut === null) {
+            return false;
+        }
+
+        if ($this->status === self::STATUS_CHECKED_IN) {
+            return false;
+        }
+
+        return $this->checkIn === null || $this->checkOut === null;
     }
 
     /** A weekend day on which the employee punched (the weekend tag is then not shown). */

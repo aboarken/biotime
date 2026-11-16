@@ -132,7 +132,7 @@ await page.screenshot({ path: `${OUT}/settings-phone.png`, fullPage: true });
 await page.setViewportSize({ width: 1366, height: 900 });
 await page.goto(`${BASE}/administrator/index.php?option=com_config&view=component&component=com_biotime`);
 const perms = await page.innerText('body');
-for (const label of ['View My Dashboard', 'View My Attendance', 'View Attendance Calendar', 'View Biometric Devices']) {
+for (const label of ['View My Dashboard', 'View My Attendance', 'View Attendance Calendar', 'View My Punches']) {
   check(perms.includes(label), `permission "${label}" listed`);
 }
 check((await untranslated()).length === 0, 'Options page has no untranslated strings');

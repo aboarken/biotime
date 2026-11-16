@@ -23,7 +23,11 @@ $name  = static fn (DateTimeImmutable $d): string => $f->monthName((int) $d->for
 $link  = static fn (DateTimeImmutable $d): string => Route::_('index.php?option=com_biotime&view=' . $view . '&' . http_build_query(['month' => $d->format('Y-m')] + $extra));
 ?>
 <nav class="bt-monthnav" aria-label="<?php echo $e(Text::_('COM_BIOTIME_MONTH')); ?>">
-    <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($prev); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_PREV_MONTH_LABEL', $name($prev))); ?>">&larr;<span class="visually-hidden"> <?php echo Text::_('COM_BIOTIME_PREV_MONTH'); ?></span></a>
+    <?php if ((int) $prev->format('Y') >= \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR) : ?>
+        <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($prev); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_PREV_MONTH_LABEL', $name($prev))); ?>">&larr;<span class="visually-hidden"> <?php echo Text::_('COM_BIOTIME_PREV_MONTH'); ?></span></a>
+    <?php else : ?>
+        <span class="bt-btn bt-btn--ghost bt-btn--sm" aria-hidden="true" style="visibility: hidden">&larr;</span>
+    <?php endif; ?>
     <p class="bt-monthnav-title" aria-current="date"><?php echo $e($name($first)); ?></p>
     <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($next); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_NEXT_MONTH_LABEL', $name($next))); ?>"><span class="visually-hidden"><?php echo Text::_('COM_BIOTIME_NEXT_MONTH'); ?> </span>&rarr;</a>
 </nav>

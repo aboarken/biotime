@@ -3,6 +3,22 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] - 2026-11-16
+
+### Changed
+- **Missing Punch instead of Incomplete.** A day with any punch is **Present**. When its check-in or check-out is missing it also gets the amber **Missing Punch** tag, and the missing time shows *Missing*. The first punch of the day is the check-in even when it is the only one; a lone check-out punch stays a check-out (check-in *Missing*). The Monthly Overview and the cards count such a day as Present **and** as a Missing Punch day.
+- **My Punches replaces Biometric Devices**: the logged-in employee's own punches for a year (or one month): totals by fingerprint and by face, per month with a total row, and per device. Updating turns Biometric Devices menu items into My Punches and moves the *View Biometric Devices* permission to *View My Punches*. The device list (`/iclock/api/terminals/`) is no longer read.
+- My Dashboard: 10 summary cards (6, then 4), all the same size (Total Time In-Out has its own card); Devices You Used lists every device used in the selected month.
+- My Attendance: 8 summary cards (5, then 3), all the same size.
+- Dates are shown as **DD/MM/YYYY** by default (sites on the old default YYYY-MM-DD switch on update); the My Attendance date filter is typed as DD/MM/YYYY.
+- Year lists start at 2025, and month navigation stops at January 2025.
+
+### Removed
+- The **Leave** tag, legend entry, filter and card. A working day without punches is Absent.
+
+### Fixed
+- Punches outside the month asked for (from a server that ignores the time filter) are skipped, so they are never counted twice.
+
 ## [0.4.1] - 2026-11-16
 
 ### Changed

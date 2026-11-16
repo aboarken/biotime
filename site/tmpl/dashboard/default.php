@@ -16,7 +16,7 @@ use Joomla\CMS\Layout\LayoutHelper;
  * Layout (same design as the ServiceDesk Plus portal): heading with month navigation, filter bar,
  * Today panel, summary cards, then Monthly Overview and Devices You Used side by side, then Recent
  * Activity. Styles are in media/com_biotime/css/portal.css (.bt-*). Tones: green present, amber
- * incomplete, red absent, slate weekend, blue leave, teal checked in, muted for zero.
+ * missing punch, red absent, slate weekend, teal checked in, purple weekend worked, muted for zero.
  */
 
 $s     = $this->summary;
@@ -42,16 +42,23 @@ $panelHead = static fn (string $title, string $url = '', string $linkText = ''):
     . ($url !== '' ? '<a class="bt-panel-link" href="' . $url . '">' . $linkText . ' &rarr;</a>' : '')
     . '</div>';
 
-// Monthly overview: days per status up to today. [filter, label, count, tone]
-$overview = array_values(array_filter([
-    ['present', Text::_('COM_BIOTIME_OVERVIEW_COMPLETE'), $s->completeDays, 'green'],
-    ['incomplete', Text::_('COM_BIOTIME_STATUS_INCOMPLETE'), $s->incompleteDays, 'amber'],
+// Monthly overview: days per status up to today. [filter, label, count, tone]. A present day with
+// a missing check-in or check-out counts as Present and as Missing Punch.
+$overview = [
+    ['attended', Text::_('COM_BIOTIME_STATUS_PRESENT'), $s->presentDays, 'green'],
+    ['missingpunch', Text::_('COM_BIOTIME_MISSING_PUNCH'), $s->missingPunchDays, 'amber'],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT'), $s->absentDays, 'red'],
-    ['leave', Text::_('COM_BIOTIME_STATUS_LEAVE'), $s->leaveDays, 'blue'],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND'), $s->weekendDays, 'slate'],
     ['weekendworked', Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, 'purple'],
-], static fn (array $o): bool => $o[0] !== 'leave' || $o[2] > 0));
-$days = array_sum(array_map(static fn (array $o): int => $o[0] === 'weekendworked' ? 0 : $o[2], $overview));
+];
+// The bar splits the days so far: present (complete), present with a missing punch, absent, weekend.
+$bar  = [
+    ['green', max(0, $s->presentDays - $s->missingPunchDays)],
+    ['amber', $s->missingPunchDays],
+    ['red', $s->absentDays],
+    ['slate', $s->weekendDays],
+];
+$days = array_sum(array_column($bar, 1));
 ?>
 <div class="com-biotime biotime-dashboard">
     <div class="bt-head">
@@ -86,21 +93,18 @@ $days = array_sum(array_map(static fn (array $o): int => $o[0] === 'weekendworke
     <?php endif; ?>
 
     <?php // Summary cards ?>
-    <div class="bt-stats">
+    <div class="bt-stats bt-stats--6">
         <?php
         echo $stat(Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended', Text::_('COM_BIOTIME_CARD_PRESENT_DAYS_HINT'));
         echo $stat(Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent');
-        echo $stat(Text::_('COM_BIOTIME_CARD_INCOMPLETE_DAYS'), (string) $s->incompleteDays, Ui::countTone($s->incompleteDays, 'amber'), 'incomplete', Text::_('COM_BIOTIME_CARD_INCOMPLETE_DAYS_HINT'));
+        echo $stat(Text::_('COM_BIOTIME_CARD_MISSING_PUNCH_DAYS'), (string) $s->missingPunchDays, Ui::countTone($s->missingPunchDays, 'amber'), 'missingpunch', Text::_('COM_BIOTIME_CARD_MISSING_PUNCH_HINT'));
         echo $stat(Text::_('COM_BIOTIME_CARD_RATE'), $s->rate === null ? '—' : $s->rate . ' <small>%</small>', $s->rate === null ? 'muted' : ($s->rate >= 90 ? 'green' : ($s->rate >= 75 ? 'amber' : 'red')));
         echo $stat(Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', '', $s->firstCheckIn !== null ? Text::sprintf('COM_BIOTIME_CARD_EARLIEST', $f->time($s->firstCheckIn)) : '');
         echo $stat(Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', '', $s->lastCheckOut !== null ? Text::sprintf('COM_BIOTIME_CARD_LATEST', $f->time($s->lastCheckOut)) : '');
-        echo $stat(Text::_('COM_BIOTIME_CARD_AVG_SPAN'), $e($f->duration($s->avgSpanMinutes)), 'slate', '', $s->spanMinutes !== null ? Text::sprintf('COM_BIOTIME_CARD_TOTAL_SPAN', $f->duration($s->spanMinutes)) : '');
+        echo $stat(Text::_('COM_BIOTIME_CARD_AVG_SPAN'), $e($f->duration($s->avgSpanMinutes)), 'slate', '', Text::_('COM_BIOTIME_CARD_AVG_SPAN_HINT'));
+        echo $stat(Text::_('COM_BIOTIME_CARD_TOTAL_SPAN_SHORT'), $e($f->duration($s->spanMinutes)), 'slate', '', Text::_('COM_BIOTIME_CARD_TOTAL_SPAN_HINT'));
         echo $stat(Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'purple'), 'weekendworked');
         echo $stat(Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::countTone($s->punchCount, 'blue'), 'punches', Text::plural('COM_BIOTIME_CARD_PUNCH_DAYS_HINT', $s->punchDays));
-
-        if ($s->leaveDays > 0) {
-            echo $stat(Text::_('COM_BIOTIME_CARD_LEAVE_DAYS'), (string) $s->leaveDays, 'blue', 'leave');
-        }
         ?>
     </div>
 
@@ -110,8 +114,8 @@ $days = array_sum(array_map(static fn (array $o): int => $o[0] === 'weekendworke
             <div class="bt-panel-body">
                 <?php if ($this->showChart && $days > 0) : ?>
                     <div class="bt-bar" aria-hidden="true">
-                        <?php foreach ($overview as [$key, , $count, $tone]) : ?>
-                            <?php if ($key !== 'weekendworked' && $count > 0) : ?>
+                        <?php foreach ($bar as [$tone, $count]) : ?>
+                            <?php if ($count > 0) : ?>
                                 <span class="bt-tone-<?php echo $tone; ?>" style="width: <?php echo round(100 * $count / $days, 2); ?>%"></span>
                             <?php endif; ?>
                         <?php endforeach; ?>

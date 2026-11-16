@@ -64,15 +64,6 @@ final class ZkbClient
      */
     private const PATH_TRANSACTIONS = '/iclock/api/transactions/';
 
-    /**
-     * Devices (terminals): serial number, name, IP address, area, firmware, last activity and the
-     * number of users, fingerprints, faces and punches stored on each device.
-     * VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), devices
-     * (/iclock/api/terminals/, filters page, page_size, sn, alias, state, area). Field names follow
-     * that manual's example answer; any that a server does not send are shown as "—".
-     */
-    private const PATH_TERMINALS = '/iclock/api/terminals/';
-
     /** Transaction filters. VERIFIED: BioTime 9.5 API User Manual (ZKTeco Middle East, 16 Aug 2024), 9.1 (also page, page_size, terminal_sn). */
     private const PARAM_TX_EMP   = 'emp_code';
     private const PARAM_TX_START = 'start_time';
@@ -387,22 +378,6 @@ final class ZkbClient
     }
 
     /**
-     * Every device (terminal) the API user may read, page by page up to the safety maximum.
-     *
-     * @throws ZkbException
-     */
-    public function terminals(): ListResult
-    {
-        return $this->listAll(self::PATH_TERMINALS);
-    }
-
-    /** The device endpoint's path, for display and logs. */
-    public static function terminalsPath(): string
-    {
-        return self::PATH_TERMINALS;
-    }
-
-    /**
      * Rows of an administrator-configured read-only source (calculated daily attendance or leave),
      * filtered to one employee and a date range. The path and parameter names were validated when
      * the settings were saved and are checked again here.
@@ -538,12 +513,12 @@ final class ZkbClient
     }
 
     /**
-     * Paths the portal already reads for its own purpose (login, employees, punches, devices). They hold no
+     * Paths the portal already reads for its own purpose (login, employees, punches). They hold no
      * calculated attendance or leave, so they cannot be chosen as a data source.
      */
     public static function isBuiltInPath(string $path): bool
     {
-        return \in_array($path, [self::PATH_JWT_AUTH, self::PATH_TOKEN_AUTH, self::PATH_EMPLOYEES, self::PATH_TRANSACTIONS, self::PATH_TERMINALS], true)
+        return \in_array($path, [self::PATH_JWT_AUTH, self::PATH_TOKEN_AUTH, self::PATH_EMPLOYEES, self::PATH_TRANSACTIONS], true)
             || str_starts_with($path, self::PATH_EMPLOYEES);
     }
 

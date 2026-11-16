@@ -232,7 +232,7 @@ final class SettingsValidatorTest extends TestCase
         self::assertSame('', $settings->serverUrl());
         self::assertSame('jwt', $settings->authMethod());
         self::assertSame(60, $settings->cacheMinutes());
-        self::assertSame('Y-m-d', $settings->dateFormat());
+        self::assertSame('d/m/Y', $settings->dateFormat(), 'default: DD/MM/YYYY');
         self::assertSame('', $settings->serverTimezone());
         self::assertSame('', $settings->matchField());
         self::assertSame('employeeid', (new Settings())->matchField());

@@ -16,7 +16,6 @@ use Joomla\CMS\Extension\MVCComponent;
 use Psr\Container\ContainerInterface;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
-use BiotimePortal\Component\Biotime\Administrator\Devices\DeviceService;
 use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
@@ -78,11 +77,6 @@ final class BiotimeComponent extends MVCComponent implements RouterServiceInterf
     public function getAttendanceService(): AttendanceService
     {
         return $this->service(AttendanceService::class);
-    }
-
-    public function getDeviceService(): DeviceService
-    {
-        return $this->service(DeviceService::class);
     }
 
     public function getLogger(): JoomlaLogger

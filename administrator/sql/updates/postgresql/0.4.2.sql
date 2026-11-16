@@ -1,0 +1,1 @@
+-- No schema changes in 0.4.2 (script.php moves Biometric Devices menu items and permission to My Punches).

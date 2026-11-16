@@ -11,6 +11,6 @@
         <action name="zkb.dashboard.view" title="COM_BIOTIME_ACCESS_DASHBOARD_VIEW" description="COM_BIOTIME_ACCESS_DASHBOARD_VIEW_DESC" />
         <action name="zkb.attendance.view" title="COM_BIOTIME_ACCESS_ATTENDANCE_VIEW" description="COM_BIOTIME_ACCESS_ATTENDANCE_VIEW_DESC" />
         <action name="zkb.calendar.view" title="COM_BIOTIME_ACCESS_CALENDAR_VIEW" description="COM_BIOTIME_ACCESS_CALENDAR_VIEW_DESC" />
-        <action name="zkb.devices.view" title="COM_BIOTIME_ACCESS_DEVICES_VIEW" description="COM_BIOTIME_ACCESS_DEVICES_VIEW_DESC" />
+        <action name="zkb.punches.view" title="COM_BIOTIME_ACCESS_PUNCHES_VIEW" description="COM_BIOTIME_ACCESS_PUNCHES_VIEW_DESC" />
     </section>
 </access>

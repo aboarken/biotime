@@ -46,6 +46,10 @@ return new class () implements ServiceProviderInterface {
                     'tmpl/schedules',
                     'tmpl/reports',
                     'tmpl/profile',
+                    // 0.4.2: Biometric Devices replaced by My Punches.
+                    'src/Model/DevicesModel.php',
+                    'src/View/Devices',
+                    'tmpl/devices',
                 ];
 
                 private const OBSOLETE_ADMIN = [
@@ -53,6 +57,8 @@ return new class () implements ServiceProviderInterface {
                     'src/Export',
                     'src/Profile',
                     'lib',
+                    // 0.4.2: the device list went with Biometric Devices.
+                    'src/Devices',
                 ];
 
                 /** Settings rows of removed options. */
@@ -120,6 +126,9 @@ return new class () implements ServiceProviderInterface {
 
                     $db = Factory::getContainer()->get(DatabaseInterface::class);
 
+                    $renamed = $this->renameDevicesMenuItems($db);
+                    $this->copyDevicesPermission($db);
+                    $this->switchDateFormat($db);
                     $trashed = $this->trashObsoleteMenuItems($db);
                     $this->mergeServerPort($db);
                     $this->deleteObsoleteSettings($db);
@@ -128,6 +137,10 @@ return new class () implements ServiceProviderInterface {
 
                     if ($removed > 0) {
                         $app->enqueueMessage(Text::sprintf('COM_BIOTIME_INSTALL_CLEANED_FILES', $removed), 'info');
+                    }
+
+                    if ($renamed > 0) {
+                        $app->enqueueMessage(Text::sprintf('COM_BIOTIME_INSTALL_RENAMED_MENU', $renamed), 'info');
                     }
 
                     if ($trashed > 0) {
@@ -190,6 +203,91 @@ return new class () implements ServiceProviderInterface {
                     }
 
                     return $count;
+                }
+
+                /**
+                 * 0.4.2: Biometric Devices became My Punches. Its menu items keep working: their
+                 * link points to the new page, and the title changes where it was the default one.
+                 */
+                private function renameDevicesMenuItems(DatabaseInterface $db): int
+                {
+                    $old = 'index.php?option=com_biotime&view=devices';
+                    $new = 'index.php?option=com_biotime&view=punches';
+
+                    try {
+                        $db->setQuery(
+                            $db->createQuery()
+                                ->update($db->quoteName('#__menu'))
+                                ->set($db->quoteName('title') . ' = ' . $db->quote('My Punches'))
+                                ->where($db->quoteName('client_id') . ' = 0')
+                                ->where($db->quoteName('link') . ' = :link')
+                                ->where($db->quoteName('title') . ' = ' . $db->quote('Biometric Devices'))
+                                ->bind(':link', $old)
+                        )->execute();
+
+                        $db->setQuery(
+                            $db->createQuery()
+                                ->update($db->quoteName('#__menu'))
+                                ->set($db->quoteName('link') . ' = :new')
+                                ->where($db->quoteName('client_id') . ' = 0')
+                                ->where($db->quoteName('link') . ' = :old')
+                                ->bind(':new', $new)
+                                ->bind(':old', $old)
+                        )->execute();
+
+                        return (int) $db->getAffectedRows();
+                    } catch (\Throwable) {
+                        return 0;
+                    }
+                }
+
+                /** 0.4.2: groups allowed to view Biometric Devices may view My Punches. */
+                private function copyDevicesPermission(DatabaseInterface $db): void
+                {
+                    try {
+                        $rules = (string) $db->setQuery(
+                            $db->createQuery()
+                                ->select($db->quoteName('rules'))
+                                ->from($db->quoteName('#__assets'))
+                                ->where($db->quoteName('name') . ' = ' . $db->quote('com_biotime'))
+                        )->loadResult();
+
+                        $data = json_decode($rules !== '' ? $rules : '{}', true);
+
+                        if (!\is_array($data) || !isset($data['zkb.devices.view']) || isset($data['zkb.punches.view'])) {
+                            return;
+                        }
+
+                        $data['zkb.punches.view'] = $data['zkb.devices.view'];
+                        unset($data['zkb.devices.view']);
+                        $json = json_encode($data);
+
+                        $db->setQuery(
+                            $db->createQuery()
+                                ->update($db->quoteName('#__assets'))
+                                ->set($db->quoteName('rules') . ' = :rules')
+                                ->where($db->quoteName('name') . ' = ' . $db->quote('com_biotime'))
+                                ->bind(':rules', $json)
+                        )->execute();
+                    } catch (\Throwable) {
+                        // Not critical: the permission can be set again under Options.
+                    }
+                }
+
+                /** 0.4.2: dates are shown as DD/MM/YYYY; sites still on the old default switch to it. */
+                private function switchDateFormat(DatabaseInterface $db): void
+                {
+                    try {
+                        $db->setQuery(
+                            $db->createQuery()
+                                ->update($db->quoteName('#__biotime_settings'))
+                                ->set($db->quoteName('value') . ' = ' . $db->quote('d/m/Y'))
+                                ->where($db->quoteName('name') . ' = ' . $db->quote('date_format'))
+                                ->where($db->quoteName('value') . ' = ' . $db->quote('Y-m-d'))
+                        )->execute();
+                    } catch (\Throwable) {
+                        // Not critical: the format can be chosen in Integration Settings.
+                    }
                 }
 
                 /**

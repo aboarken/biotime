@@ -46,9 +46,6 @@ $dir   = static fn ($p): string => match ($p->direction()) {
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></dt><dd><?php echo $check('out'); ?></dd></div>
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></dt><dd><?php echo $e($f->duration($d->span())); ?></dd></div>
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></dt><dd><?php echo LayoutHelper::render('biotime.status', ['day' => $d, 'f' => $f]); ?></dd></div>
-            <?php if ($d->leave !== null) : ?>
-                <div><dt><?php echo Text::_('COM_BIOTIME_COL_LEAVE'); ?></dt><dd><span class="bt-badge bt-tone-blue"><?php echo $e($d->leave); ?></span></dd></div>
-            <?php endif; ?>
         </dl>
     </section>
 
@@ -106,17 +103,4 @@ $dir   = static fn ($p): string => match ($p->direction()) {
         <?php endif; ?>
     </section>
 
-    <?php if ($this->leave !== []) : ?>
-        <section class="bt-panel">
-            <div class="bt-panel-head"><h2 class="bt-panel-title"><?php echo Text::_('COM_BIOTIME_LEAVE'); ?></h2></div>
-            <ul class="bt-list">
-                <?php foreach ($this->leave as $l) : ?>
-                    <li><span class="bt-list-row">
-                        <span><?php echo $e($f->text($l->type) . ' · ' . $f->date($l->start) . ($l->end !== null && $l->end !== $l->start ? ' – ' . $f->date($l->end) : '')); ?></span>
-                        <span class="bt-badge bt-tone-<?php echo $l->status === 'approved' ? 'green' : ($l->status === 'rejected' ? 'red' : 'amber'); ?>"><?php echo $e($l->status !== null ? Text::_('COM_BIOTIME_LEAVE_' . strtoupper($l->status)) : $f->text($l->statusRaw)); ?></span>
-                    </span></li>
-                <?php endforeach; ?>
-            </ul>
-        </section>
-    <?php endif; ?>
 </div>

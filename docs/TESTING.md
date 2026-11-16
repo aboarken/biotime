@@ -21,8 +21,7 @@ vendor/bin/phpunit
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
 | Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form, data sources, no free-form queries, 0.1.x port merged into the URL) | `tests/Unit/SettingsValidatorTest.php` |
 | Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification, administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php` |
-| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; day statuses from the punches (present, checked in, incomplete, absent, weekend, leave; a weekend day with punches loses the weekend tag; configurable weekend days); month summaries (present / absent / incomplete days, rate, average check-in and check-out, time in–out); punch details (verify type, device, serial, area); calculated values when a daily source is set; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
-| Biometric Devices: the terminal list, allow-listed fields only, area as object or text, invalid IP dropped, health from the last activity (online / delayed / offline / unknown), cache, errors | `tests/Unit/DeviceServiceTest.php` |
+| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; day statuses from the punches (present with or without a missing punch, checked in, absent, weekend; a lone punch is the check-in; punches outside the month asked for are skipped; My Punches counts by fingerprint / face, month and device; a weekend day with punches loses the weekend tag; configurable weekend days); month summaries (present / absent / incomplete days, rate, average check-in and check-out, time in–out); punch details (verify type, device, serial, area); calculated values when a daily source is set; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
 | Find Endpoints: OpenAPI and CoreJSON descriptions, list endpoints only, attendance first, the order the description forms are tried, parameter suggestions, field inspection without personal values, field and status suggestions that form a valid source, login paths refused | `tests/Unit/DiscoveryTest.php` |
 | Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
 
@@ -52,8 +51,8 @@ php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
   item types (and that My Schedules, Attendance Reports and My Profile are gone), all four pages
   and day details (status 200, translated, noindex, no other employee's data, check-in and
   check-out with the device, present / incomplete / absent / weekend, no fields the 9.5 API does
-  not provide, exceptions, chart, today card), Biometric Devices (names, locations, health, health
-  filter, no technical details by default), the removed pages answering 404, IDOR attempts,
+  not provide, exceptions, chart, today card), My Punches (fingerprint, face, per month and per device;
+  year lists from 2025), the date filter typed as DD/MM/YYYY, the removed pages answering 404, IDOR attempts,
   390 px without horizontal scrolling on every page, e-mail matching, the "could not be matched"
   page, the User Mappings list, duplicate refusal, manual mapping and Re-match.
 
@@ -111,6 +110,14 @@ passwords, tokens or personal data) with the pull request.
       site (tables `#__biotime_settings` and `#__biotime_audit` removed).
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
+
+### 0.4.2 – Missing Punch, My Punches, DD/MM/YYYY
+- [ ] After the update: a Biometric Devices menu item now opens **My Punches**; *Options → Permissions* shows *View My Punches* with the same groups allowed.
+- [ ] My Attendance: a day with one punch shows that time under Check-In (or Check-Out for a check-out punch), *Missing* under the other, and **Present** plus **Missing Punch**. No *Incomplete* and no *Leave* anywhere.
+- [ ] My Dashboard: 10 cards (6 then 4), all the same size; Monthly Overview counts that day under Present and under Missing Punch; Devices You Used lists every device used in the month.
+- [ ] My Attendance: 8 cards (5 then 3), all the same size; the date filter takes 05/11/2026 as 5 November.
+- [ ] Year lists start at 2025; dates show as DD/MM/YYYY.
+- [ ] My Punches: compare a month's fingerprint and face counts with ZKBioTime's transactions for the same employee.
 
 ### 0.4.0 – Biometric Devices, weekend and absence
 - [ ] After the update: *Menus* — items of My Schedules, Attendance Reports and My Profile are in the trash; *Options → Permissions* lists four portal permissions.

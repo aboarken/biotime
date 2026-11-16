@@ -14,7 +14,14 @@ use Joomla\CMS\Layout\LayoutHelper;
 
 $f      = $this->f;
 $e      = fn (string $text): string => $this->escape($text);
-$legend = ['present', 'checked_in', 'incomplete', 'absent', 'weekend', 'leave'];
+// [status, label]: Missing Punch is a tag on a present day, not a status of its own.
+$legend = [
+    ['present', Text::_('COM_BIOTIME_STATUS_PRESENT')],
+    ['missing_punch', Text::_('COM_BIOTIME_MISSING_PUNCH')],
+    ['checked_in', Text::_('COM_BIOTIME_STATUS_CHECKED_IN')],
+    ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT')],
+    ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND')],
+];
 ?>
 <div class="com-biotime biotime-calendar">
     <div class="bt-head">
@@ -51,6 +58,7 @@ $legend = ['present', 'checked_in', 'incomplete', 'absent', 'weekend', 'leave'];
                             <?php else :
                                 $status = $day->status ?? ($day->punches !== [] ? 'punched' : null);
                                 $label  = $f->weekday($day->weekday()) . ' ' . $f->date($day->date) . ': ' . ($day->status !== null ? $f->status($day) : '—')
+                                    . ($day->missingPunch() ? ', ' . Text::_('COM_BIOTIME_MISSING_PUNCH') : '')
                                     . ($day->checkIn !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_IN') . ' ' . $f->time($day->checkIn) : '')
                                     . ($day->checkOut !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_OUT') . ' ' . $f->time($day->checkOut) : '');
                                 $today  = $day->date === $this->today;
@@ -67,8 +75,9 @@ $legend = ['present', 'checked_in', 'incomplete', 'absent', 'weekend', 'leave'];
                                                 <?php echo LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => 'out', 'compact' => true]); ?>
                                             </span>
                                         <?php endif; ?>
-                                        <?php if ($day->exceptions !== []) : ?>
-                                            <span class="bt-cal-ex" title="<?php echo $e(implode(', ', array_map([$f, 'exception'], $day->exceptions))); ?>">!</span>
+                                        <?php if ($day->missingPunch()) : ?>
+                                            <span class="bt-cal-tag"><?php echo Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span>
+                                            <span class="bt-cal-ex" title="<?php echo $e(Text::_('COM_BIOTIME_MISSING_PUNCH')); ?>">!</span>
                                         <?php endif; ?>
                                     </a>
                                 </td>
@@ -80,8 +89,8 @@ $legend = ['present', 'checked_in', 'incomplete', 'absent', 'weekend', 'leave'];
             </table>
         </div>
         <ul class="bt-legend" aria-label="<?php echo $e(Text::_('COM_BIOTIME_LEGEND')); ?>">
-            <?php foreach ($legend as $status) : ?>
-                <li><span class="bt-badge bt-tone-<?php echo Ui::tone($status); ?>"><span aria-hidden="true"><?php echo Ui::symbol($status); ?></span><?php echo Text::_('COM_BIOTIME_STATUS_' . strtoupper($status)); ?></span></li>
+            <?php foreach ($legend as [$status, $text]) : ?>
+                <li><span class="bt-badge bt-tone-<?php echo Ui::tone($status); ?>"><span aria-hidden="true"><?php echo Ui::symbol($status); ?></span><?php echo $e($text); ?></span></li>
             <?php endforeach; ?>
         </ul>
     </section>

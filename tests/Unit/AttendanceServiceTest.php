@@ -19,7 +19,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Month data: ownership checks (rows of other employees are dropped), per-day schedules, status
- * mapping, day statuses from punches (present, incomplete, absent, weekend), summaries, exceptions,
+ * mapping, day statuses from punches (present with or without a missing punch, absent, weekend),
+ * summaries, punch counts by verification, exceptions,
  * cache and independent failures.
  */
 final class AttendanceServiceTest extends TestCase
@@ -159,12 +160,15 @@ final class AttendanceServiceTest extends TestCase
         self::assertNull($d2->schedule);
         self::assertNull($d2->late);
 
-        self::assertSame('incomplete', $period->day('2026-11-04')->status, 'check-in only, day is over');
+        $d4 = $period->day('2026-11-04');
+        self::assertSame('present', $d4->status, 'check-in only: present ...');
+        self::assertTrue($d4->missingPunch(), '... with the Missing Punch tag');
+        self::assertFalse($d2->missingPunch());
         self::assertSame('absent', $period->day('2026-11-05')->status, 'past working day without punches');
         self::assertSame('absent', $period->day('2026-11-01')->status, 'Sunday is a working day');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-06')->status, 'Friday');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-07')->status, 'Saturday');
-        self::assertSame('leave', $period->day('2026-11-10')->status, 'leave instead of absent');
+        self::assertSame('absent', $period->day('2026-11-10')->status, 'leave is no longer shown: a day without punches is absent');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-20')->status, 'today, a Friday');
         self::assertNull($period->day('2026-11-23')->status, 'future working day: nothing to say yet');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-27')->status, 'future weekend');
@@ -185,7 +189,8 @@ final class AttendanceServiceTest extends TestCase
         self::assertTrue($sat->weekend);
         self::assertTrue($sat->workedOnWeekend());
         self::assertSame('present', $sat->status);
-        self::assertSame('incomplete', $period->day('2026-11-14')->status, 'a weekend day with only a check-in');
+        self::assertSame('present', $period->day('2026-11-14')->status, 'a weekend day with only a check-in');
+        self::assertTrue($period->day('2026-11-14')->missingPunch());
         self::assertSame(2, $period->summary()->weekendWorked);
     }
 
@@ -234,11 +239,11 @@ final class AttendanceServiceTest extends TestCase
         $s = $this->service()->month($this->alice, 2026, 11)->summary();
 
         self::assertSame(15, $s->workingDays, '20 days so far minus 5 weekend days');
-        self::assertSame(3, $s->presentDays);
+        self::assertSame(3, $s->presentDays, 'the missing-punch day counts as present ...');
         self::assertSame(2, $s->completeDays);
-        self::assertSame(1, $s->incompleteDays);
-        self::assertSame(10, $s->absentDays);
-        self::assertSame(2, $s->leaveDays);
+        self::assertSame(1, $s->missingPunchDays, '... and as a missing punch');
+        self::assertSame(12, $s->absentDays);
+        self::assertSame(0, $s->leaveDays);
         self::assertSame(5, $s->weekendDays);
         self::assertSame(0, $s->weekendWorked);
         self::assertSame(20, $s->rate);
@@ -250,6 +255,26 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame('16:00:30', $s->avgCheckOut);
         self::assertSame('07:58:10', $s->firstCheckIn);
         self::assertSame('17:01:00', $s->lastCheckOut);
+    }
+
+    public function testMyPunchesCountsByVerificationMonthAndDevice(): void
+    {
+        $this->zkb->list('/iclock/api/transactions/', [
+            ['emp_code' => 'E1', 'punch_time' => '2026-10-05 07:50:00', 'punch_state_display' => 'Check In', 'verify_type_display' => 'Face', 'terminal_alias' => 'Gate A', 'area_alias' => 'HQ'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-10-05 15:10:00', 'punch_state_display' => 'Unknown', 'verify_type' => 1, 'terminal_alias' => 'Gate B'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-02 07:58:00', 'punch_state_display' => 'Check In', 'verify_type_display' => 'Fingerprint', 'terminal_alias' => 'Gate A'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-02 16:00:00', 'punch_state_display' => 'Check Out', 'verify_type' => 15, 'terminal_alias' => 'Gate A'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-03 08:00:00', 'punch_state_display' => 'Check In', 'verify_type_display' => 'Card'],
+        ]);
+
+        $period = $this->service()->range($this->alice, new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-20'));
+        $stats  = \BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats::of($period->days);
+
+        self::assertSame(['fingerprint' => 2, 'face' => 2, 'other' => 1, 'total' => 5, 'days' => 3], $stats->total);
+        self::assertSame(['fingerprint' => 1, 'face' => 1, 'other' => 0, 'total' => 2, 'days' => 1], $stats->months[10]);
+        self::assertSame(3, $stats->months[11]['total']);
+        self::assertSame(['Gate A', 'Gate B', '—'], array_column($stats->devices, 'device'), 'most used device first');
+        self::assertSame(['fingerprint' => 1, 'face' => 2, 'total' => 3, 'last' => '2026-11-02 16:00:00'], array_intersect_key($stats->devices[0], ['fingerprint' => 0, 'face' => 0, 'total' => 0, 'last' => 0]));
     }
 
     public function testPunchDetailsIncludeHowAndWhere(): void
@@ -345,13 +370,13 @@ final class AttendanceServiceTest extends TestCase
         ]));
         self::assertSame([null, '17:00:00'], AttendanceService::checkTimes([$p('17:00:00', null, '1')]), 'code 1 = check-out when there is no text');
         self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'تسجيل دخول', '0')]), 'unknown text falls back to the code');
-        self::assertSame([null, null], AttendanceService::checkTimes([$p('09:00:00', null)]), 'single punch of unknown state: neither');
+        self::assertSame(['09:00:00', null], AttendanceService::checkTimes([$p('09:00:00', null)]), 'single punch of unknown state: the check-in (check-out missing)');
 
         // As recorded on the real server: "Check In" (state 0) and "Unknown" (state 255).
         self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('15:30:00', 'Unknown', '255')]), 'unknown after check-in is the check-out');
         self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Unknown', '255'), $p('15:30:00', 'Unknown', '255')]));
         self::assertSame(['07:50:00', '17:00:00'], AttendanceService::checkTimes([$p('07:50:00', 'Unknown', '255'), $p('12:00:00', 'Unknown', '255'), $p('17:00:00', 'Check Out', '1')]), 'an explicit check-out wins');
-        self::assertSame([null, null], AttendanceService::checkTimes([$p('15:30:00', 'Unknown', '255')]), 'a lone unknown punch: neither');
+        self::assertSame(['15:30:00', null], AttendanceService::checkTimes([$p('15:30:00', 'Unknown', '255')]), 'a lone unknown punch: the check-in');
         self::assertSame(['07:50:00', null], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('12:00:00', 'Break Out', '2')]), 'a break is not a check-out');
         self::assertSame(['08:00:00', '17:00:00'], AttendanceService::checkTimes([$p('08:00:00', null), $p('17:00:00', null)]), 'unknown states: first and last');
 

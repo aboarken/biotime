@@ -20,11 +20,10 @@ $filters = [
     ''              => Text::_('COM_BIOTIME_FILTER_ALL'),
     'attended'      => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
     'present'       => Text::_('COM_BIOTIME_STATUS_PRESENT'),
-    'incomplete'    => Text::_('COM_BIOTIME_STATUS_INCOMPLETE'),
+    'missingpunch'  => Text::_('COM_BIOTIME_MISSING_PUNCH'),
     'absent'        => Text::_('COM_BIOTIME_STATUS_ABSENT'),
     'weekend'       => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
     'weekendworked' => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
-    'leave'         => Text::_('COM_BIOTIME_STATUS_LEAVE'),
     'exceptions'    => Text::_('COM_BIOTIME_FILTER_EXCEPTIONS'),
     'punches'       => Text::_('COM_BIOTIME_FILTER_PUNCHES'),
     'nopunches'     => Text::_('COM_BIOTIME_FILTER_NO_PUNCHES'),
@@ -37,13 +36,16 @@ foreach ($filters as $value => $label) {
 }
 
 $statusSelect .= '</select>';
-$dateInput     = '<input class="bt-input" type="date" id="bt-date" name="date" value="' . $e($this->date) . '">';
+// A text field in DD/MM/YYYY (a browser date field shows the browser's own order, e.g. MM/DD/YYYY).
+$dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" inputmode="numeric" autocomplete="off" maxlength="10"'
+    . ' pattern="\d{1,2}/\d{1,2}/\d{4}" placeholder="' . $e(Text::_('COM_BIOTIME_DATE_HINT')) . '"'
+    . ' value="' . $e($this->date !== '' ? (new DateTimeImmutable($this->date))->format('d/m/Y') : '') . '">';
 
 // Summary cards: [label, value html, tone, filter]
 $cards = [
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
-    [Text::_('COM_BIOTIME_CARD_INCOMPLETE_DAYS'), (string) $s->incompleteDays, Ui::countTone($s->incompleteDays, 'amber'), 'incomplete'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_PUNCH_DAYS'), (string) $s->missingPunchDays, Ui::countTone($s->missingPunchDays, 'amber'), 'missingpunch'],
     [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'purple'), 'weekendworked'],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', ''],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', ''],
@@ -74,7 +76,7 @@ $cards = [
 
     <?php echo $this->notices($this->period); ?>
 
-    <div class="bt-stats">
+    <div class="bt-stats bt-stats--5">
         <?php foreach ($cards as [$label, $value, $tone, $filter]) :
             $inner = '<span class="bt-stat-label">' . $e($label) . '</span><span class="bt-stat-value">' . $value . '</span>';
             ?>
@@ -118,9 +120,6 @@ $cards = [
                             <td>
                                 <div class="bt-badges">
                                     <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
-                                    <?php if ($day->leave !== null && $day->status !== 'leave') : ?>
-                                        <span class="bt-badge bt-tone-blue"><?php echo $e(Text::_('COM_BIOTIME_STATUS_LEAVE') . ': ' . $day->leave); ?></span>
-                                    <?php endif; ?>
                                     <?php foreach ($day->exceptions as $ex) : ?>
                                         <?php if (!in_array($ex, ['missing_check_in', 'missing_check_out'], true)) : ?>
                                             <span class="bt-badge bt-badge--outline bt-tone-amber"><?php echo $e($f->exception($ex)); ?></span>

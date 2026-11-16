@@ -72,8 +72,8 @@ final class HtmlView extends BaseHtmlView
             }
         }
 
+        // Every device used in the selected month, most used first.
         arsort($this->devices);
-        $this->devices = \array_slice($this->devices, 0, 5, true);
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
         $model->logPage('dashboard', \sprintf('%04d-%02d', $this->year, $this->month));

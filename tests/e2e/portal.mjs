@@ -111,7 +111,7 @@ await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.
 // Menu item types.
 await admin.goto(`${BASE}/administrator/index.php?option=com_menus&view=menutypes&tmpl=component&client_id=0&menutype=mainmenu`, { waitUntil: 'networkidle' });
 const types = await admin.evaluate(() => document.body.textContent);
-for (const t of ['My Dashboard', 'My Attendance', 'Attendance Calendar', 'Biometric Devices']) {
+for (const t of ['My Dashboard', 'My Attendance', 'Attendance Calendar', 'My Punches']) {
   check(types.includes(t), `menu item type "${t}"`);
 }
 for (const t of ['My Schedules', 'Attendance Reports', 'My Profile']) {
@@ -134,7 +134,7 @@ async function login(username) {
   return { ctx, page };
 }
 
-const views = ['dashboard', 'attendance', 'calendar', 'devices'];
+const views = ['dashboard', 'attendance', 'calendar', 'punches'];
 const pageUrl = (q) => `${BASE}/index.php?option=com_biotime&${q}`;
 
 // Guests are sent to the login page.
@@ -158,10 +158,12 @@ let text = await sara.innerText('main, body');
 check(text.includes('07:58') && text.includes('17:02') && text.includes('Main Gate'), 'attendance: check-in / check-out with the device');
 check(!/Schedule|Late-In|Early-Out|Worked Hours|Overtime/.test(text), 'attendance: no fields ZKBioTime 9.5 does not provide');
 check(/Duplicate punch/.test(text), 'attendance: duplicate punch exception');
-check(/Present/.test(text) && /Incomplete/.test(text) && /Weekend/.test(text), 'attendance: present, incomplete and weekend statuses');
+check(/Present/.test(text) && /Missing Punch/.test(text) && /Weekend/.test(text) && !/Incomplete|Leave/.test(text), 'attendance: present, missing punch and weekend; no Incomplete or Leave');
 check(/Absent/.test(text) || Number(new Date().getDate()) <= 2, 'attendance: past working days without punches are absent');
-await sara.goto(pageUrl(`view=attendance&month=${ym}&status=incomplete`), { waitUntil: 'networkidle' });
-check((await sara.locator('table tbody tr').count()) >= 1, 'attendance: status filter (incomplete)');
+await sara.goto(pageUrl(`view=attendance&month=${ym}&status=missingpunch`), { waitUntil: 'networkidle' });
+check((await sara.locator('table tbody tr').count()) >= 1, 'attendance: status filter (missing punch)');
+await sara.goto(pageUrl(`view=attendance&month=${ym}&date=02/${ym.slice(5, 7)}/${ym.slice(0, 4)}`), { waitUntil: 'networkidle' });
+check((await sara.locator('table tbody tr').count()) === 1 && (await sara.inputValue('#bt-date')) === `02/${ym.slice(5, 7)}/${ym.slice(0, 4)}`, 'attendance: date typed as DD/MM/YYYY');
 
 await sara.goto(pageUrl(`view=dashboard&month=${ym}`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
@@ -177,7 +179,7 @@ check(/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard
 await sara.goto(pageUrl(`view=day&date=${ym}-09`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
 check(/Check-In\s*Missing/i.test(text) && /Check-Out\s*↗?\s*17:10/i.test(text), `check-out alone shown under Check-Out (${text.replace(/\s+/g, ' ').slice(0, 200)})`);
-check(/Incomplete/.test(text), 'check-out alone: incomplete day');
+check(/Present/.test(text) && /Missing Punch/.test(text), 'check-out alone: present with a missing punch');
 
 // "Check In" then "Unknown" (state 255), as the real terminals record.
 await sara.goto(pageUrl(`view=day&date=${ym}-12`), { waitUntil: 'networkidle' });
@@ -188,14 +190,13 @@ await sara.goto(pageUrl(`view=day&date=${ym}-03`), { waitUntil: 'networkidle' })
 text = await sara.innerText('body');
 check(/Side Door/.test(text) && /All Punches/.test(text), 'day details: all punches');
 
-// Biometric Devices: names, locations and health; no secrets.
-await sara.goto(pageUrl('view=devices'), { waitUntil: 'networkidle' });
+// My Punches: the user's own punches by fingerprint and face, per month and per device.
+await sara.goto(pageUrl('view=punches'), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
-check(/Main Gate/.test(text) && /Head Office/.test(text) && /Sports Hall/.test(text), 'devices: names and locations');
-check(/Online/.test(text) && /Delayed/.test(text) && /Offline/.test(text), 'devices: health');
-check(!/FIXTURE-SECRET|10\.0\.0\.21|FIXTURE-SN-1/.test(await sara.content()), 'devices: no technical details by default');
-await sara.goto(pageUrl('view=devices&health=offline'), { waitUntil: 'networkidle' });
-check((await sara.locator('table tbody tr').count()) === 1, 'devices: health filter');
+check(/Fingerprint/.test(text) && /Face/.test(text) && /Main Gate/.test(text) && /Punches per Month/.test(text), 'punches: by verification, month and device');
+check(!/OTHER-EMPLOYEE/.test(await sara.content()), 'punches: no other employee\'s data');
+const years = await sara.locator('#bt-y-punches option').allInnerTexts();
+check(years.at(-1) === '2025', `year lists start at 2025 (${years.join(',')})`);
 
 // Removed pages are gone.
 for (const view of ['schedules', 'reports', 'profile']) {
@@ -224,7 +225,7 @@ const { ctx: omarCtx, page: omar } = await login('omar');
 await omar.goto(pageUrl(`view=day&date=${ym}-04`), { waitUntil: 'networkidle' });
 const omarDay = await omar.innerText('body');
 check(omarDay.includes('06:06'), 'omar matched by e-mail sees his own punch');
-check(/Incomplete punch record/.test(omarDay) || new Date(`${ym}-04`) >= new Date(new Date().toDateString()), 'a single punch of unknown state is an incomplete record');
+check(/06:06/.test(omarDay) && /Missing Punch/.test(omarDay) || new Date(`${ym}-04`) >= new Date(new Date().toDateString()), 'a single punch of unknown state is the check-in, with a missing punch');
 await omarCtx.close();
 
 for (const user of ['shared', 'nobody']) {

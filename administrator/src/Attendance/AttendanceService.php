@@ -39,6 +39,10 @@ final class AttendanceService
     public const TX_AREA     = 'area_alias';
     public const TX_VERIFY   = 'verify_type_display';
     public const TX_SN       = 'terminal_sn';
+    public const TX_VERIFY_CODE = 'verify_type';
+
+    /** The first year the portal offers (year lists, month navigation). */
+    public const FIRST_YEAR = 2025;
 
     /** ISO weekdays (1 = Monday … 7 = Sunday) that are weekend days by default: Friday and Saturday. */
     public const DEFAULT_WEEKEND = [5, 6];
@@ -226,7 +230,7 @@ final class AttendanceService
             $derived = $status === null;
 
             if ($derived) {
-                $status = self::dayStatus($date, $today, $weekend, $checkIn, $checkOut, $p !== [], $leaveText !== null);
+                $status = self::dayStatus($date, $today, $weekend, $checkIn, $checkOut, $p !== []);
             }
 
             $day = new Day(
@@ -261,33 +265,28 @@ final class AttendanceService
 
     /**
      * The status of a day without ZKBioTime's calculated status, told from the punches only:
-     *  - leave:      a leave record covers the (working) day and there are no punches;
-     *  - present:    check-in and check-out were both recorded;
+     *  - present:    any punch was recorded: the employee was there. When the check-in or the
+     *                check-out is missing the day also carries the "Missing Punch" tag
+     *                (Day::missingPunch());
      *  - checked_in: today, checked in and not checked out yet;
-     *  - incomplete: punches, but the check-in or the check-out is missing;
      *  - weekend:    a weekend day without punches (a weekend day with punches is treated like any
      *                other day, so the weekend tag disappears);
      *  - absent:     a past working day without any punch;
      *  - null:       today or a future working day without punches (nothing to say yet).
      */
-    public static function dayStatus(string $date, string $today, bool $weekend, ?string $checkIn, ?string $checkOut, bool $hasPunches, bool $onLeave): ?string
+    public static function dayStatus(string $date, string $today, bool $weekend, ?string $checkIn, ?string $checkOut, bool $hasPunches): ?string
     {
         $punched = $hasPunches || $checkIn !== null || $checkOut !== null;
 
         if (!$punched) {
             return match (true) {
                 $weekend       => Day::STATUS_WEEKEND,
-                $onLeave       => 'leave',
                 $date < $today => 'absent',
                 default        => null,
             };
         }
 
-        if ($checkIn !== null && $checkOut !== null) {
-            return 'present';
-        }
-
-        return $date === $today && $checkIn !== null ? Day::STATUS_CHECKED_IN : 'incomplete';
+        return $date === $today && $checkIn !== null && $checkOut === null ? Day::STATUS_CHECKED_IN : 'present';
     }
 
     /**
@@ -358,7 +357,9 @@ final class AttendanceService
                 default            => $this->normaliseLeave($item),
             };
 
-            if ($row === null) {
+            // A punch outside the month asked for (a server that ignored the time filter) would be
+            // counted twice when the next month is read: it is skipped.
+            if ($row === null || ($type === self::TYPE_PUNCHES && substr($row['t'], 0, 7) !== $first->format('Y-m'))) {
                 $stat['skipped']++;
 
                 continue;
@@ -383,7 +384,7 @@ final class AttendanceService
     /**
      * @param array<mixed> $item
      *
-     * @return array{t: string, s: ?string, c: ?string, d: ?string, a: ?string, v: ?string, n: ?string}|null
+     * @return array{t: string, s: ?string, c: ?string, d: ?string, a: ?string, v: ?string, n: ?string, vc: ?string}|null
      */
     private static function normalisePunch(array $item): ?array
     {
@@ -399,7 +400,9 @@ final class AttendanceService
 
         $code = isset($item[self::TX_STATE_CODE]) && is_scalar($item[self::TX_STATE_CODE]) && preg_match('/^\d{1,3}$/', (string) $item[self::TX_STATE_CODE]) ? (string) $item[self::TX_STATE_CODE] : null;
 
-        return ['t' => $time, 's' => $text(self::TX_STATE), 'c' => $code, 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA), 'v' => $text(self::TX_VERIFY), 'n' => $text(self::TX_SN)];
+        $verifyCode = isset($item[self::TX_VERIFY_CODE]) && is_scalar($item[self::TX_VERIFY_CODE]) && preg_match('/^\d{1,3}$/', (string) $item[self::TX_VERIFY_CODE]) ? (string) $item[self::TX_VERIFY_CODE] : null;
+
+        return ['t' => $time, 's' => $text(self::TX_STATE), 'c' => $code, 'd' => $text(self::TX_DEVICE), 'a' => $text(self::TX_AREA), 'v' => $text(self::TX_VERIFY), 'n' => $text(self::TX_SN), 'vc' => $verifyCode];
     }
 
     /**
@@ -460,11 +463,12 @@ final class AttendanceService
      * Check-in and check-out from one day's punches (in time order), exactly as recorded, when
      * ZKBioTime's calculated times are not available. Punches whose state is unknown (e.g. state
      * 255 "Unknown", as many terminals record) are used only where no explicit punch exists:
-     *  - check-in: the first check-in punch; else the first unknown punch that has a later punch;
+     *  - check-in: the first check-in punch; else the first (earliest) unknown punch, even when it
+     *    is the only punch of the day (the check-out is then missing);
      *  - check-out: the last check-out punch after the check-in; else the last unknown punch after
      *    the check-in;
-     *  - break punches are ignored; a check-out is never shown as check-in; a single punch of
-     *    unknown state is shown under neither (it stays in the punch list as incomplete).
+     *  - break punches are ignored; a check-out is never shown as check-in (a lone check-out
+     *    punch gives a check-out and a missing check-in).
      *
      * @param list<Punch> $punches
      *
@@ -486,7 +490,7 @@ final class AttendanceService
 
         if ($inIdx === null) {
             foreach ($punches as $i => $punch) {
-                if ($punch->direction() === null && $i < $last) {
+                if ($punch->direction() === null) {
                     $inIdx = $i;
 
                     break;
