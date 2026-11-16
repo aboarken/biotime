@@ -52,7 +52,6 @@ final class AttendanceService
 
     public const TYPE_PUNCHES = 'punches';
     public const TYPE_DAILY   = 'daily';
-    public const TYPE_LEAVE   = 'leave';
 
     /** @var \Closure(): \DateTimeImmutable */
     private \Closure $clock;
@@ -69,8 +68,6 @@ final class AttendanceService
     public function __construct(
         private readonly \Closure $clientFactory,
         private readonly SourceConfig $daily,
-        private readonly SourceConfig $leave,
-        private readonly bool $leaveEnabled,
         private readonly UserCacheInterface $cache,
         private readonly LoggerInterface $logger,
         private readonly \DateTimeZone $serverZone,
@@ -102,11 +99,6 @@ final class AttendanceService
         return $this->daily;
     }
 
-    public function leaveEnabled(): bool
-    {
-        return $this->leaveEnabled && $this->leave->isConfigured();
-    }
-
     public function month(Identity $identity, int $year, int $month): Period
     {
         $first = self::firstOfMonth($year, $month);
@@ -126,12 +118,12 @@ final class AttendanceService
             [$from, $to] = [$to, $from];
         }
 
-        $data = [self::TYPE_PUNCHES => [], self::TYPE_DAILY => [], self::TYPE_LEAVE => []];
+        $data = [self::TYPE_PUNCHES => [], self::TYPE_DAILY => []];
         $errors = $truncated = [];
         $fetched = null;
 
         for ($m = $from->modify('first day of this month'); $m <= $to; $m = $m->modify('first day of next month')) {
-            foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY, self::TYPE_LEAVE] as $type) {
+            foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY] as $type) {
                 $part = $this->monthRows($identity, $type, (int) $m->format('Y'), (int) $m->format('n'));
 
                 if ($part['error'] !== null) {
@@ -195,9 +187,6 @@ final class AttendanceService
             $rows[$row['date']] ??= $row;
         }
 
-        $leave = array_map(fn (array $row): LeaveRecord => LeaveRecord::fromCache($row, $this->leave), $data[self::TYPE_LEAVE]);
-        usort($leave, static fn (LeaveRecord $a, LeaveRecord $b): int => $a->start <=> $b->start);
-
         $today = $this->today();
         $days  = [];
 
@@ -206,24 +195,12 @@ final class AttendanceService
             $p    = $punches[$date] ?? [];
             $row  = $rows[$date] ?? null;
 
-            $leaveText = $row['leave'] ?? null;
-
-            if ($leaveText === null) {
-                foreach ($leave as $record) {
-                    if ($record->covers($date) && $record->status !== 'rejected') {
-                        $leaveText = $record->type ?? '—';
-
-                        break;
-                    }
-                }
-            }
-
             $checkIn  = $row['check_in'] ?? null;
             $checkOut = $row['check_out'] ?? null;
             $fromPunches = false;
 
             if ($checkIn === null && $checkOut === null && $p !== []) {
-                // ZKBioTime gave no calculated times: use the punches, by their state.
+                // ZKBioTime gave no calculated times: use the punches, by the time of day.
                 [$checkIn, $checkOut] = self::checkTimes($p);
                 $fromPunches          = true;
             }
@@ -254,7 +231,6 @@ final class AttendanceService
                 isset($row['overtime']) ? (int) $row['overtime'] : null,
                 $status,
                 $row['status'] ?? null,
-                $leaveText,
                 $weekend,
                 $derived
             );
@@ -263,7 +239,7 @@ final class AttendanceService
             $days[] = $day;
         }
 
-        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $leave, $this->daily, $this->leave, $errors, $truncated, $fetched, $today);
+        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $this->daily, $errors, $truncated, $fetched, $today);
     }
 
     /**
@@ -319,12 +295,6 @@ final class AttendanceService
             return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => null];
         }
 
-        if ($type === self::TYPE_LEAVE && !$this->leaveEnabled()) {
-            $stat['state'] = $this->leaveEnabled ? 'not configured' : 'module off';
-
-            return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => null];
-        }
-
         $key    = $type . ':' . \sprintf('%04d-%02d', $year, $month);
         $cached = $this->cache->get($identity, $key);
 
@@ -342,8 +312,7 @@ final class AttendanceService
             $client = ($this->clientFactory)();
             $result = match ($type) {
                 self::TYPE_PUNCHES => $client->transactions($identity->empCode(), $first->setTime(0, 0, 0), $last->setTime(23, 59, 59)),
-                self::TYPE_DAILY   => $client->sourceRows($this->daily, $identity->empCode(), $first, $last),
-                default            => $client->sourceRows($this->leave, $identity->empCode(), $first, $last),
+                default            => $client->sourceRows($this->daily, $identity->empCode(), $first, $last),
             };
         } catch (ZkbException $e) {
             $stat['error'] = $e->getKind();
@@ -357,7 +326,7 @@ final class AttendanceService
         foreach ($result->items as $item) {
             $code = $type === self::TYPE_PUNCHES
                 ? (isset($item[self::TX_EMP_CODE]) && is_scalar($item[self::TX_EMP_CODE]) ? (string) $item[self::TX_EMP_CODE] : null)
-                : ($type === self::TYPE_DAILY ? $this->daily : $this->leave)->value($item, 'emp_code');
+                : $this->daily->value($item, 'emp_code');
 
             if ($code !== $identity->empCode()) {
                 $hidden++;
@@ -367,8 +336,7 @@ final class AttendanceService
 
             $row = match ($type) {
                 self::TYPE_PUNCHES => self::normalisePunch($item),
-                self::TYPE_DAILY   => $this->normaliseDaily($item, $first, $last),
-                default            => $this->normaliseLeave($item),
+                default            => $this->normaliseDaily($item, $first, $last),
             };
 
             // A punch outside the month asked for (a server that ignored the time filter) would be
@@ -434,7 +402,7 @@ final class AttendanceService
 
         $row = ['date' => $date];
 
-        foreach (['schedule', 'break', 'schedule_note', 'status', 'leave'] as $field) {
+        foreach (['schedule', 'break', 'schedule_note', 'status'] as $field) {
             $row[$field] = $this->daily->value($item, $field);
         }
 
@@ -447,30 +415,6 @@ final class AttendanceService
         }
 
         return array_filter($row, static fn ($v) => $v !== null);
-    }
-
-    /**
-     * @param array<mixed> $item
-     *
-     * @return array<string, ?string>|null
-     */
-    private function normaliseLeave(array $item): ?array
-    {
-        $start = self::date($this->leave->value($item, 'start'));
-
-        if ($start === null) {
-            return null;
-        }
-
-        $end = self::date($this->leave->value($item, 'end'));
-
-        return [
-            'start'    => $start,
-            'end'      => $end !== null && $end >= $start ? $end : null,
-            'type'     => $this->leave->value($item, 'type'),
-            'duration' => $this->leave->value($item, 'duration'),
-            'status'   => $this->leave->value($item, 'status'),
-        ];
     }
 
     /**

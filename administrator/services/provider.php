@@ -136,8 +136,6 @@ return new class () implements ServiceProviderInterface {
                 return new AttendanceService(
                     $client($c),
                     $settings->source('daily'),
-                    $settings->source('leave'),
-                    $settings->moduleEnabled('leave'),
                     $c->get(UserCacheInterface::class),
                     $c->get(JoomlaLogger::class),
                     $zone($c),

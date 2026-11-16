@@ -21,7 +21,7 @@ $types  = [
     'date' => 'COM_BIOTIME_ENDPOINTS_TYPE_DATE', 'datetime' => 'COM_BIOTIME_ENDPOINTS_TYPE_DATETIME', 'time' => 'COM_BIOTIME_ENDPOINTS_TYPE_TIME',
     'number' => 'COM_BIOTIME_ENDPOINTS_TYPE_NUMBER', 'bool' => 'COM_BIOTIME_ENDPOINTS_TYPE_BOOL', 'text' => 'COM_BIOTIME_ENDPOINTS_TYPE_TEXT', 'empty' => 'COM_BIOTIME_ENDPOINTS_TYPE_EMPTY',
 ];
-$portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceConfig::LEAVE_FIELDS : SourceConfig::DAILY_FIELDS;
+$portalFields = static fn (string $kind): array => SourceConfig::DAILY_FIELDS;
 ?>
 <div class="biotime-endpoints">
     <p><?php echo Text::_('COM_BIOTIME_ENDPOINTS_INTRO'); ?></p>
@@ -75,7 +75,7 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
                 <input type="hidden" name="view" value="endpoints">
                 <div class="col-auto">
                     <label class="form-label" for="biotime-filter"><?php echo Text::_('JSEARCH_FILTER'); ?></label>
-                    <input class="form-control" id="biotime-filter" name="filter" value="<?php echo $e($this->filter); ?>" placeholder="att, report, leave">
+                    <input class="form-control" id="biotime-filter" name="filter" value="<?php echo $e($this->filter); ?>" placeholder="att, report">
                 </div>
                 <div class="col-auto form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="biotime-all" name="all" value="1" <?php echo $this->showAll ? 'checked' : ''; ?>>
@@ -136,13 +136,7 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
             <input class="form-control" id="biotime-path" name="path" required pattern="(/[A-Za-z0-9_\-]+)+/" value="<?php echo $e($form['path']); ?>" placeholder="/…/api/…/" list="biotime-paths">
             <datalist id="biotime-paths"><?php foreach (($this->catalog['endpoints'] ?? []) as $ep) : ?><option value="<?php echo $e($ep['path']); ?>"></option><?php endforeach; ?></datalist>
         </div>
-        <div class="col-6 col-lg-2">
-            <label class="form-label" for="biotime-kind"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_KIND'); ?></label>
-            <select class="form-select" id="biotime-kind" name="kind">
-                <option value="daily" <?php echo $form['kind'] === 'daily' ? 'selected' : ''; ?>><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_DAILY'); ?></option>
-                <option value="leave" <?php echo $form['kind'] === 'leave' ? 'selected' : ''; ?>><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_LEAVE'); ?></option>
-            </select>
-        </div>
+        <input type="hidden" name="kind" value="daily">
         <div class="col-6 col-lg-2">
             <label class="form-label" for="biotime-emp"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_EMP_CODE'); ?></label>
             <input class="form-control" id="biotime-emp" name="emp_code" maxlength="30" value="<?php echo $e($form['emp_code']); ?>">
@@ -233,16 +227,16 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
                 <div class="col-12 col-lg-6">
                     <label class="form-label" for="biotime-fields"><?php echo Text::_('COM_BIOTIME_SETTINGS_SOURCE_FIELDS'); ?></label>
                     <textarea class="form-control font-monospace" id="biotime-fields" name="fields" rows="12"><?php echo $e($fieldsText); ?></textarea>
-                    <div class="form-text"><?php echo Text::_($kind === 'leave' ? 'COM_BIOTIME_SETTINGS_LEAVE_FIELDS_DESC' : 'COM_BIOTIME_SETTINGS_DAILY_FIELDS_DESC'); ?></div>
+                    <div class="form-text"><?php echo Text::_('COM_BIOTIME_SETTINGS_DAILY_FIELDS_DESC'); ?></div>
                 </div>
                 <div class="col-12 col-lg-6">
                     <label class="form-label" for="biotime-status"><?php echo Text::_('COM_BIOTIME_SETTINGS_SOURCE_STATUS_MAP'); ?></label>
                     <textarea class="form-control font-monospace" id="biotime-status" name="status_map" rows="8"><?php echo $e($statusText); ?></textarea>
-                    <div class="form-text"><?php echo Text::_($kind === 'leave' ? 'COM_BIOTIME_SETTINGS_LEAVE_STATUS_MAP_DESC' : 'COM_BIOTIME_SETTINGS_DAILY_STATUS_MAP_DESC'); ?></div>
+                    <div class="form-text"><?php echo Text::_('COM_BIOTIME_SETTINGS_DAILY_STATUS_MAP_DESC'); ?></div>
                     <label class="form-label mt-2" for="biotime-unit"><?php echo Text::_('COM_BIOTIME_SETTINGS_SOURCE_UNIT'); ?></label>
                     <select class="form-select" id="biotime-unit" name="duration_unit">
                         <option value="minutes"><?php echo Text::_('COM_BIOTIME_SETTINGS_UNIT_MINUTES'); ?></option>
-                        <option value="hours" <?php echo $kind === 'leave' ? 'selected' : ''; ?>><?php echo Text::_('COM_BIOTIME_SETTINGS_UNIT_HOURS'); ?></option>
+                        <option value="hours"><?php echo Text::_('COM_BIOTIME_SETTINGS_UNIT_HOURS'); ?></option>
                         <option value="seconds"><?php echo Text::_('COM_BIOTIME_SETTINGS_UNIT_SECONDS'); ?></option>
                     </select>
                     <label class="form-label mt-2" for="biotime-extra"><?php echo Text::_('COM_BIOTIME_SETTINGS_SOURCE_EXTRA'); ?></label>
@@ -250,7 +244,7 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
                 </div>
             </div>
             <p class="small text-muted mt-2"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_REVIEW'); ?></p>
-            <button class="btn btn-success" type="submit"><?php echo Text::_($kind === 'leave' ? 'COM_BIOTIME_ENDPOINTS_USE_LEAVE' : 'COM_BIOTIME_ENDPOINTS_USE_DAILY'); ?></button>
+            <button class="btn btn-success" type="submit"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_USE_DAILY'); ?></button>
         </form>
         <?php endif; ?>
     <?php endif; ?>

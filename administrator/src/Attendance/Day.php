@@ -72,7 +72,6 @@ final class Day
         public readonly ?int $overtime,
         public readonly ?string $status,
         public readonly ?string $statusRaw,
-        public readonly ?string $leave,
         public readonly bool $weekend = false,
         public readonly bool $statusFromPunches = false
     ) {

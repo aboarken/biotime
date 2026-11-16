@@ -24,7 +24,7 @@ use Joomla\CMS\Router\Route;
 
 /**
  * Find Endpoints: read the server's API list, check one endpoint (field names and kinds only,
- * plus status texts), and save it as the Daily Attendance or Leave Source. Every task needs POST,
+ * plus status texts), and save it as the Daily Attendance Source. Every task needs POST,
  * a valid CSRF token and core.admin; only GET requests are sent to ZKBioTime.
  */
 final class EndpointsController extends BaseController
@@ -70,7 +70,7 @@ final class EndpointsController extends BaseController
         }
 
         $in    = $this->input->post;
-        $kind  = $in->getCmd('kind', 'daily') === 'leave' ? 'leave' : 'daily';
+        $kind  = 'daily';
         $path  = trim($in->getString('path', ''));
         $param = static fn (string $v, string $d): string => preg_match('/^[a-z][a-z0-9_]{0,39}$/', $v) ? $v : $d;
         $emp   = $param(trim($in->getString('param_emp', '')), 'emp_code');
@@ -175,7 +175,6 @@ final class EndpointsController extends BaseController
                 'Login method'          => $settings->get('auth_method') ?: '—',
                 'Connect via set'       => $settings->get('connect_via') !== '' ? 'yes' : 'no',
                 'Daily source API path' => $settings->get('daily_path') ?: '(empty)',
-                'Leave source API path' => $settings->get('leave_path') ?: '(empty)',
             ]);
         } catch (ZkbException $e) {
             $report = 'ZKBioTime portal diagnostics' . "\n" . 'FAILED before the first request: ' . $e->getKind();
@@ -201,14 +200,14 @@ final class EndpointsController extends BaseController
     }
 
     /**
-     * Save the reviewed values as the Daily Attendance or Leave Source.
+     * Save the reviewed values as the Daily Attendance Source.
      */
     public function save(): void
     {
         $this->guard();
 
         $in   = $this->input->post;
-        $kind = $in->getCmd('kind', 'daily') === 'leave' ? 'leave' : 'daily';
+        $kind = 'daily';
         $raw  = [];
 
         foreach (['path', 'param_emp', 'param_from', 'param_to', 'date_format', 'extra', 'fields', 'duration_unit', 'status_map'] as $name) {
@@ -244,7 +243,7 @@ final class EndpointsController extends BaseController
         ]);
 
         $this->component()->getAuditLog()->record($this->actorId(), 'settings.source', AuditLogInterface::RESULT_OK, $kind . ' ' . $source->path);
-        $this->app->enqueueMessage(Text::_($kind === 'daily' ? 'COM_BIOTIME_ENDPOINTS_SAVED_DAILY' : 'COM_BIOTIME_ENDPOINTS_SAVED_LEAVE'), 'success');
+        $this->app->enqueueMessage(Text::_('COM_BIOTIME_ENDPOINTS_SAVED_DAILY'), 'success');
         $this->setRedirect(Route::_('index.php?option=com_biotime&view=integrationsettings', false));
     }
 

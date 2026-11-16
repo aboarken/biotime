@@ -35,7 +35,6 @@ final class AttendanceServiceTest extends TestCase
     private Identity $alice;
 
     private const DAILY_PATH = '/att/api/fixture_daily/';
-    private const LEAVE_PATH = '/att/api/fixture_leave/';
 
     protected function setUp(): void
     {
@@ -64,11 +63,6 @@ final class AttendanceServiceTest extends TestCase
             ['emp' => ['code' => 'E1'], 'att_date' => '2026-11-07', 'state' => 'Weekend'],
             ['emp' => ['code' => 'E2'], 'att_date' => '2026-11-04', 'shift' => 'BOB-SHIFT', 'state' => 'Late'],
         ]);
-
-        $this->zkb->list(self::LEAVE_PATH, [
-            ['emp_code' => 'E1', 'start' => '2026-11-10', 'end' => '2026-11-11', 'leave_type' => 'Annual', 'hours' => '16', 'approval' => 'Approved'],
-            ['emp_code' => 'E2', 'start' => '2026-11-12', 'leave_type' => 'BOB-LEAVE', 'approval' => 'Approved'],
-        ]);
     }
 
     private function daily(): SourceConfig
@@ -80,23 +74,13 @@ final class AttendanceServiceTest extends TestCase
         ]);
     }
 
-    private function leave(): SourceConfig
-    {
-        return SourceConfig::parse('leave', [
-            'path' => self::LEAVE_PATH, 'fields' => "emp_code = emp_code\nstart = start\nend = end\ntype = leave_type\nduration = hours\nstatus = approval",
-            'status_map' => 'Approved = approved', 'duration_unit' => 'hours',
-        ]);
-    }
-
-    private function service(?SourceConfig $daily = null, bool $leave = true, int $ttl = 300): AttendanceService
+    private function service(?SourceConfig $daily = null, int $ttl = 300): AttendanceService
     {
         $empty = SourceConfig::parse('daily', []);
 
         return new AttendanceService(
             fn () => Fakes::client($this->zkb),
             $daily ?? $empty,
-            $leave ? $this->leave() : SourceConfig::parse('leave', []),
-            $leave,
             Fakes::cache($this->session, $ttl),
             $this->log,
             new \DateTimeZone('Asia/Riyadh'),
@@ -124,7 +108,6 @@ final class AttendanceServiceTest extends TestCase
         $all = serialize($period);
         self::assertStringNotContainsString('BOB-SECRET', $all);
         self::assertStringNotContainsString('BOB-SHIFT', $all);
-        self::assertStringNotContainsString('BOB-LEAVE', $all);
         self::assertSame([], $period->day('2026-11-05')->punches);
         self::assertNull($period->day('2026-11-04')->schedule);
         self::assertTrue($this->log->has('warning', 'rows of other employees'));
@@ -168,7 +151,7 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame('absent', $period->day('2026-11-01')->status, 'Sunday is a working day');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-06')->status, 'Friday');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-07')->status, 'Saturday');
-        self::assertSame('absent', $period->day('2026-11-10')->status, 'leave is no longer shown: a day without punches is absent');
+        self::assertSame('absent', $period->day('2026-11-10')->status, 'a past working day without punches');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-20')->status, 'today, a Friday');
         self::assertNull($period->day('2026-11-23')->status, 'future working day: nothing to say yet');
         self::assertSame(Day::STATUS_WEEKEND, $period->day('2026-11-27')->status, 'future weekend');
@@ -201,8 +184,6 @@ final class AttendanceServiceTest extends TestCase
         $service = new AttendanceService(
             fn () => Fakes::client($this->zkb),
             SourceConfig::parse('daily', []),
-            SourceConfig::parse('leave', []),
-            false,
             Fakes::cache($this->session),
             $this->log,
             new \DateTimeZone('Asia/Riyadh'),
@@ -226,8 +207,6 @@ final class AttendanceServiceTest extends TestCase
         $service = new AttendanceService(
             fn () => Fakes::client($this->zkb),
             SourceConfig::parse('daily', []),
-            SourceConfig::parse('leave', []),
-            false,
             Fakes::cache($this->session),
             $this->log,
             new \DateTimeZone('Asia/Riyadh'),
@@ -247,8 +226,6 @@ final class AttendanceServiceTest extends TestCase
         $service = new AttendanceService(
             fn () => Fakes::client($this->zkb),
             SourceConfig::parse('daily', []),
-            SourceConfig::parse('leave', []),
-            false,
             Fakes::cache($this->session),
             $this->log,
             new \DateTimeZone('Asia/Riyadh'),
@@ -270,7 +247,6 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame(2, $s->completeDays);
         self::assertSame(1, $s->missingPunchDays, '... and as a missing punch');
         self::assertSame(12, $s->absentDays);
-        self::assertSame(0, $s->leaveDays);
         self::assertSame(5, $s->weekendDays);
         self::assertSame(0, $s->weekendWorked);
         self::assertSame(20, $s->rate);
@@ -330,20 +306,6 @@ final class AttendanceServiceTest extends TestCase
         self::assertNull($plain->day('2026-11-04')->checkOut);
     }
 
-    public function testLeaveIsReadWhenEnabledAndShownOnItsDays(): void
-    {
-        $period = $this->service($this->daily())->month($this->alice, 2026, 11);
-
-        self::assertCount(1, $period->leave);
-        self::assertSame(['Annual', 960, 'approved'], [$period->leave[0]->type, $period->leave[0]->durationMinutes, $period->leave[0]->status]);
-        self::assertSame('Annual', $period->day('2026-11-11')->leave);
-
-        $this->zkb->calls = [];
-        $this->session    = [];
-        $this->service($this->daily(), false)->month($this->alice, 2026, 11);
-        self::assertSame([], $this->zkb->queries(self::LEAVE_PATH), 'leave module off: no call');
-    }
-
     public function testMonthIsCachedPerUserAndEmployee(): void
     {
         $this->service($this->daily())->month($this->alice, 2026, 11);
@@ -358,7 +320,7 @@ final class AttendanceServiceTest extends TestCase
         self::assertGreaterThan($calls, \count($this->zkb->calls));
 
         $this->zkb->calls = [];
-        $this->service($this->daily(), true, 0)->month($this->alice, 2026, 11);
+        $this->service($this->daily(), 0)->month($this->alice, 2026, 11);
         self::assertNotSame([], $this->zkb->calls, 'cache time 0 reads again');
     }
 

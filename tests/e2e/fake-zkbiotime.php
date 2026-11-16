@@ -5,7 +5,7 @@
  * Joomla pages and cURL transport without a real server. It answers the forms documented in
  * docs/API-MAPPING.md (all UNVERIFIED until checked on a real 9.5 server) and holds invented
  * fixture data only. The two /att/api/fixture_* paths do not exist in ZKBioTime: they stand in for
- * whatever endpoint the administrator configures as the daily and leave source. Never deploy it.
+ * whatever endpoint the administrator configures as the daily source. Never deploy it.
  *
  * Run: php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
  *
@@ -74,7 +74,6 @@ if (\in_array($path, ['/api/docs/', '/api/personnel_docs/'], true)) {
             'transactions' => ['list' => $link('/iclock/api/transactions/', 'Transactions', 'emp_code', 'start_time', 'end_time')],
             'att'          => [
                 'fixture_daily' => ['list' => $link('/att/api/fixture_daily/', 'Fixture daily attendance', 'emp_code', 'start_date', 'end_date')],
-                'fixture_leave' => ['list' => $link('/att/api/fixture_leave/', 'Fixture leave', 'emp_code', 'start_date', 'end_date')],
             ]];
 
     http_response_code(200);
@@ -152,15 +151,6 @@ if ($path === '/att/api/fixture_daily/') {
         ['employee' => ['emp_code' => 'FIXTURE2'], 'att_date' => "$ym-06", 'timetable' => 'OTHER-EMPLOYEE-SHIFT', 'att_status' => 'Normal'],
     ];
     $page(array_filter($rows, static fn ($r) => $r['att_date'] >= ($q['start_date'] ?? '') && $r['att_date'] <= ($q['end_date'] ?? '9999')));
-
-    return true;
-}
-
-if ($path === '/att/api/fixture_leave/') {
-    $page([
-        ['emp_code' => 'FIXTURE1', 'start' => "$ym-10", 'end' => "$ym-11", 'category' => 'Annual Leave', 'days' => '16', 'approval' => 'Approved'],
-        ['emp_code' => 'FIXTURE2', 'start' => "$ym-12", 'category' => 'OTHER-EMPLOYEE-LEAVE', 'approval' => 'Approved'],
-    ]);
 
     return true;
 }

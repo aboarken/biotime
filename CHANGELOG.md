@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.4] - 2026-11-16
+
+### Added
+- My Dashboard → **Recent Activity**: a **Note** column at the end shows *! Missing Punch* for days whose check-in or check-out is missing (the Status column keeps the status only).
+
+### Removed
+- **Leave Source** and the **Leave information** switch (*Integration Settings*), and *Save as Leave Source* in Find Endpoints: leave has not been shown since 0.4.2, but a configured leave source was still read from ZKBioTime on every page. Updating deletes the stored leave settings. "leave" is no longer a daily status or daily field.
+- Code and strings left over from removed features: the leave record class, punch-state direction detection (the time of day decides check-in and check-out since 0.4.3), unused view helpers, the "Use for" list in Find Endpoints, unused styles (lists, pills, panel footers), the leave endpoint of the test server, and outdated items in the testing checklist.
+
 ## [0.4.3] - 2026-11-16
 
 ### Changed

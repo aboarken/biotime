@@ -52,7 +52,6 @@ final class SettingsValidatorTest extends TestCase
             'match_field'     => 'employeeid',
             'auto_match'      => '1',
             'module_charts'   => '1',
-            'module_leave'    => '1',
         ];
     }
 
@@ -274,11 +273,11 @@ final class SettingsValidatorTest extends TestCase
         yield 'sql in extra' => [['daily_extra' => 'q = SELECT * FROM x'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_EXTRA'];
         yield 'paging in extra' => [['daily_extra' => 'page = 2'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_EXTRA'];
         yield 'punch list as daily source' => [['daily_path' => '/iclock/api/transactions/', 'daily_fields' => "emp_code = emp_code\ndate = punch_time"], 'COM_BIOTIME_SETTINGS_DAILY_ERR_BUILTIN'];
-        yield 'employee list as leave source' => [['leave_path' => '/personnel/api/employees/', 'leave_fields' => "emp_code = emp_code\nstart = hire_date"], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_BUILTIN'];
+        yield 'employee list as daily source' => [['daily_path' => '/personnel/api/employees/', 'daily_fields' => "emp_code = emp_code\ndate = hire_date"], 'COM_BIOTIME_SETTINGS_DAILY_ERR_BUILTIN'];
         yield 'bad param' => [['daily_param_emp' => 'Emp Code'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_PARAM'];
         yield 'bad status' => [['daily_status_map' => 'Late = tardy'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_STATUS_MAP'];
-        yield 'bad leave status' => [['leave_status_map' => 'OK = present'], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_STATUS_MAP'];
-        yield 'no separator' => [['leave_fields' => 'no separator'], 'COM_BIOTIME_SETTINGS_LEAVE_ERR_LINE'];
+        yield 'leave is no daily status' => [['daily_status_map' => 'Leave = leave'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_STATUS_MAP'];
+        yield 'no separator' => [['daily_fields' => 'no separator'], 'COM_BIOTIME_SETTINGS_DAILY_ERR_LINE'];
         yield 'match field' => [['match_field' => 'employee id!'], 'COM_BIOTIME_SETTINGS_ERR_MATCH_FIELD'];
         yield 'cache' => [['cache_minutes' => '61'], 'COM_BIOTIME_SETTINGS_ERR_CACHE'];
         yield 'time zone' => [['server_timezone' => 'Nowhere/City'], 'COM_BIOTIME_SETTINGS_ERR_TIMEZONE'];

@@ -108,14 +108,6 @@ trait PortalViewTrait
         return $this->url('view=' . $view . '&' . http_build_query(['month' => $first->format('Y-m')] + $extra));
     }
 
-    /** @return array{0: int, 1: int} */
-    public function shiftMonth(int $by): array
-    {
-        $d = (new \DateTimeImmutable(\sprintf('%04d-%02d-01', $this->year, $this->month)))->modify(($by >= 0 ? '+' : '') . $by . ' month');
-
-        return [(int) $d->format('Y'), (int) $d->format('n')];
-    }
-
     public function monthTitle(): string
     {
         return $this->f->monthName($this->month) . ' ' . $this->year;
@@ -131,18 +123,6 @@ trait PortalViewTrait
             'updated' => $this->updatedText($period->fetchedAt),
             'weekend' => $this->weekendText,
         ]);
-    }
-
-    /** The device a check-in or check-out (time "HH:MM:SS") was recorded on; "" when unknown. */
-    public function deviceAt(\BiotimePortal\Component\Biotime\Administrator\Attendance\Day $day, ?string $time): string
-    {
-        if ($time === null) {
-            return '';
-        }
-
-        $punch = $day->punchAt($time);
-
-        return $punch?->device ?? '';
     }
 
     public function errorText(?string $kind): string

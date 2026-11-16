@@ -239,12 +239,12 @@ final class SettingsValidator
         $values['match_field'] = $matchField;
 
         // Employee mapping and modules.
-        foreach (['auto_match', 'module_charts', 'module_leave'] as $flag) {
+        foreach (['auto_match', 'module_charts'] as $flag) {
             $values[$flag] = self::flag($input[$flag] ?? '0') ? '1' : '0';
         }
 
-        // Data sources for calculated attendance and leave (paths, parameter and field names only).
-        foreach (['daily', 'leave'] as $kind) {
+        // Data source for calculated attendance (paths, parameter and field names only).
+        foreach (['daily'] as $kind) {
             $raw = [];
 
             foreach (['path', 'param_emp', 'param_from', 'param_to', 'date_format', 'extra', 'fields', 'duration_unit', 'status_map'] as $name) {

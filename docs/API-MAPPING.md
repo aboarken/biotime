@@ -36,9 +36,10 @@ punches, check-in and check-out, the device, area and verification of each punch
 devices themselves. Fields only ZKBioTime calculates (schedule, late-in, early-out, worked hours,
 overtime) are no longer shown. The day's status (Present, with a Missing Punch tag when needed;
 Checked In, Absent, Weekend) is told from the punches and the weekend days set in Integration Settings (see
-*Day statuses* below). The Daily Attendance and Leave Sources stay **CONFIGURED** (empty by
+*Day statuses* below). The Daily Attendance Source stays **CONFIGURED** (empty by
 default) for a ZKBioTime that offers such an endpoint; a calculated status from the daily
-source is used instead of the punch-based one. Leave is no longer shown (0.4.2).
+source is used instead of the punch-based one. Leave is no longer shown (0.4.2) and the Leave
+Source was removed (0.4.4).
 
 The client still reports anything unexpected instead of guessing:
 
@@ -159,8 +160,7 @@ whether they answer and their field names and kinds, and reads nothing from them
 | `schedule_note` | Temporary or changed schedule marker (shown as text) | |
 | `check_in`, `check_out` | ZKBioTime's first check-in / last check-out | |
 | `late`, `early`, `worked`, `overtime` | Durations (unit set in the settings; `HH:MM` also read) | |
-| `status` | ZKBioTime's calculated status, mapped to present / late / early / absent / leave / holiday / rest / incomplete / other | |
-| `leave` | Leave on that day (text) | |
+| `status` | ZKBioTime's calculated status, mapped to present / late / early / absent / holiday / rest / incomplete / other | |
 
 Values not mapped show "—". Joomla never calculates them. Rows whose `emp_code` differs from the
 mapped employee are dropped and logged.
@@ -168,20 +168,6 @@ mapped employee are dropped and logged.
 | Server | Endpoint chosen | Field names | Status |
 |---|---|---|---|
 | School's ZKBioTime 9.5 | none: BioTime 9.5 has no such API | — | not available |
-
-## Leave — CONFIGURED
-
-*Integration Settings → Leave Source.* Same request form as the daily source.
-
-| Portal field | Meaning | Required |
-|---|---|---|
-| `emp_code` | Employee code (ownership check) | yes |
-| `start`, `end` | Leave dates | `start` |
-| `type` | Leave type | |
-| `duration` | Duration (unit set in the settings, or shown as text) | |
-| `status` | Approval status, mapped to approved / pending / rejected | |
-
-No leave requests and no approval actions: read only.
 
 ## List envelope and paging — VERIFIED
 
@@ -218,5 +204,4 @@ then the page says results were cut off and a warning is logged.
   the portal's punch rule above, not ZKBioTime's calculated statuses; holidays are not known and
   a public holiday without punches shows as Absent. The time between check-in and check-out is
   the difference of the two punches, not ZKBioTime's worked hours.
-- Leave appears only if the installed ZKBioTime offers it in its API and the leave source is set.
 - Holidays and rest days are shown only as ZKBioTime's calculated status of a date.
