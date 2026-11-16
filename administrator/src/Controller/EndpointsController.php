@@ -14,6 +14,7 @@ use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Discovery\Diagnostics;
 use BiotimePortal\Component\Biotime\Administrator\Discovery\FieldInspector;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use Joomla\CMS\Access\Exception\NotAllowed;
@@ -30,6 +31,7 @@ final class EndpointsController extends BaseController
 {
     public const STATE_CATALOG = 'com_biotime.endpoints.catalog';
     public const STATE_CHECK   = 'com_biotime.endpoints.check';
+    public const STATE_DIAG    = 'com_biotime.endpoints.diagnostics';
 
     private const URL = 'index.php?option=com_biotime&view=endpoints';
 
@@ -132,6 +134,70 @@ final class EndpointsController extends BaseController
         $this->audit(AuditLogInterface::RESULT_OK, 'check ' . $path . ' rows ' . \count($page->items));
         $this->app->enqueueMessage(Text::sprintf('COM_BIOTIME_ENDPOINTS_CHECKED', \count($page->items), \count($fields)), \count($page->items) > 0 ? 'success' : 'warning');
         $this->setRedirect(Route::_(self::URL . '#biotime-check', false));
+    }
+
+    /**
+     * Diagnostics: every check in one run, as a text report to copy (paths, results, field names
+     * and kinds only).
+     */
+    public function diagnose(): void
+    {
+        $this->guard();
+
+        if (!$this->allowed()) {
+            return;
+        }
+
+        $in   = $this->input->post;
+        $code = trim($in->getString('emp_code', ''));
+
+        if ($code !== '') {
+            try {
+                $code = ZkbClient::empCode($code);
+            } catch (\InvalidArgumentException) {
+                $this->app->enqueueMessage(Text::_('COM_BIOTIME_MAPPING_ERR_CODE'), 'warning');
+                $this->setRedirect(Route::_(self::URL . '#biotime-diag', false));
+
+                return;
+            }
+        }
+
+        $from      = $this->date($in->getString('from', '')) ?? new \DateTimeImmutable('first day of this month');
+        $to        = $this->date($in->getString('to', '')) ?? new \DateTimeImmutable('today');
+        $component = $this->component();
+        $settings  = $component->getSettingsRepository()->load();
+
+        try {
+            $client = $component->getClientFactory()->create();
+            $report = Diagnostics::run($client, $code !== '' ? $code : null, $from, $to, [
+                'Component version'     => $this->version(),
+                'Joomla / PHP'          => JVERSION . ' / ' . PHP_VERSION,
+                'Login method'          => $settings->get('auth_method') ?: '—',
+                'Connect via set'       => $settings->get('connect_via') !== '' ? 'yes' : 'no',
+                'Daily source API path' => $settings->get('daily_path') ?: '(empty)',
+                'Leave source API path' => $settings->get('leave_path') ?: '(empty)',
+            ]);
+        } catch (ZkbException $e) {
+            $report = 'ZKBioTime portal diagnostics' . "\n" . 'FAILED before the first request: ' . $e->getKind();
+        }
+
+        $this->app->setUserState(self::STATE_DIAG, ['report' => $report, 'emp_code' => $code, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')]);
+        $this->audit(AuditLogInterface::RESULT_OK, 'diagnostics');
+        $this->app->enqueueMessage(Text::_('COM_BIOTIME_DIAG_DONE'), 'success');
+        $this->setRedirect(Route::_(self::URL . '#biotime-diag', false));
+    }
+
+    private function version(): string
+    {
+        $db    = \Joomla\CMS\Factory::getContainer()->get(\Joomla\Database\DatabaseInterface::class);
+        $query = $db->createQuery()
+            ->select($db->quoteName('manifest_cache'))
+            ->from($db->quoteName('#__extensions'))
+            ->where($db->quoteName('element') . ' = ' . $db->quote('com_biotime'))
+            ->where($db->quoteName('type') . ' = ' . $db->quote('component'));
+        $cache = json_decode((string) $db->setQuery($query)->loadResult(), true);
+
+        return \is_array($cache) && \is_string($cache['version'] ?? null) ? $cache['version'] : '—';
     }
 
     /**

@@ -100,6 +100,17 @@ answer HTTP 200 with a web page, which the portal reports as "not API data".
 | Check | `GET <selected path>?page=1&page_size=20&<filters>`; only field names, kinds of values and status-like texts are shown |
 | Source | ZKBioTime administrator's manual (pages `/api/docs/` and `/api/personnel_docs/`); format to be confirmed on the 9.5 server |
 
+## Diagnostics candidates — UNVERIFIED
+
+The 9.5 server under test lists only personnel endpoints in its API description (10, checked
+2026-11-16): no attendance, report or leave endpoint, not even `/iclock/api/transactions/`,
+which works. Diagnostics (*Find Endpoints*) therefore also checks these paths, reports only
+whether they answer and their field names and kinds, and reads nothing from them otherwise:
+
+| Path | Parameters sent | Source | Status |
+|---|---|---|---|
+| `/att/api/totalTimeCardReport/` | `start_date`, `end_date` (`YYYY-MM-DD`), `emp_code` when given, `page`, `page_size` | BioTimeCloud API User Manual 1.0 (Aug 2023), "Att API" | UNVERIFIED on 9.5 — `ZkbClient::DIAG_ATT_PATHS` |
+
 ## Calculated daily attendance and schedules — CONFIGURED
 
 *Integration Settings → Daily Attendance Source.* The administrator picks a read-only endpoint

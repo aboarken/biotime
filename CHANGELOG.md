@@ -3,6 +3,14 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.3.3] - 2026-11-16
+
+### Added
+- **Diagnostics** (*Find Endpoints*, at the top): one button runs every check from the Joomla server: the connection, the API list, the punch endpoint and the calculated-attendance endpoints (those in the API list plus `/att/api/totalTimeCardReport/`, from ZKTeco's BioTimeCloud API manual, unverified on 9.5). It shows one plain-text report with a **Copy report** button. The report holds only paths, results (HTTP status and ZKBioTime's message), row counts, field names, kinds of values and status texts: no credentials, tokens, names, employee codes or times. Super User only, POST with CSRF token, counted in the 60 checks per hour, audited.
+
+### Changed
+- When the API list holds no attendance, report or leave endpoints (as on the school's server, which lists only personnel endpoints), Find Endpoints says so instead of "listed first".
+
 ## [0.3.2] - 2026-11-16
 
 ### Fixed

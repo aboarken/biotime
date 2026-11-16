@@ -26,6 +26,37 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
 <div class="biotime-endpoints">
     <p><?php echo Text::_('COM_BIOTIME_ENDPOINTS_INTRO'); ?></p>
 
+    <?php $diag = $this->diagnostics; ?>
+    <section class="card mb-4" id="biotime-diag">
+        <div class="card-body">
+            <h2 class="h4 card-title"><?php echo Text::_('COM_BIOTIME_DIAG_TITLE'); ?></h2>
+            <p><?php echo Text::_('COM_BIOTIME_DIAG_INTRO'); ?></p>
+            <form method="post" action="<?php echo $action; ?>" class="row g-2 align-items-end">
+                <input type="hidden" name="task" value="endpoints.diagnose">
+                <?php echo $token; ?>
+                <div class="col-12 col-md-3">
+                    <label class="form-label" for="biotime-diag-emp"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_EMP_CODE'); ?></label>
+                    <input class="form-control" id="biotime-diag-emp" name="emp_code" maxlength="30" value="<?php echo $e($diag['emp_code'] ?? ''); ?>">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="biotime-diag-from"><?php echo Text::_('COM_BIOTIME_REPORT_FROM'); ?></label>
+                    <input class="form-control" type="date" id="biotime-diag-from" name="from" value="<?php echo $e($diag['from'] ?? date('Y-m-01')); ?>">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="biotime-diag-to"><?php echo Text::_('COM_BIOTIME_REPORT_TO'); ?></label>
+                    <input class="form-control" type="date" id="biotime-diag-to" name="to" value="<?php echo $e($diag['to'] ?? date('Y-m-d')); ?>">
+                </div>
+                <div class="col-12 col-md-3"><button class="btn btn-primary w-100" type="submit" id="biotime-diag-run"><span class="icon-wrench" aria-hidden="true"></span> <?php echo Text::_('COM_BIOTIME_DIAG_RUN'); ?></button></div>
+            </form>
+            <?php if ($diag !== null) : ?>
+                <label class="form-label mt-3" for="biotime-diag-report"><?php echo Text::_('COM_BIOTIME_DIAG_REPORT'); ?></label>
+                <textarea class="form-control font-monospace small" id="biotime-diag-report" rows="18" readonly><?php echo $e($diag['report']); ?></textarea>
+                <button class="btn btn-secondary mt-2" type="button" id="biotime-diag-copy" data-done="<?php echo $e(Text::_('COM_BIOTIME_DIAG_COPIED')); ?>"><span class="icon-copy" aria-hidden="true"></span> <?php echo Text::_('COM_BIOTIME_DIAG_COPY'); ?></button>
+                <p class="small text-muted mt-2 mb-0"><?php echo Text::_('COM_BIOTIME_DIAG_PRIVACY'); ?></p>
+            <?php endif; ?>
+        </div>
+    </section>
+
     <h2 class="h4"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_STEP1'); ?></h2>
     <form method="post" action="<?php echo $action; ?>" class="mb-3">
         <input type="hidden" name="task" value="endpoints.catalog">
@@ -37,7 +68,8 @@ $portalFields = static fn (string $kind): array => $kind === 'leave' ? SourceCon
         <?php if ($this->catalog['error'] !== null) : ?>
             <div class="alert alert-warning"><?php echo Text::_('COM_BIOTIME_ENDPOINTS_NO_DOCS'); ?></div>
         <?php else : ?>
-            <p class="small text-muted"><?php echo Text::sprintf('COM_BIOTIME_ENDPOINTS_SOURCES', $e(implode(', ', $this->catalog['sources'])), count($this->catalog['endpoints'])); ?></p>
+            <?php $anyLikely = array_filter($this->catalog['endpoints'], static fn (array $ep): bool => $ep['relevant']) !== []; ?>
+            <p class="small text-muted"><?php echo Text::sprintf($anyLikely ? 'COM_BIOTIME_ENDPOINTS_SOURCES' : 'COM_BIOTIME_ENDPOINTS_SOURCES_NONE', $e(implode(', ', $this->catalog['sources'])), count($this->catalog['endpoints'])); ?></p>
             <form method="get" action="<?php echo Route::_('index.php'); ?>" class="row g-2 align-items-end mb-2">
                 <input type="hidden" name="option" value="com_biotime">
                 <input type="hidden" name="view" value="endpoints">
