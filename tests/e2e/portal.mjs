@@ -163,7 +163,12 @@ check(/Absent/.test(text) || Number(new Date().getDate()) <= 2, 'attendance: pas
 await sara.goto(pageUrl(`view=attendance&month=${ym}&status=missingpunch`), { waitUntil: 'networkidle' });
 check((await sara.locator('table tbody tr').count()) >= 1, 'attendance: status filter (missing punch)');
 await sara.goto(pageUrl(`view=attendance&month=${ym}&date=02/${ym.slice(5, 7)}/${ym.slice(0, 4)}`), { waitUntil: 'networkidle' });
-check((await sara.locator('table tbody tr').count()) === 1 && (await sara.inputValue('#bt-date')) === `02/${ym.slice(5, 7)}/${ym.slice(0, 4)}`, 'attendance: date typed as DD/MM/YYYY');
+check((await sara.locator('table tbody tr').count()) === 1 && (await sara.inputValue('#bt-date')) === `02/${ym.slice(5, 7)}/${ym.slice(0, 4)}`, 'attendance: date filter in DD/MM/YYYY');
+check(!(await sara.title()).includes('|'), `page title uses " - " (${await sara.title()})`);
+await sara.click('#bt-date');
+check(await sara.locator('.bt-datepicker-pop').isVisible() && await sara.locator('#bt-date').evaluate((el) => el.readOnly), 'attendance: date picker opens, field not typed into');
+await Promise.all([sara.waitForNavigation({ waitUntil: 'networkidle' }), sara.locator('.bt-datepicker-day', { hasText: /^3$/ }).first().click()]);
+check((await sara.inputValue('#bt-date')) === `03/${ym.slice(5, 7)}/${ym.slice(0, 4)}`, 'attendance: choosing a day in the date picker filters to it');
 
 await sara.goto(pageUrl(`view=dashboard&month=${ym}`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');

@@ -67,13 +67,33 @@ trait PortalViewTrait
         $this->zone            = $model->zoneLabel();
         $this->weekendText     = implode(', ', array_map(fn (int $d): string => $this->f->weekday($d), $model->attendance()->weekendDays()));
 
-        $this->setDocumentTitle($title);
+        $this->setPortalTitle($title);
 
         $document = $this->getDocument();
         $document->setMetaData('robots', 'noindex, nofollow');
         $document->getWebAssetManager()->getRegistry()->addExtensionRegistryFile('com_biotime');
         $document->getWebAssetManager()->useStyle('com_biotime.portal');
         $document->getWebAssetManager()->useScript('com_biotime.filters');
+        $document->getWebAssetManager()->useScript('com_biotime.datepicker');
+    }
+
+    /**
+     * The browser title, with the site name before or after it as the Global Configuration asks
+     * (Site Name in Page Titles), always joined with " - " (never the language's own separator,
+     * which can be "|").
+     */
+    public function setPortalTitle(string $title): void
+    {
+        $app  = Factory::getApplication();
+        $site = trim((string) $app->get('sitename', ''));
+
+        $title = match ($site === '' ? 0 : (int) $app->get('sitename_pagetitles', 0)) {
+            1       => $site . ' - ' . $title,
+            2       => $title . ' - ' . $site,
+            default => $title,
+        };
+
+        $this->getDocument()->setTitle($title);
     }
 
     public function url(string $query): string

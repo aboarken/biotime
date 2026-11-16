@@ -138,14 +138,44 @@ $days = array_sum(array_column($bar, 1));
 
         <section class="bt-panel">
             <?php echo $panelHead(Text::_('COM_BIOTIME_DEVICES_USED')); ?>
-            <?php if ($this->devices === []) : ?>
+            <?php $ps = $this->punchStats; $other = $ps->total['other'] > 0; ?>
+            <?php if ($ps->devices === []) : ?>
                 <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_DEVICES_USED_NONE'); ?></p>
             <?php else : ?>
-                <ul class="bt-list">
-                    <?php foreach ($this->devices as $name => $n) : ?>
-                        <li><span class="bt-list-row"><span><?php echo $e((string) $name); ?></span><span class="bt-pill bt-tone-blue" title="<?php echo $e(Text::plural('COM_BIOTIME_N_PUNCHES', $n)); ?>"><?php echo (int) $n; ?></span></span></li>
-                    <?php endforeach; ?>
-                </ul>
+                <div class="bt-table-wrap">
+                    <table class="bt-table">
+                        <caption class="visually-hidden"><?php echo Text::_('COM_BIOTIME_DEVICES_USED'); ?></caption>
+                        <thead>
+                            <tr>
+                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DEVICE'); ?></th>
+                                <th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_VERIFY_FINGERPRINT'); ?></th>
+                                <th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_VERIFY_FACE'); ?></th>
+                                <?php if ($other) : ?><th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_VERIFY_OTHER'); ?></th><?php endif; ?>
+                                <th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_COL_TOTAL'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($ps->devices as $d) : ?>
+                            <tr>
+                                <th scope="row"><?php echo $e($d['device']); ?></th>
+                                <td class="bt-num"><?php echo (int) $d['fingerprint']; ?></td>
+                                <td class="bt-num"><?php echo (int) $d['face']; ?></td>
+                                <?php if ($other) : ?><td class="bt-num"><?php echo (int) $d['other']; ?></td><?php endif; ?>
+                                <td class="bt-num"><strong><?php echo (int) $d['total']; ?></strong></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bt-row-total">
+                                <th scope="row"><?php echo Text::_('COM_BIOTIME_COL_TOTAL'); ?></th>
+                                <td class="bt-num"><?php echo (int) $ps->total['fingerprint']; ?></td>
+                                <td class="bt-num"><?php echo (int) $ps->total['face']; ?></td>
+                                <?php if ($other) : ?><td class="bt-num"><?php echo (int) $ps->total['other']; ?></td><?php endif; ?>
+                                <td class="bt-num"><?php echo (int) $ps->total['total']; ?></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             <?php endif; ?>
         </section>
     </div>
@@ -163,6 +193,7 @@ $days = array_sum(array_column($bar, 1));
                     <thead>
                         <tr>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DATE'); ?></th>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DAY'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
@@ -172,8 +203,8 @@ $days = array_sum(array_column($bar, 1));
                     <tbody>
                     <?php foreach ($this->recent as $day) : ?>
                         <tr class="<?php echo $day->weekend ? 'bt-row-weekend' : ''; ?><?php echo $day->date === $this->today ? ' bt-row-today' : ''; ?>">
-                            <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a>
-                                <span class="bt-sub"><?php echo $e($f->weekday($day->weekday())); ?></span></th>
+                            <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a></th>
+                            <td><?php echo $e($f->weekday($day->weekday())); ?></td>
                             <td><?php echo $check($day, 'in'); ?></td>
                             <td><?php echo $check($day, 'out'); ?></td>
                             <td><?php echo $e($f->duration($day->span())); ?></td>

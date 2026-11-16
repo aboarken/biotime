@@ -19,6 +19,7 @@ $legend = [
     ['present', Text::_('COM_BIOTIME_STATUS_PRESENT')],
     ['missing_punch', Text::_('COM_BIOTIME_MISSING_PUNCH')],
     ['checked_in', Text::_('COM_BIOTIME_STATUS_CHECKED_IN')],
+    ['checked_out', Text::_('COM_BIOTIME_STATUS_CHECKED_OUT')],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT')],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND')],
 ];
@@ -67,7 +68,7 @@ $legend = [
                                     <a href="<?php echo $this->url('view=day&date=' . $day->date); ?>" aria-label="<?php echo $e($label); ?>"<?php echo $today ? ' aria-current="date"' : ''; ?>>
                                         <span class="bt-cal-num"><?php echo (int) substr($day->date, 8, 2); ?></span>
                                         <?php if ($status !== null) : ?>
-                                            <span class="bt-cal-status"><span class="bt-cal-sym" aria-hidden="true"><?php echo Ui::symbol($status); ?></span><span class="bt-cal-label"><?php echo $e($status === 'punched' ? Text::_('COM_BIOTIME_STATUS_PUNCHED') : $f->status($day)); ?></span></span>
+                                            <span class="bt-cal-status"><span class="bt-cal-sym" aria-hidden="true"><?php echo Ui::symbol($status); ?></span><span class="bt-cal-label"><?php echo in_array($status, ['checked_in', 'checked_out'], true) ? '<span aria-hidden="true">' . Ui::symbol($status) . '</span> ' : ''; ?><?php echo $e($status === 'punched' ? Text::_('COM_BIOTIME_STATUS_PUNCHED') : $f->status($day)); ?></span></span>
                                         <?php endif; ?>
                                         <?php if ($day->checkIn !== null || $day->checkOut !== null || $day->punches !== []) : ?>
                                             <span class="bt-cal-times">

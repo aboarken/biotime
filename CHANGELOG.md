@@ -3,6 +3,16 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.3] - 2026-11-16
+
+### Changed
+- **Check-in before 12:00, check-out from 12:00.** The time of day now decides, whatever state the device recorded: the first punch before 12:00 is the check-in and the last punch from 12:00 on is the check-out. A day with only an afternoon punch shows it under Check-Out (check-in *Missing*), never under Check-In.
+- **Checked Out**: today shows Checked In (↘) after the check-in and Checked Out (↗) after the check-out, with the same arrows as the times; both are in the calendar legend.
+- **Date picker** on My Attendance: the date field opens a month calendar (in the portal's design, DD/MM/YYYY, weeks from Monday, keyboard friendly) instead of being typed into; choosing a day filters at once.
+- **Page titles** always join the site name with " - " (as set in *Site Name in Page Titles*), never with "|".
+- My Dashboard: **Devices You Used** shows fingerprint, face and total punches per device with a total row; **Recent Activity** has a Day column (e.g. Sunday).
+- Day details: the punch table marks only the punches counted as check-in and check-out.
+
 ## [0.4.2] - 2026-11-16
 
 ### Changed

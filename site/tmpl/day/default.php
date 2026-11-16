@@ -15,12 +15,6 @@ $f     = $this->f;
 $d     = $this->day;
 $e     = fn (string $text): string => $this->escape($text);
 $check = fn (string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $d, 'f' => $f, 'type' => $type, 'device' => true]);
-$dir   = static fn ($p): string => match ($p->direction()) {
-    'in'    => Text::_('COM_BIOTIME_DIRECTION_IN'),
-    'out'   => Text::_('COM_BIOTIME_DIRECTION_OUT'),
-    'break' => Text::_('COM_BIOTIME_DIRECTION_BREAK'),
-    default => '—',
-};
 ?>
 <div class="com-biotime biotime-day">
     <?php if ($this->canAttendance) : ?><a class="bt-back" href="<?php echo $this->monthUrl('attendance', $this->year, $this->month); ?>">&larr; <?php echo Text::_('COM_BIOTIME_BACK_ATTENDANCE'); ?></a><?php endif; ?>
@@ -89,7 +83,7 @@ $dir   = static fn ($p): string => match ($p->direction()) {
                                 <?php elseif ($p->time === $d->checkOut) : ?>
                                     <span class="bt-badge bt-tone-blue"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></span>
                                 <?php else : ?>
-                                    <span class="bt-badge bt-tone-muted"><?php echo $e($dir($p)); ?></span>
+                                    <span class="bt-check-none">—</span>
                                 <?php endif; ?>
                             </td>
                             <td><?php echo $e($f->text($p->verify)); ?></td>

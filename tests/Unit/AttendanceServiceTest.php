@@ -213,6 +213,33 @@ final class AttendanceServiceTest extends TestCase
 
         self::assertSame(Day::STATUS_CHECKED_IN, $day->status);
         self::assertNotContains(Day::EX_MISSING_OUT, $day->exceptions, 'the day is not over');
+        self::assertFalse($day->missingPunch(), 'the check-out may still come');
+    }
+
+    public function testTodayWithACheckOutIsCheckedOut(): void
+    {
+        $this->zkb->list('/iclock/api/transactions/', [
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-19 07:40:00', 'punch_state_display' => 'Check In'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-19 14:05:00', 'punch_state_display' => 'Check In'],
+        ]);
+
+        $service = new AttendanceService(
+            fn () => Fakes::client($this->zkb),
+            SourceConfig::parse('daily', []),
+            SourceConfig::parse('leave', []),
+            false,
+            Fakes::cache($this->session),
+            $this->log,
+            new \DateTimeZone('Asia/Riyadh'),
+            static fn () => new \DateTimeImmutable('2026-11-19 15:00:00', new \DateTimeZone('Asia/Riyadh')),
+            [5, 6]
+        );
+        $day = $service->month($this->alice, 2026, 11)->day('2026-11-19');
+
+        self::assertSame(['07:40:00', '14:05:00'], [$day->checkIn, $day->checkOut], 'the 14:05 punch is the check-out');
+        self::assertSame(Day::STATUS_CHECKED_OUT, $day->status);
+        self::assertFalse($day->missingPunch());
+        self::assertContains(Day::STATUS_CHECKED_OUT, Day::ATTENDED);
     }
 
     public function testWeekendDaysAreConfigurable(): void
@@ -355,30 +382,21 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame('2026-10-25', $period->from);
     }
 
-    /** A check-out punch is never shown as check-in (reported on a real site). */
-    public function testCheckOutAloneIsNotShownAsCheckIn(): void
+    /** The time of day decides: before 12:00 check-in, from 12:00 check-out (whatever state the device recorded). */
+    public function testCheckInBeforeNoonCheckOutFromNoon(): void
     {
         $p = static fn (string $t, ?string $state, ?string $code = null): Punch => new Punch('2026-11-02', $t, $state, null, null, $code);
 
         self::assertSame([null, '17:00:00'], AttendanceService::checkTimes([$p('17:00:00', 'Check Out')]));
-        self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'Check In')]));
-        self::assertSame(['08:00:00', '17:00:00'], AttendanceService::checkTimes([
-            $p('08:00:00', 'Check In'), $p('12:00:00', 'Break Out'), $p('13:00:00', 'Break In'), $p('17:00:00', 'Check Out'),
-        ]), 'break punches are ignored');
-        self::assertSame(['08:00:00', '19:30:00'], AttendanceService::checkTimes([
-            $p('08:00:00', 'Check In'), $p('17:00:00', 'Check Out'), $p('18:00:00', 'Overtime In'), $p('19:30:00', 'Overtime Out'),
-        ]));
-        self::assertSame([null, '17:00:00'], AttendanceService::checkTimes([$p('17:00:00', null, '1')]), 'code 1 = check-out when there is no text');
-        self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'تسجيل دخول', '0')]), 'unknown text falls back to the code');
-        self::assertSame(['09:00:00', null], AttendanceService::checkTimes([$p('09:00:00', null)]), 'single punch of unknown state: the check-in (check-out missing)');
-
-        // As recorded on the real server: "Check In" (state 0) and "Unknown" (state 255).
-        self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('15:30:00', 'Unknown', '255')]), 'unknown after check-in is the check-out');
-        self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Unknown', '255'), $p('15:30:00', 'Unknown', '255')]));
-        self::assertSame(['07:50:00', '17:00:00'], AttendanceService::checkTimes([$p('07:50:00', 'Unknown', '255'), $p('12:00:00', 'Unknown', '255'), $p('17:00:00', 'Check Out', '1')]), 'an explicit check-out wins');
-        self::assertSame(['15:30:00', null], AttendanceService::checkTimes([$p('15:30:00', 'Unknown', '255')]), 'a lone unknown punch: the check-in');
-        self::assertSame(['07:50:00', null], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('12:00:00', 'Break Out', '2')]), 'a break is not a check-out');
-        self::assertSame(['08:00:00', '17:00:00'], AttendanceService::checkTimes([$p('08:00:00', null), $p('17:00:00', null)]), 'unknown states: first and last');
+        self::assertSame([null, '15:30:00'], AttendanceService::checkTimes([$p('15:30:00', 'Check In', '0')]), 'an afternoon "Check In" punch is the check-out');
+        self::assertSame(['08:00:00', null], AttendanceService::checkTimes([$p('08:00:00', 'Check Out', '1')]), 'a morning "Check Out" punch is the check-in');
+        self::assertSame(['11:59:59', '12:00:00'], AttendanceService::checkTimes([$p('11:59:59', null), $p('12:00:00', null)]), '11:59 is a check-in, 12:00 a check-out');
+        self::assertSame(['07:50:00', '17:00:00'], AttendanceService::checkTimes([
+            $p('07:50:00', 'Check In'), $p('07:51:00', 'Check In'), $p('12:30:00', 'Break Out'), $p('13:00:00', 'Break In'), $p('17:00:00', 'Check Out'),
+        ]), 'first morning punch and last afternoon punch');
+        self::assertSame(['07:50:00', '15:30:00'], AttendanceService::checkTimes([$p('07:50:00', 'Check In', '0'), $p('15:30:00', 'Unknown', '255')]));
+        self::assertSame(['09:00:00', null], AttendanceService::checkTimes([$p('09:00:00', null)]));
+        self::assertSame([null, null], AttendanceService::checkTimes([]));
 
         // Through the whole service: the day shows only a check-out and says check-in is missing.
         $this->zkb->list('/iclock/api/transactions/', [['emp_code' => 'E1', 'punch_time' => '2026-11-09 17:05:00', 'punch_state_display' => 'Check Out']]);

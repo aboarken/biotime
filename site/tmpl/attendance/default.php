@@ -36,9 +36,20 @@ foreach ($filters as $value => $label) {
 }
 
 $statusSelect .= '</select>';
-// A text field in DD/MM/YYYY (a browser date field shows the browser's own order, e.g. MM/DD/YYYY).
-$dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" inputmode="numeric" autocomplete="off" maxlength="10"'
+// A date picker in DD/MM/YYYY (media/com_biotime/js/datepicker.js); a browser date field would show
+// the browser's own order, e.g. MM/DD/YYYY. Month and weekday names are passed in translated.
+$dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" autocomplete="off" maxlength="10" data-bt-datepicker'
     . ' pattern="\d{1,2}/\d{1,2}/\d{4}" placeholder="' . $e(Text::_('COM_BIOTIME_DATE_HINT')) . '"'
+    . ' data-months="' . $e(implode(',', array_map([$f, 'monthName'], range(1, 12)))) . '"'
+    . ' data-days="' . $e(implode(',', array_map(static fn (int $d): string => $f->weekday($d, true), range(1, 7)))) . '"'
+    . ' data-min="01/01/' . \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR . '"'
+    . ' data-labels="' . $e((string) json_encode([
+        'choose' => Text::_('COM_BIOTIME_DATE_CHOOSE'),
+        'prev'   => Text::_('COM_BIOTIME_PREV_MONTH'),
+        'next'   => Text::_('COM_BIOTIME_NEXT_MONTH'),
+        'today'  => Text::_('COM_BIOTIME_DATE_TODAY'),
+        'clear'  => Text::_('COM_BIOTIME_DATE_CLEAR'),
+    ])) . '"'
     . ' value="' . $e($this->date !== '' ? (new DateTimeImmutable($this->date))->format('d/m/Y') : '') . '">';
 
 // Summary cards: [label, value html, tone, filter]

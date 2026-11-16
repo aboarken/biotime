@@ -19,6 +19,7 @@ final class Ui
     private const STATUS_TONES = [
         'present'    => 'green',
         'checked_in' => 'teal',
+        'checked_out' => 'blue',
         'late'       => 'amber',
         'early'      => 'amber',
         'incomplete' => 'amber',
@@ -35,7 +36,8 @@ final class Ui
     /** A symbol per status, so the calendar can show it in a narrow phone cell (with the legend). */
     private const STATUS_SYMBOLS = [
         'present'    => '✓',
-        'checked_in' => '→',
+        'checked_in' => '↘',
+        'checked_out' => '↗',
         'late'       => '⏱',
         'early'      => '↧',
         'incomplete' => '!',

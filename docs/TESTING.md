@@ -111,6 +111,13 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.4.3 – Check-in before 12:00, check-out from 12:00, date picker
+- [ ] A day whose only punch is in the afternoon shows it under **Check-Out** (check-in *Missing*); a morning punch recorded as "Check Out" shows under **Check-In**.
+- [ ] Today shows Checked In (↘) after the morning punch and Checked Out (↗) after an afternoon punch; both are in the calendar legend.
+- [ ] My Attendance → Date: clicking opens a calendar; choosing a day shows DD/MM/YYYY and filters at once; the field cannot be typed into.
+- [ ] The browser tab reads "My Attendance - Site name" (or as set in Site Name in Page Titles), never with "|".
+- [ ] Dashboard: Devices You Used has Fingerprint, Face, Total and a total row; Recent Activity has a Day column.
+
 ### 0.4.2 – Missing Punch, My Punches, DD/MM/YYYY
 - [ ] After the update: a Biometric Devices menu item now opens **My Punches**; *Options → Permissions* shows *View My Punches* with the same groups allowed.
 - [ ] My Attendance: a day with one punch shows that time under Check-In (or Check-Out for a check-out punch), *Missing* under the other, and **Present** plus **Missing Punch**. No *Incomplete* and no *Leave* anywhere.

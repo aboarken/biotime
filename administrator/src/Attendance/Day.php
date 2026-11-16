@@ -26,12 +26,13 @@ final class Day
     /** Statuses only the portal sets (when ZKBioTime gives no calculated status). */
     public const STATUS_WEEKEND    = 'weekend';
     public const STATUS_CHECKED_IN = 'checked_in';
+    public const STATUS_CHECKED_OUT = 'checked_out';
 
     /** Every status a day can have (ZKBioTime's mapped statuses plus the portal's own). */
-    public const STATUSES = [...SourceConfig::DAILY_STATUSES, self::STATUS_WEEKEND, self::STATUS_CHECKED_IN];
+    public const STATUSES = [...SourceConfig::DAILY_STATUSES, self::STATUS_WEEKEND, self::STATUS_CHECKED_IN, self::STATUS_CHECKED_OUT];
 
     /** Statuses that count as attended. */
-    public const ATTENDED = ['present', 'late', 'early', 'incomplete', self::STATUS_CHECKED_IN];
+    public const ATTENDED = ['present', 'late', 'early', 'incomplete', self::STATUS_CHECKED_IN, self::STATUS_CHECKED_OUT];
 
     public const EX_MISSING_IN    = 'missing_check_in';
     public const EX_MISSING_OUT   = 'missing_check_out';
