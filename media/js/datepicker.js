@@ -31,6 +31,12 @@
     const days = (input.dataset.days || '').split(',');
     const labels = JSON.parse(input.dataset.labels || '{}');
     const min = input.dataset.min ? parse(input.dataset.min) : null;
+    // The month the page shows (data-month "MM/YYYY"): the calendar opens there when no date is set.
+    const pageMonth = (() => {
+      const m = /^(\d{1,2})\/(\d{4})$/.exec(input.dataset.month || '');
+
+      return m ? new Date(Number(m[2]), Number(m[1]) - 1, 1) : null;
+    })();
 
     input.readOnly = true;
     input.setAttribute('aria-haspopup', 'dialog');
@@ -49,7 +55,7 @@
     pop.hidden = true;
     wrap.appendChild(pop);
 
-    let view = parse(input.value) || new Date();
+    let view = parse(input.value) || pageMonth || new Date();
     view = new Date(view.getFullYear(), view.getMonth(), 1);
 
     const choose = (d) => {
@@ -175,8 +181,8 @@
         return;
       }
 
-      const selected = parse(input.value);
-      view = new Date((selected || new Date()).getFullYear(), (selected || new Date()).getMonth(), 1);
+      const start = parse(input.value) || pageMonth || new Date();
+      view = new Date(start.getFullYear(), start.getMonth(), 1);
       pop.hidden = false;
       input.setAttribute('aria-expanded', 'true');
       render();
@@ -230,8 +236,10 @@
       render(d);
     });
 
+    // Close on a click outside. composedPath() is taken when the click starts, so a click on the
+    // month arrows (whose buttons are rebuilt by render()) still counts as inside.
     document.addEventListener('click', (event) => {
-      if (!wrap.contains(event.target)) {
+      if (!event.composedPath().includes(wrap)) {
         close(false);
       }
     });

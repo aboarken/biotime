@@ -111,6 +111,11 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.4.5 – Date picker months, no "Unknown"
+- [ ] My Attendance → Date: open the calendar, click ← to go to the previous month: it stays open; choose a day there and the page shows that day.
+- [ ] With October selected in the Month list, the date calendar opens on October.
+- [ ] Punch details (My Attendance and day details) never show "Unknown".
+
 ### 0.4.4 – Clean-up
 - [ ] After the update: *Integration Settings* has no Leave Source section and no Leave information switch; Find Endpoints offers only *Save as Daily Attendance Source*.
 - [ ] My Dashboard → Recent Activity: a **Note** column shows *! Missing Punch* for days with a missing check-in or check-out.

@@ -42,6 +42,7 @@ $dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" a
     . ' pattern="\d{1,2}/\d{1,2}/\d{4}" placeholder="' . $e(Text::_('COM_BIOTIME_DATE_HINT')) . '"'
     . ' data-months="' . $e(implode(',', array_map([$f, 'monthName'], range(1, 12)))) . '"'
     . ' data-days="' . $e(implode(',', array_map(static fn (int $d): string => $f->weekday($d, true), range(1, 7)))) . '"'
+    . ' data-month="' . sprintf('%02d/%04d', $this->month, $this->year) . '"'
     . ' data-min="01/01/' . \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR . '"'
     . ' data-labels="' . $e((string) json_encode([
         'choose' => Text::_('COM_BIOTIME_DATE_CHOOSE'),

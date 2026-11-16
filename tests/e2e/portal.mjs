@@ -189,6 +189,7 @@ check(/Present/.test(text) && /Missing Punch/.test(text), 'check-out alone: pres
 await sara.goto(pageUrl(`view=day&date=${ym}-12`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
 check(/07:45/.test(text) && /15:20/.test(text) && /7:35/.test(text), 'Check In + Unknown punches give check-in, check-out and the time between');
+check(!/Unknown/.test(text), 'the word Unknown is not shown in the punch details');
 
 await sara.goto(pageUrl(`view=day&date=${ym}-03`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
