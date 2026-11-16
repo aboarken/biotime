@@ -43,20 +43,22 @@ $panelHead = static fn (string $title, string $url = '', string $linkText = ''):
     . '</div>';
 
 // Monthly overview: days per status up to today. [filter, label, count, tone]. A present day with
-// a missing check-in or check-out counts as Present and as Missing Punch.
+// a missing check-in or check-out counts as Present and as Missing Punch. Order: Present, Absent,
+// Weekend, Missing Punch (then Weekend Worked), the same as the bar, so amber never sits by red.
 $overview = [
     ['attended', Text::_('COM_BIOTIME_STATUS_PRESENT'), $s->presentDays, 'green'],
-    ['missingpunch', Text::_('COM_BIOTIME_MISSING_PUNCH'), $s->missingPunchDays, 'amber'],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT'), $s->absentDays, 'red'],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND'), $s->weekendDays, 'slate'],
+    ['missingpunch', Text::_('COM_BIOTIME_MISSING_PUNCH'), $s->missingPunchDays, 'amber'],
     ['weekendworked', Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, 'purple'],
 ];
-// The bar splits the days so far: present (complete), present with a missing punch, absent, weekend.
+// The bar splits the days so far, in the order of the tiles: present (complete), absent, weekend,
+// present with a missing punch.
 $bar  = [
     ['green', max(0, $s->presentDays - $s->missingPunchDays)],
-    ['amber', $s->missingPunchDays],
     ['red', $s->absentDays],
     ['slate', $s->weekendDays],
+    ['amber', $s->missingPunchDays],
 ];
 $days = array_sum(array_column($bar, 1));
 ?>
