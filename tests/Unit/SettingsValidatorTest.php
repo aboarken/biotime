@@ -48,12 +48,10 @@ final class SettingsValidatorTest extends TestCase
             'date_format'     => 'Y-m-d',
             'time_format'     => 'H:i',
             'server_timezone' => '',
-            'export_per_hour' => '10',
-            'report_max_days' => '93',
+            'weekend_days'    => ['5', '6'],
             'match_field'     => 'employeeid',
             'auto_match'      => '1',
             'module_charts'   => '1',
-            'module_exports'  => '1',
             'module_leave'    => '1',
         ];
     }
@@ -68,6 +66,16 @@ final class SettingsValidatorTest extends TestCase
         }
 
         return [];
+    }
+
+    public function testWeekendDaysAreStoredAsIsoWeekdays(): void
+    {
+        self::assertSame('5,6', $this->validator()->validate($this->input(), new Settings())['weekend_days']);
+        self::assertSame('6,7', $this->validator()->validate($this->input(['weekend_days' => ['7', '6', '9', 'x']]), new Settings())['weekend_days']);
+        self::assertSame('', $this->validator()->validate($this->input(['weekend_days' => []]), new Settings())['weekend_days'], 'no weekend at all is allowed');
+        self::assertContains('COM_BIOTIME_SETTINGS_ERR_WEEKEND', $this->errors($this->input(['weekend_days' => ['1', '2', '3', '4', '5', '6', '7']])));
+        self::assertSame([5, 6], (new Settings())->weekendDays(), 'default: Friday and Saturday');
+        self::assertSame([1, 7], (new Settings(['weekend_days' => '7,1']))->weekendDays());
     }
 
     public function testValidSettingsAreStoredWithEncryptedPassword(): void

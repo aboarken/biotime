@@ -128,11 +128,11 @@ const overflow = await page.evaluate(() => document.documentElement.scrollWidth 
 check(overflow <= 0, `no horizontal overflow at 390 px (${overflow}px)`);
 await page.screenshot({ path: `${OUT}/settings-phone.png`, fullPage: true });
 
-// Permissions tab lists the seven portal actions.
+// Permissions tab lists the four portal actions.
 await page.setViewportSize({ width: 1366, height: 900 });
 await page.goto(`${BASE}/administrator/index.php?option=com_config&view=component&component=com_biotime`);
 const perms = await page.innerText('body');
-for (const label of ['View My Dashboard', 'View My Attendance', 'View Attendance Calendar', 'View My Schedules', 'View Attendance Reports', 'Export Attendance Reports', 'View My Profile']) {
+for (const label of ['View My Dashboard', 'View My Attendance', 'View Attendance Calendar', 'View Biometric Devices']) {
   check(perms.includes(label), `permission "${label}" listed`);
 }
 check((await untranslated()).length === 0, 'Options page has no untranslated strings');

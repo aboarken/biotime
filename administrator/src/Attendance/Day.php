@@ -12,12 +12,26 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 
 
 /**
- * One calendar day of one employee: the schedule applied that day and the calculated values from
- * the daily source (when configured), the punches, and read-only exceptions. Values ZKBioTime did
- * not provide are null and shown as "—".
+ * One calendar day of one employee: the punches, check-in and check-out, the day's status and
+ * read-only exceptions. Values ZKBioTime did not provide are null and shown as "—".
+ *
+ * Status: ZKBioTime's calculated status when a daily source is configured; otherwise the portal
+ * tells it from the punches (see AttendanceService::dayStatus()): present, checked in (today),
+ * incomplete (check-in or check-out missing), absent (a past working day without any punch),
+ * weekend (a weekend day without punches) or leave.
  */
 final class Day
 {
+    /** Statuses only the portal sets (when ZKBioTime gives no calculated status). */
+    public const STATUS_WEEKEND    = 'weekend';
+    public const STATUS_CHECKED_IN = 'checked_in';
+
+    /** Every status a day can have (ZKBioTime's mapped statuses plus the portal's own). */
+    public const STATUSES = [...SourceConfig::DAILY_STATUSES, self::STATUS_WEEKEND, self::STATUS_CHECKED_IN];
+
+    /** Statuses that count as attended. */
+    public const ATTENDED = ['present', 'late', 'early', 'incomplete', self::STATUS_CHECKED_IN];
+
     public const EX_MISSING_IN    = 'missing_check_in';
     public const EX_MISSING_OUT   = 'missing_check_out';
     public const EX_INCOMPLETE    = 'incomplete';
@@ -56,8 +70,50 @@ final class Day
         public readonly ?int $overtime,
         public readonly ?string $status,
         public readonly ?string $statusRaw,
-        public readonly ?string $leave
+        public readonly ?string $leave,
+        public readonly bool $weekend = false,
+        public readonly bool $statusFromPunches = false
     ) {
+    }
+
+    /** A weekend day on which the employee punched (the weekend tag is then not shown). */
+    public function workedOnWeekend(): bool
+    {
+        return $this->weekend && $this->punches !== [];
+    }
+
+    /**
+     * Minutes from check-in to check-out, both as recorded; null unless both exist and the
+     * check-out is later. This is the time between the two punches, not ZKBioTime's worked hours.
+     */
+    public function span(): ?int
+    {
+        if ($this->checkIn === null || $this->checkOut === null) {
+            return null;
+        }
+
+        $seconds = self::seconds($this->checkOut) - self::seconds($this->checkIn);
+
+        return $seconds > 0 ? intdiv($seconds, 60) : null;
+    }
+
+    /** The punch recorded at this time ("HH:MM:SS"), e.g. the one behind the check-in. */
+    public function punchAt(?string $time): ?Punch
+    {
+        foreach ($time === null ? [] : $this->punches as $punch) {
+            if ($punch->time === $time) {
+                return $punch;
+            }
+        }
+
+        return null;
+    }
+
+    public static function seconds(string $his): int
+    {
+        [$h, $m, $s] = array_map('intval', explode(':', $his . ':00:00'));
+
+        return $h * 3600 + $m * 60 + $s;
     }
 
     public function weekday(): int

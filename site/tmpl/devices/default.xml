@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+    <layout title="COM_BIOTIME_MENU_DEVICES">
+        <message><![CDATA[COM_BIOTIME_MENU_DEVICES_DESC]]></message>
+    </layout>
+    <fields name="params">
+        <fieldset name="basic" label="COM_BIOTIME_MENU_DEVICES">
+            <field name="show_technical" type="radio" label="COM_BIOTIME_MENU_DEVICES_TECHNICAL" description="COM_BIOTIME_MENU_DEVICES_TECHNICAL_DESC"
+                   layout="joomla.form.field.radio.switcher" default="0" filter="integer">
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+        </fieldset>
+    </fields>
+</metadata>

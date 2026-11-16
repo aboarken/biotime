@@ -20,7 +20,8 @@ use Joomla\CMS\Router\Exception\RouteNotFoundException;
  * Every portal page passes through here:
  *  1. login required;
  *  2. a known view and its Joomla permission (403 otherwise);
- *  3. a matched ZKBioTime employee (otherwise only the "could not be matched" page).
+ *  3. a matched ZKBioTime employee (otherwise only the "could not be matched" page), except for
+ *     Biometric Devices, which shows no employee data.
  */
 final class DisplayController extends BaseController
 {
@@ -31,11 +32,12 @@ final class DisplayController extends BaseController
         'dashboard'  => 'zkb.dashboard.view',
         'attendance' => 'zkb.attendance.view',
         'calendar'   => 'zkb.calendar.view',
-        'schedules'  => 'zkb.schedule.view',
-        'reports'    => 'zkb.report.view',
-        'profile'    => 'zkb.profile.view',
-        'day'        => ['zkb.attendance.view', 'zkb.calendar.view', 'zkb.schedule.view'],
+        'devices'    => 'zkb.devices.view',
+        'day'        => ['zkb.attendance.view', 'zkb.calendar.view', 'zkb.dashboard.view'],
     ];
+
+    /** Views that show no personal data and so do not need a matched ZKBioTime employee. */
+    public const NO_EMPLOYEE_VIEWS = ['devices'];
 
     protected $default_view = 'dashboard';
 
@@ -58,6 +60,10 @@ final class DisplayController extends BaseController
 
         if ($allowed === []) {
             throw new NotAllowed(Text::_('COM_BIOTIME_NOT_AUTHORISED'), 403);
+        }
+
+        if (\in_array($view, self::NO_EMPLOYEE_VIEWS, true)) {
+            return parent::display(false, $urlparams);
         }
 
         try {

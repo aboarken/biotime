@@ -51,7 +51,7 @@ final class LanguageTest extends TestCase
         $sys   = self::file('administrator/language/en-GB/com_biotime.sys.ini');
 
         // Shared classes that render text on the site.
-        $siteShared = ['administrator/src/Support/', 'administrator/src/Export/', 'administrator/src/Api/ZkbException.php'];
+        $siteShared = ['administrator/src/Support/', 'administrator/src/Devices/', 'administrator/src/Api/ZkbException.php'];
         $missing    = [];
         $root       = str_replace('\\', '/', (string) realpath(self::ROOT));
         $files      = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
@@ -105,9 +105,15 @@ final class LanguageTest extends TestCase
             $need[] = ['COM_BIOTIME_EXCEPTION_' . strtoupper($ex), $site];
         }
 
-        foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig::DAILY_STATUSES as $st) {
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\Day::STATUSES as $st) {
             $need[] = ['COM_BIOTIME_STATUS_' . strtoupper($st), $site];
         }
+
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Devices\Device::HEALTHS as $h) {
+            $need[] = ['COM_BIOTIME_HEALTH_' . strtoupper($h), $site];
+        }
+
+        $need[] = ['COM_BIOTIME_PART_DEVICES', $site];
 
         foreach (\BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig::LEAVE_STATUSES as $st) {
             $need[] = ['COM_BIOTIME_LEAVE_' . strtoupper($st), $site];

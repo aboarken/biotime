@@ -25,7 +25,6 @@ final class Settings
     public const DEFAULT_MAX_PAGES     = 50;
     public const DEFAULT_CACHE_MINUTES = 5;
     public const MAX_CACHE_MINUTES     = 60;
-    public const DEFAULT_REPORT_DAYS   = 93;
 
     public const DATE_FORMATS = ['Y-m-d', 'd/m/Y', 'm/d/Y', 'd.m.Y', 'd M Y'];
     public const TIME_FORMATS = ['H:i', 'H:i:s', 'h:i A'];
@@ -48,10 +47,11 @@ final class Settings
         // Employee mapping: the Joomla custom user field holding emp_code, then e-mail as fallback
         'match_field'      => 'employeeid',
         'auto_match'       => '1',
-        // Modules within the six pages
+        // Modules within the portal pages
         'module_charts'    => '1',
-        'module_exports'   => '1',
         'module_leave'     => '1',
+        // Weekend days, ISO weekdays (1 = Monday … 7 = Sunday), comma-separated: Friday and Saturday
+        'weekend_days'     => '5,6',
         // Calculated daily attendance and schedules: a read-only ZKBioTime endpoint or saved report
         'daily_path'          => '',
         'daily_param_emp'     => 'emp_code',
@@ -80,8 +80,6 @@ final class Settings
         'date_format'      => 'Y-m-d',
         'time_format'      => 'H:i',
         'server_timezone'  => '',
-        'export_per_hour'  => '10',
-        'report_max_days'  => '93',
         // Internal: the cached API token (encrypted) and when to renew it. Never in the form.
         'token_cache_enc'      => '',
         'token_cache_renew_at' => '',
@@ -212,7 +210,7 @@ final class Settings
         return $this->get('auto_match') !== '0';
     }
 
-    /** @param 'charts'|'exports'|'leave' $module */
+    /** @param 'charts'|'leave' $module */
     public function moduleEnabled(string $module): bool
     {
         return $this->get('module_' . $module) !== '0';
@@ -278,14 +276,39 @@ final class Settings
         return \in_array($zone, \DateTimeZone::listIdentifiers(), true) ? $zone : '';
     }
 
-    public function exportsPerHour(): int
+    /**
+     * Weekend days as ISO weekdays (1 = Monday … 7 = Sunday). A weekend day without punches is
+     * shown as "Weekend" instead of "Absent". Default: Friday and Saturday.
+     *
+     * @return list<int>
+     */
+    public function weekendDays(): array
     {
-        return max(1, min(1000, (int) $this->get('export_per_hour') ?: 10));
+        return self::parseWeekdays($this->get('weekend_days'));
     }
 
-    public function reportMaxDays(): int
+    /**
+     * @param string|list<string|int> $value "5,6" or a list of weekdays
+     *
+     * @return list<int>
+     */
+    public static function parseWeekdays(string|array $value): array
     {
-        return max(1, min(366, (int) $this->get('report_max_days') ?: self::DEFAULT_REPORT_DAYS));
+        $list = \is_array($value) ? $value : explode(',', $value);
+        $days = [];
+
+        foreach ($list as $item) {
+            $item = trim((string) $item);
+
+            if (preg_match('/^[1-7]$/', $item)) {
+                $days[] = (int) $item;
+            }
+        }
+
+        $days = array_values(array_unique($days));
+        sort($days);
+
+        return $days;
     }
 
     public function isHttps(): bool

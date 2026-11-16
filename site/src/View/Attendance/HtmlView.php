@@ -12,7 +12,6 @@ namespace BiotimePortal\Component\Biotime\Site\View\Attendance;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
 use BiotimePortal\Component\Biotime\Site\Model\AttendanceModel;
 use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
@@ -20,16 +19,17 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
- * My Attendance: one month, one row per day, with the schedule applied on each date.
+ * My Attendance: one month, one row per day: check-in, check-out (with the device), the time
+ * between them, the punches and the day's status.
  */
 final class HtmlView extends BaseHtmlView
 {
     use PortalViewTrait;
 
-    public const PAGE_SIZE = 25;
+    public const PAGE_SIZE = 31;
 
-    /** Status filter values: portal statuses plus "exceptions" and "punches". */
-    public const FILTERS = [...SourceConfig::DAILY_STATUSES, 'exceptions', 'punches', 'nopunches'];
+    /** Status filter values. */
+    public const FILTERS = ['attended', 'present', 'checked_in', 'incomplete', 'absent', 'weekend', 'weekendworked', 'leave', 'holiday', 'exceptions', 'punches', 'nopunches'];
 
     public Period $period;
 
@@ -98,13 +98,14 @@ final class HtmlView extends BaseHtmlView
         }
 
         return match ($this->status) {
-            ''           => true,
-            'exceptions' => $d->exceptions !== [],
-            'punches'    => $d->punches !== [],
-            'nopunches'  => $d->punches === [],
-            'late'       => $d->status === 'late' || ($d->late ?? 0) > 0,
-            'early'      => $d->status === 'early' || ($d->early ?? 0) > 0,
-            default      => $d->status === $this->status,
+            ''              => true,
+            'attended'      => \in_array($d->status, Day::ATTENDED, true),
+            'present'       => \in_array($d->status, ['present', 'late', 'early'], true),
+            'exceptions'    => $d->exceptions !== [],
+            'punches'       => $d->punches !== [],
+            'nopunches'     => $d->punches === [],
+            'weekendworked' => $d->workedOnWeekend(),
+            default         => $d->status === $this->status,
         };
     }
 }

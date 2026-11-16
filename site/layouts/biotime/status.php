@@ -15,7 +15,8 @@ $f      = $displayData['f'];
 $status = $day->status ?? ($day->punches !== [] ? 'punched' : 'none');
 $symbol = [
     'present' => '✓', 'late' => '⏱', 'early' => '↧', 'absent' => '✕', 'leave' => '✈',
-    'holiday' => '★', 'rest' => '◦', 'incomplete' => '!', 'other' => '•', 'punched' => '•', 'none' => '',
+    'holiday' => '★', 'rest' => '◦', 'weekend' => '◦', 'checked_in' => '→', 'incomplete' => '!',
+    'other' => '•', 'punched' => '•', 'none' => '',
 ][$status] ?? '•';
 $label = match ($status) {
     'punched' => \Joomla\CMS\Language\Text::_('COM_BIOTIME_STATUS_PUNCHED'),

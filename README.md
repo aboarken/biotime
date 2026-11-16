@@ -1,40 +1,55 @@
 # Joomla ZKBioTime
 **A read-only employee self-service attendance portal for ZKTeco ZKBioTime 9.5, inside Joomla 6.**
 
-Employees log in to Joomla and see their own attendance from ZKBioTime: monthly check-in and
-check-out times, the schedule applied on each day, late arrivals, early departures, absences,
-leave, and reports they can download as PDF or Excel.
+Employees log in to Joomla and see their own attendance from ZKBioTime: each day's check-in and
+check-out (with the device and how they were verified), the time between them, and whether the
+day was Present, Incomplete, Absent or a Weekend. The people who look after the devices see
+every biometric device with its location and health.
 
 ZKBioTime is the single source of truth. Joomla only reads and displays: it never creates,
-edits, corrects or recalculates attendance data. When ZKBioTime does not provide a value, the
-portal shows "—" and says so instead of guessing.
+edits or corrects attendance data. The pages show only what the ZKBioTime 9.5 API provides
+(punches and devices); the day statuses follow a simple, documented rule on those punches.
 
 Which ZKBioTime endpoint supplies each value, and whether it has been verified on a real server,
 is in [docs/API-MAPPING.md](docs/API-MAPPING.md).
 
 ## Features
 
-### Portal pages (six menu item types)
+### Portal pages (four menu item types)
 
 Create them under **Menus → Add New Menu Item → ZKBioTime**. The site's own menu is the
 navigation; the pages have no navigation bar of their own. The menu item title is the page
 heading and browser title, and *Page Heading*, *Browser Page Title* and *Show Page Heading*
 are respected.
 
-| Menu item type | What the employee sees |
+| Menu item type | What the user sees |
 |---|---|
-| **My Dashboard** | Summary cards (working days, present days, late-in occurrences and time, early-out occurrences and time, absence days, leave days, worked hours, overtime), a Monthly Overview chart with the same figures as a table, and Recent Activity. Every figure links to My Attendance with the matching filter. Each part loads on its own. |
-| **My Attendance** | One row per day: date (link to the day's details), day, the schedule applied on that date, scheduled start and end, check-in, check-out, late-in, early-out, worked hours, overtime and status, plus all punches of the day (time, state, device, area) and exceptions. Filter by month and year, status, or a date. |
-| **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text and opens the day's details. Usable with keyboard and screen readers and on a 390 px phone. |
-| **My Schedules** | The schedule ZKBioTime applied on each date (month list and one week): shift, start and end, breaks, rest days, holidays, changed schedules. |
-| **Attendance Reports** | A month or a custom date range (at most 93 days by default): summary, late-in, early-out, absence and overtime reports, leave summary, attendance exceptions and all days. **Download PDF** and **Download Excel**. |
-| **My Profile** | The employee's own ZKBioTime record, read only: employee code, name, department, position, area, e-mail and hire date. Nothing else is ever read (no passwords, card numbers, biometric data, national ID or device data). |
+| **My Dashboard** | **Today**: check-in, check-out, the time between them and the status. The month's figures: days attended (of the working days so far), days absent, incomplete days, attendance rate, average check-in (and the earliest), average check-out (and the latest), average and total time between check-in and check-out, weekend days worked, punches; a Monthly Overview chart with the same figures as a table; the devices used most; Recent Activity (last 7 days). Every figure links to My Attendance with the matching filter. |
+| **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, the status and all punches of the day (time, state, verification, device, area). Weekend rows and today are shaded. Filter by month and year, status (attended, present, incomplete, absent, weekend, weekend worked, leave, exceptions, with or without punches) or a date. |
+| **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
+| **Biometric Devices** | Every ZKBioTime device: name and model, location (area), **health** (Online, Delayed, Offline, Unknown), last activity ("5 min ago"), users, fingerprints, faces and punches stored on it; counts per health (click to filter) and a location filter. The menu item option *Show technical details* adds serial number, IP address and firmware. Needs no employee mapping; shows no employee data. |
 
-Day details (one day: schedule, times, all punches, exceptions, leave) open from the
-Attendance, Calendar, Schedules and Reports pages; they are not a menu item type.
+Day details (one day: check-in, check-out, time between, status, every punch with how it was
+counted, exceptions, leave) open from the Dashboard, Attendance and Calendar pages; they are not a
+menu item type.
+
+**Day statuses** (from the punches, see [docs/API-MAPPING.md](docs/API-MAPPING.md#day-statuses-from-the-punches--portal-rule)):
+
+| Status | When |
+|---|---|
+| Present | check-in and check-out recorded |
+| Checked In | today, checked in and not checked out yet |
+| Incomplete | a check-in or a check-out is missing |
+| Absent | a past working day without any punch |
+| Weekend | a weekend day without punches (Friday and Saturday by default, *Integration Settings → System → Weekend days*). A weekend day **with** a check-in or check-out loses the weekend tag and is shown like any other day. |
+| Leave | a working day without punches covered by leave (only with a Leave Source) |
+
+**Check-in** is the first check-in punch of the day and **check-out** the last check-out punch
+after it, exactly as recorded (punches recorded as *Unknown* count when no explicit punch exists;
+break punches are ignored; a check-out is never shown as a check-in).
 
 **Exceptions** shown read-only (nothing is corrected): missing check-in, missing check-out,
-incomplete punch record, duplicate punch, late arrival, early departure, missing schedule.
+incomplete punch record, duplicate punch.
 
 **Times** are shown exactly as ZKBioTime recorded them, in the ZKBioTime server's time zone; a
 page says so when the user's own Joomla time zone differs. Times are never shifted.
@@ -57,7 +72,7 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 | Requirement | Version |
 |---|---|
 | Joomla | 6.2 or later |
-| PHP | 8.3 or later, with OpenSSL (AES-256-GCM), cURL and zip (Excel exports) |
+| PHP | 8.3 or later, with OpenSSL (AES-256-GCM) and cURL |
 | Database | MySQL / MariaDB or PostgreSQL |
 | ZKBioTime | 9.5, REST API reachable from the Joomla web server |
 
@@ -93,14 +108,14 @@ employee only ever sees their own records.
 | TLS | Verify TLS certificate, CA bundle file, Certificate pin | Verification is on by default. |
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. |
-| Modules | Charts, Exports, Leave information | Turn parts of the pages off. A turned-off feature shows a friendly "not available" message. |
+| Modules | Charts, Leave information | Turn parts of the pages off. |
 | Daily Attendance Source | API path, parameters, field names, status names | Where ZKBioTime's calculated attendance and per-day schedules are read; see *Calculated attendance* below. |
 | Leave Source | API path, parameters, field names, approval names | Where leave records are read, if your ZKBioTime offers them. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
-| | Date format, Time format | How the portal and exports show dates and times. |
+| | Date format, Time format | How the portal shows dates and times. |
 | | ZKBioTime server time zone | Default: Joomla's server time zone. |
-| | Longest report range (days), Exports per user and hour | Default 93 days and 10 exports. |
+| | Weekend days | Default Friday and Saturday. A weekend day without punches is *Weekend*, not *Absent*; with a punch it is shown like any other day. |
 | | API page size, Safety maximum (pages) | Default 100 rows × 50 pages; pages say when results were cut off. |
 
 Settings are stored in the component's own table `#__biotime_settings`, not in Joomla's
@@ -166,8 +181,8 @@ re-verified against ZKBioTime once a day. Every administrative change is recorde
 **ZKBioTime 9.5 has no API for these.** Its API manual (BioTime 9.5 API User Manual, ZKTeco
 Middle East, 16 Aug 2024) documents login, devices, personnel and transactions (punches) only,
 and a real 9.5 server confirmed it. On 9.5, leave both sources empty: the portal shows punches,
-check-in and check-out, and "—" for the schedule, status, late-in, early-out, worked hours,
-overtime and leave. Joomla never calculates them itself.
+check-in and check-out and the punch-based day status, and no schedule, late-in, early-out,
+worked hours or overtime. Joomla never calculates those itself.
 
 If your ZKBioTime does offer such an endpoint (BioTime Cloud or a later build; **Run
 Diagnostics** in Find Endpoints tells you), the portal reads them
@@ -211,12 +226,9 @@ path from `/api/docs/` there.
 API list, the punch endpoint and the known calculated-attendance endpoints from your Joomla
 server, and contains no passwords, tokens, names, employee codes or times.
 
-Until the daily source is set, the portal shows punches and "—" for schedule, status, late-in,
-early-out, worked hours and overtime, with a note saying so. Check-in and check-out then come from
-the punches by their state: the first check-in punch and the last check-out punch (break punches
-ignored), so a check-out is never shown as check-in.
-Nothing is calculated by Joomla. Only counting of values ZKBioTime returned is done (e.g. the
-number of days with status Late, the sum of late-in minutes).
+When a daily source is set, its check-in, check-out and calculated status are used instead of
+the punch-based ones (a status mapped to late or early is shown as such). The pages still show
+only check-in, check-out, the time between them and the status.
 
 ### 5. Permissions
 
@@ -232,16 +244,16 @@ group (or the group your employees are in). Without them users get "You are not 
 | `zkb.dashboard.view` | My Dashboard |
 | `zkb.attendance.view` | My Attendance (and day details) |
 | `zkb.calendar.view` | Attendance Calendar (and day details) |
-| `zkb.schedule.view` | My Schedules (and day details) |
-| `zkb.report.view` | Attendance Reports |
-| `zkb.report.export` | PDF and Excel downloads |
-| `zkb.profile.view` | My Profile |
+| `zkb.devices.view` | Biometric Devices (grant it to the group that looks after the devices; it needs no employee mapping) |
+
+My Dashboard also opens day details. Updating from 0.3.x moves menu items of the removed My
+Schedules, Attendance Reports and My Profile pages to the trash.
 
 ## Cache and performance
 
 Each data type (punches, calculated attendance, leave) is read once per user and month and
 kept in the user's own session for the cache time (default 5 minutes), so My Dashboard, My
-Attendance, the Calendar, My Schedules, day details and Reports share it. Pages show
+Attendance, the Calendar and day details share it. The device list is kept the same way. Pages show
 "Updated hh:mm". With cache time 0 every page reads ZKBioTime again, which makes the Dashboard
 slow.
 
@@ -251,9 +263,8 @@ API calls per page load, for one month (cold cache; a warm cache makes **0** cal
 |---|---|
 | Any page, first visit of a user | Employee code field: 1 (employee list filtered by code). E-mail: one per page of the employee list. Then 0 while the mapping is active (1 per day to re-verify). |
 | Login | 1 per token lifetime (the token is cached on the server, encrypted). |
-| Dashboard, My Attendance, Calendar, My Schedules, day details | punches + daily source + leave source = **3** (more only when a month has more rows than the page size). |
-| Attendance Reports, exports | 3 per month the range touches (at most 4 months for 93 days). |
-| My Profile | 1 |
+| Dashboard, My Attendance, Calendar, day details | punches (+ daily source + leave source when set) = **1** on 9.5, at most 3 (more only when a month has more rows than the page size). |
+| Biometric Devices | 1 (one per page of devices). |
 
 ## Security
 
@@ -263,8 +274,8 @@ API calls per page load, for one month (cold cache; a warm cache makes **0** cal
 - If ZKBioTime ignores an employee filter and returns other people's rows, they are dropped
   and a warning is logged.
 - Credentials and tokens never reach the browser (no JavaScript, HTML, session or cookie).
-- Every state-changing action is a POST with a CSRF token and a permission check; exports are
-  limited per user and hour; connection tests per administrator and hour.
+- Every state-changing action is a POST with a CSRF token and a permission check; connection
+  tests are limited per administrator and hour.
 - Portal pages are `noindex, nofollow` and sent with `Cache-Control: no-store`.
 - Input is checked against strict patterns and whitelists; all output is escaped.
 - The integration is read-only: the only POST sent to ZKBioTime is the login.
@@ -284,15 +295,14 @@ written to it. With *Detailed logging* off, only warnings and errors are written
 | could not find what was asked for | Server URL must not contain an extra path; check the source paths against `/api/docs/` |
 | sent an answer the portal could not read | The URL may point to a proxy or login page; the log lists the keys received |
 | Your account could not be matched | **User Mappings**: the user's status (Not found / Ambiguous / Suspended) and employee code field |
-| values show "—" | The daily attendance source is not set, or a field name is not mapped |
+| a working day shows Absent although the person was there | No punch was recorded that day (check the device on Biometric Devices), or the day should be a weekend day (*Weekend days*). Public holidays are not known to the portal. |
+| a device shows Delayed or Offline | It has not contacted ZKBioTime recently: check its power and network. |
 
 ## Development
 
 - Every change goes through a pull request; the maintainer merges.
 - Tests: `composer install`, then `vendor/bin/phpunit` (no ZKBioTime server needed). Browser
   checks and the live checklist for the real server: [docs/TESTING.md](docs/TESTING.md).
-- PDF exports use the bundled TCPDF (LGPL-3.0-or-later) in `administrator/lib/tcpdf`, pruned to
-  DejaVu Sans (Latin, Arabic and more); `build/update-tcpdf.sh` refreshes it.
 - Each version: bump `<version>` in `biotime.xml` and `media/joomla.asset.json`, add
   `administrator/sql/updates/{mysql,postgresql}/<version>.sql` (a comment when nothing changes),
   add a `CHANGELOG.md` entry and `docs/release-notes/<version>.md`.
@@ -307,5 +317,4 @@ files and the release notes.
 
 ## License
 
-GNU General Public License version 2 or later. See [LICENSE](LICENSE). The bundled TCPDF is
-LGPL-3.0-or-later (`administrator/lib/tcpdf/LICENSE.TXT`).
+GNU General Public License version 2 or later. See [LICENSE](LICENSE).

@@ -21,7 +21,8 @@ vendor/bin/phpunit
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
 | Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form, data sources, no free-form queries, 0.1.x port merged into the URL) | `tests/Unit/SettingsValidatorTest.php` |
 | Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification, administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php` |
-| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; per-day schedules; status mapping; month summaries; nothing calculated without the daily source; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months; exports contain only the user's data (Excel and PDF); profile allow-list | `tests/Unit/AttendanceServiceTest.php` |
+| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; day statuses from the punches (present, checked in, incomplete, absent, weekend, leave; a weekend day with punches loses the weekend tag; configurable weekend days); month summaries (present / absent / incomplete days, rate, average check-in and check-out, time in–out); punch details (verify type, device, serial, area); calculated values when a daily source is set; exceptions; leave on/off; cache per user and employee; one failing part does not hide the others; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
+| Biometric Devices: the terminal list, allow-listed fields only, area as object or text, invalid IP dropped, health from the last activity (online / delayed / offline / unknown), cache, errors | `tests/Unit/DeviceServiceTest.php` |
 | Find Endpoints: OpenAPI and CoreJSON descriptions, list endpoints only, attendance first, the order the description forms are tried, parameter suggestions, field inspection without personal values, field and status suggestions that form a valid source, login paths refused | `tests/Unit/DiscoveryTest.php` |
 | Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
 
@@ -39,20 +40,22 @@ php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
 
 - `tests/e2e/admin-settings.mjs`: Integration Settings (toolbar, validation, no password or
   ciphertext in the browser, Test Connection success / wrong password / unreachable, Connect via
-  with the Host header kept, 390 px, the seven permissions, CSRF).
+  with the Host header kept, 390 px, the four permissions, CSRF).
 
   ```bash
   BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' FAKE_LOG=/path/to/fake.log OUT=tests/output node tests/e2e/admin-settings.mjs
   ```
 
 - `tests/e2e/portal.mjs`: needs Registered users `sara` (custom field `employeeid` = `FIXTURE1`),
-  `omar` (`omar@example.test`), `shared` (`shared@example.test`) and `nobody`, and the seven
-  permissions allowed for Registered. Checks the data sources in the settings form, the six menu
-  item types, all six pages and day details (status 200, translated, noindex, no other
-  employee's data, schedule per day, late-in / early-out from ZKBioTime, exceptions, chart,
-  profile allow-list), PDF and Excel downloads (only the user's data), CSRF refusal, IDOR
-  attempts, 390 px without horizontal scrolling on every page, e-mail matching, the "could not be
-  matched" page, the User Mappings list, duplicate refusal, manual mapping and Re-match.
+  `omar` (`omar@example.test`), `shared` (`shared@example.test`) and `nobody`, and the four
+  permissions allowed for Registered. Checks the data sources in the settings form, the four menu
+  item types (and that My Schedules, Attendance Reports and My Profile are gone), all four pages
+  and day details (status 200, translated, noindex, no other employee's data, check-in and
+  check-out with the device, present / incomplete / absent / weekend, no fields the 9.5 API does
+  not provide, exceptions, chart, today card), Biometric Devices (names, locations, health, health
+  filter, no technical details by default), the removed pages answering 404, IDOR attempts,
+  390 px without horizontal scrolling on every page, e-mail matching, the "could not be matched"
+  page, the User Mappings list, duplicate refusal, manual mapping and Re-match.
 
   ```bash
   BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' USER_PASS='…' OUT=tests/output node tests/e2e/portal.mjs
@@ -108,6 +111,15 @@ passwords, tokens or personal data) with the pull request.
       site (tables `#__biotime_settings` and `#__biotime_audit` removed).
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
+
+### 0.4.0 – Biometric Devices, weekend and absence
+- [ ] After the update: *Menus* — items of My Schedules, Attendance Reports and My Profile are in the trash; *Options → Permissions* lists four portal permissions.
+- [ ] Integration Settings → System: *Weekend days* shows Friday and Saturday ticked.
+- [ ] Add a **Biometric Devices** menu item, allow *View Biometric Devices* for the IT group: every device with its name, area and health; compare the last activity with ZKBioTime's device list. Turn on *Show technical details* on the menu item: serial number, IP and firmware appear.
+- [ ] Turn a device off for 15 minutes: it shows *Delayed*; note what ZKBioTime's own device list shows.
+- [ ] My Attendance for a month: past working days without punches are *Absent*; Fridays and Saturdays *Weekend*; a Saturday with a punch shows its check-in/check-out and no Weekend tag; a day with only one punch is *Incomplete* with *Missing* under the other time.
+- [ ] My Dashboard: today's check-in and check-out; the month's figures match My Attendance.
+- [ ] Send one sample row of `/iclock/api/terminals/?page=1&page_size=1` (IP and serial replaced) so the field names in `docs/API-MAPPING.md` can be marked as seen on the real server.
 
 ### 0.3.0 – Find Endpoints and punch states
 - [ ] *Find Endpoints → Read the API list*: the list appears (or the message says none is readable; note which).

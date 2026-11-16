@@ -38,6 +38,9 @@ trait PortalViewTrait
 
     public int $month = 0;
 
+    /** Weekend day names, e.g. "Friday, Saturday" (for the notes under the pages). */
+    public string $weekendText = '';
+
     protected function preparePage(PortalModel $model, string $view, string $titleKey): void
     {
         $default = Text::_($titleKey);
@@ -62,6 +65,7 @@ trait PortalViewTrait
         $this->showPageHeading = $show;
         $this->f               = $model->formatter();
         $this->zone            = $model->zoneLabel();
+        $this->weekendText     = implode(', ', array_map(fn (int $d): string => $this->f->weekday($d), $model->attendance()->weekendDays()));
 
         $this->setDocumentTitle($title);
 
@@ -94,6 +98,29 @@ trait PortalViewTrait
     public function monthTitle(): string
     {
         return $this->f->monthName($this->month) . ' ' . $this->year;
+    }
+
+    /** Notices shown above attendance data (errors, cut-off lists, how times are read). */
+    public function notices(\BiotimePortal\Component\Biotime\Administrator\Attendance\Period $period): string
+    {
+        return \Joomla\CMS\Layout\LayoutHelper::render('biotime.notices', [
+            'period'  => $period,
+            'zone'    => $this->zone,
+            'updated' => $this->updatedText($period->fetchedAt),
+            'weekend' => $this->weekendText,
+        ]);
+    }
+
+    /** The device a check-in or check-out (time "HH:MM:SS") was recorded on; "" when unknown. */
+    public function deviceAt(\BiotimePortal\Component\Biotime\Administrator\Attendance\Day $day, ?string $time): string
+    {
+        if ($time === null) {
+            return '';
+        }
+
+        $punch = $day->punchAt($time);
+
+        return $punch?->device ?? '';
     }
 
     public function errorText(?string $kind): string

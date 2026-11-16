@@ -34,15 +34,32 @@ return new class () implements ServiceProviderInterface {
                  * Paths are relative to the component's site / administrator folder.
                  * Add an entry whenever a release removes a file or feature.
                  */
-                private const OBSOLETE_SITE = [];
+                private const OBSOLETE_SITE = [
+                    // 0.4.0: My Schedules, Attendance Reports and My Profile removed.
+                    'src/Controller/ReportController.php',
+                    'src/Model/SchedulesModel.php',
+                    'src/Model/ReportsModel.php',
+                    'src/Model/ProfileModel.php',
+                    'src/View/Schedules',
+                    'src/View/Reports',
+                    'src/View/Profile',
+                    'tmpl/schedules',
+                    'tmpl/reports',
+                    'tmpl/profile',
+                ];
 
-                private const OBSOLETE_ADMIN = [];
+                private const OBSOLETE_ADMIN = [
+                    // 0.4.0: PDF/Excel exports and the profile service went with the removed pages.
+                    'src/Export',
+                    'src/Profile',
+                    'lib',
+                ];
 
                 /** Settings rows of removed options. */
-                private const OBSOLETE_SETTINGS = [];
+                private const OBSOLETE_SETTINGS = ['module_exports', 'export_per_hour', 'report_max_days'];
 
                 /** Front-end views that no longer exist; menu items pointing to them are trashed. */
-                private const OBSOLETE_VIEWS = [];
+                private const OBSOLETE_VIEWS = ['schedules', 'reports', 'profile'];
 
                 public function install(InstallerAdapter $adapter): bool
                 {

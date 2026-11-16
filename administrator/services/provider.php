@@ -22,9 +22,7 @@ use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
 use BiotimePortal\Component\Biotime\Administrator\Cache\StoredUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
-use BiotimePortal\Component\Biotime\Administrator\Export\ExportService;
-use BiotimePortal\Component\Biotime\Administrator\Export\PdfWriter;
-use BiotimePortal\Component\Biotime\Administrator\Export\XlsxWriter;
+use BiotimePortal\Component\Biotime\Administrator\Devices\DeviceService;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserFieldReader;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserMapRepository;
@@ -32,7 +30,6 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
 use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
-use BiotimePortal\Component\Biotime\Administrator\Profile\ProfileService;
 use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
 use BiotimePortal\Component\Biotime\Administrator\Security\SecretProvider;
 use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
@@ -40,6 +37,8 @@ use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 return new class () implements ServiceProviderInterface {
     private const CACHE_SESSION_KEY = 'com_biotime.cache';
+
+    private const DEVICE_SESSION_KEY = 'com_biotime.devices';
 
     public function register(Container $container): void
     {
@@ -120,17 +119,21 @@ return new class () implements ServiceProviderInterface {
             )
         );
 
+        // The ZKBioTime server's time zone: times are shown as recorded, never shifted.
+        $zone = static function (Container $c): \DateTimeZone {
+            $zone = $c->get(SettingsRepository::class)->load()->serverTimezone() ?: (string) Factory::getApplication()->get('offset', 'UTC');
+
+            try {
+                return new \DateTimeZone($zone);
+            } catch (\Exception) {
+                return new \DateTimeZone('UTC');
+            }
+        };
+
         $container->share(
             AttendanceService::class,
-            static function (Container $c) use ($client): AttendanceService {
+            static function (Container $c) use ($client, $zone): AttendanceService {
                 $settings = $c->get(SettingsRepository::class)->load();
-                $zone     = $settings->serverTimezone() ?: (string) Factory::getApplication()->get('offset', 'UTC');
-
-                try {
-                    $tz = new \DateTimeZone($zone);
-                } catch (\Exception) {
-                    $tz = new \DateTimeZone('UTC');
-                }
 
                 return new AttendanceService(
                     $client($c),
@@ -139,22 +142,28 @@ return new class () implements ServiceProviderInterface {
                     $settings->moduleEnabled('leave'),
                     $c->get(UserCacheInterface::class),
                     $c->get(JoomlaLogger::class),
-                    $tz
+                    $zone($c),
+                    null,
+                    $settings->weekendDays()
                 );
             }
         );
 
+        // Devices are the same for everyone; the list is kept in the user's session for the cache time.
         $container->share(
-            ProfileService::class,
-            static fn (Container $c): ProfileService => new ProfileService($client($c), $c->get(UserCacheInterface::class), $c->get(JoomlaLogger::class))
-        );
-
-        $container->share(
-            ExportService::class,
-            static fn (Container $c): ExportService => new ExportService(
-                $c->get(AttendanceService::class),
-                new XlsxWriter(),
-                new PdfWriter((string) Factory::getApplication()->get('tmp_path', sys_get_temp_dir()))
+            DeviceService::class,
+            static fn (Container $c): DeviceService => new DeviceService(
+                $client($c),
+                static fn (string $key): ?array => ((array) Factory::getApplication()->getSession()->get(self::DEVICE_SESSION_KEY, []))[$key] ?? null,
+                static function (string $key, array $value): void {
+                    $session = Factory::getApplication()->getSession();
+                    $store   = (array) $session->get(self::DEVICE_SESSION_KEY, []);
+                    $store[$key] = $value;
+                    $session->set(self::DEVICE_SESSION_KEY, $store);
+                },
+                $c->get(SettingsRepository::class)->load()->cacheTtl(),
+                $c->get(JoomlaLogger::class),
+                $zone($c)
             )
         );
 

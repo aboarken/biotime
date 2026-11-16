@@ -13,36 +13,33 @@ use Joomla\CMS\Router\Route;
 
 /** @var \BiotimePortal\Component\Biotime\Site\View\Attendance\HtmlView $this */
 
-$f      = $this->f;
-$s      = $this->summary;
-$itemId = Factory::getApplication()->getInput()->getInt('Itemid', 0);
+$f       = $this->f;
+$s       = $this->summary;
+$itemId  = Factory::getApplication()->getInput()->getInt('Itemid', 0);
+$check   = fn ($day, string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => $type, 'device' => true]);
 $filters = [
-    ''           => Text::_('COM_BIOTIME_FILTER_ALL'),
-    'present'    => Text::_('COM_BIOTIME_STATUS_PRESENT'),
-    'late'       => Text::_('COM_BIOTIME_STATUS_LATE'),
-    'early'      => Text::_('COM_BIOTIME_STATUS_EARLY'),
-    'absent'     => Text::_('COM_BIOTIME_STATUS_ABSENT'),
-    'leave'      => Text::_('COM_BIOTIME_STATUS_LEAVE'),
-    'holiday'    => Text::_('COM_BIOTIME_STATUS_HOLIDAY'),
-    'rest'       => Text::_('COM_BIOTIME_STATUS_REST'),
-    'incomplete' => Text::_('COM_BIOTIME_STATUS_INCOMPLETE'),
-    'other'      => Text::_('COM_BIOTIME_STATUS_OTHER'),
-    'exceptions' => Text::_('COM_BIOTIME_FILTER_EXCEPTIONS'),
-    'punches'    => Text::_('COM_BIOTIME_FILTER_PUNCHES'),
-    'nopunches'  => Text::_('COM_BIOTIME_FILTER_NO_PUNCHES'),
+    ''              => Text::_('COM_BIOTIME_FILTER_ALL'),
+    'attended'      => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
+    'present'       => Text::_('COM_BIOTIME_STATUS_PRESENT'),
+    'incomplete'    => Text::_('COM_BIOTIME_STATUS_INCOMPLETE'),
+    'absent'        => Text::_('COM_BIOTIME_STATUS_ABSENT'),
+    'weekend'       => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
+    'weekendworked' => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
+    'leave'         => Text::_('COM_BIOTIME_STATUS_LEAVE'),
+    'exceptions'    => Text::_('COM_BIOTIME_FILTER_EXCEPTIONS'),
+    'punches'       => Text::_('COM_BIOTIME_FILTER_PUNCHES'),
+    'nopunches'     => Text::_('COM_BIOTIME_FILTER_NO_PUNCHES'),
 ];
-$summary = array_filter([
-    [Text::_('COM_BIOTIME_CARD_WORKING_DAYS'), $s->workingDays],
-    [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays],
-    [Text::_('COM_BIOTIME_CARD_LATE_COUNT'), $s->lateCount],
-    [Text::_('COM_BIOTIME_CARD_EARLY_COUNT'), $s->earlyCount],
+$summary = [
+    [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' / ' . $s->workingDays],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), $s->absentDays],
-    [Text::_('COM_BIOTIME_CARD_LEAVE_DAYS'), $s->leaveDays],
-    [Text::_('COM_BIOTIME_CARD_WORKED_HOURS'), $s->workedMinutes === null ? null : $f->duration($s->workedMinutes)],
-    [Text::_('COM_BIOTIME_CARD_OVERTIME_HOURS'), $s->overtimeMinutes === null ? null : $f->duration($s->overtimeMinutes)],
-    [Text::_('COM_BIOTIME_CARD_PUNCH_DAYS'), $s->punchDays],
-    [Text::_('COM_BIOTIME_CARD_EXCEPTIONS'), $s->exceptionCount],
-], static fn (array $p): bool => $p[1] !== null);
+    [Text::_('COM_BIOTIME_CARD_INCOMPLETE_DAYS'), $s->incompleteDays],
+    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked],
+    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $f->time($s->avgCheckIn)],
+    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $f->time($s->avgCheckOut)],
+    [Text::_('COM_BIOTIME_CARD_TOTAL_SPAN_SHORT'), $f->duration($s->spanMinutes)],
+    [Text::_('COM_BIOTIME_CARD_PUNCHES'), $s->punchCount],
+];
 ?>
 <div class="com-biotime biotime-attendance">
     <?php if ($this->showPageHeading) : ?>
@@ -74,15 +71,13 @@ $summary = array_filter([
     </form>
 
     <h2 class="h4"><?php echo $this->escape($this->monthTitle()); ?></h2>
-    <?php echo LayoutHelper::render('biotime.notices', ['period' => $this->period, 'zone' => $this->zone, 'updated' => $this->updatedText($this->period->fetchedAt)]); ?>
+    <?php echo $this->notices($this->period); ?>
 
-    <?php if ($summary !== []) : ?>
-        <dl class="biotime-summary row row-cols-2 row-cols-md-4 g-2 mb-3">
-            <?php foreach ($summary as [$label, $value]) : ?>
-                <div class="col"><dt class="small text-muted fw-normal"><?php echo $this->escape($label); ?></dt><dd class="fw-semibold mb-0"><?php echo $this->escape((string) $value); ?></dd></div>
-            <?php endforeach; ?>
-        </dl>
-    <?php endif; ?>
+    <dl class="biotime-summary row row-cols-2 row-cols-md-4 g-2 mb-3">
+        <?php foreach ($summary as [$label, $value]) : ?>
+            <div class="col"><dt class="small text-muted fw-normal"><?php echo $this->escape($label); ?></dt><dd class="fw-semibold mb-0"><?php echo $this->escape((string) $value); ?></dd></div>
+        <?php endforeach; ?>
+    </dl>
 
     <?php if ($this->rows === []) : ?>
         <div class="alert alert-info"><?php echo Text::_('COM_BIOTIME_NO_DAYS'); ?></div>
@@ -94,43 +89,41 @@ $summary = array_filter([
                     <tr>
                         <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DATE'); ?></th>
                         <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DAY'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHED_START'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHED_END'); ?></th>
                         <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></th>
                         <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_WORKED'); ?></th>
-                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_OVERTIME'); ?></th>
+                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
                         <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
+                        <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_PUNCHES'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php foreach ($this->rows as $day) : ?>
-                    <tr>
+                    <tr class="<?php echo $day->weekend ? 'biotime-row-weekend' : ''; ?><?php echo $day->date === $this->period->today ? ' biotime-row-today' : ''; ?>">
                         <th scope="row" class="text-nowrap"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $this->escape($f->date($day->date)); ?></a></th>
                         <td><?php echo $this->escape($f->weekday($day->weekday(), true)); ?></td>
-                        <td><?php echo $this->escape($f->text($day->schedule)); ?></td>
-                        <td><?php echo $this->escape($f->time($day->schedStart)); ?></td>
-                        <td><?php echo $this->escape($f->time($day->schedEnd)); ?></td>
-                        <td><?php echo $this->escape($f->time($day->checkIn)); ?></td>
-                        <td><?php echo $this->escape($f->time($day->checkOut)); ?></td>
-                        <td><?php echo $this->escape($f->duration($day->late)); ?></td>
-                        <td><?php echo $this->escape($f->duration($day->early)); ?></td>
-                        <td><?php echo $this->escape($f->duration($day->worked)); ?></td>
-                        <td><?php echo $this->escape($f->duration($day->overtime)); ?></td>
+                        <td><?php echo $check($day, 'in'); ?></td>
+                        <td><?php echo $check($day, 'out'); ?></td>
+                        <td><?php echo $this->escape($f->duration($day->span())); ?></td>
                         <td>
                             <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
+                            <?php if ($day->leave !== null && $day->status !== 'leave') : ?>
+                                <span class="badge text-bg-light border"><?php echo $this->escape(Text::_('COM_BIOTIME_STATUS_LEAVE') . ': ' . $day->leave); ?></span>
+                            <?php endif; ?>
                             <?php foreach ($day->exceptions as $ex) : ?>
-                                <span class="badge text-bg-light border biotime-exception"><?php echo $this->escape($f->exception($ex)); ?></span>
+                                <?php if (!in_array($ex, ['missing_check_in', 'missing_check_out'], true)) : ?>
+                                    <span class="badge text-bg-light border biotime-exception"><?php echo $this->escape($f->exception($ex)); ?></span>
+                                <?php endif; ?>
                             <?php endforeach; ?>
-                            <?php if (count($day->punches) > 1 || ($day->punches !== [] && $day->checkIn === null && $day->checkOut === null)) : ?>
-                                <details class="biotime-punches mt-1">
-                                    <summary><?php echo Text::sprintf('COM_BIOTIME_N_PUNCHES', count($day->punches)); ?></summary>
+                        </td>
+                        <td>
+                            <?php if ($day->punches === []) : ?>
+                                <span class="text-muted">0</span>
+                            <?php else : ?>
+                                <details class="biotime-punches">
+                                    <summary><?php echo Text::plural('COM_BIOTIME_N_PUNCHES', count($day->punches)); ?></summary>
                                     <ol class="list-unstyled small mb-0">
                                         <?php foreach ($day->punches as $p) : ?>
-                                            <li><?php echo $this->escape($f->time($p->time)); ?><?php echo $p->state !== null ? ' · ' . $this->escape($p->state) : ''; ?><?php echo $p->device !== null ? ' · ' . $this->escape($p->device) : ''; ?><?php echo $p->area !== null ? ' · ' . $this->escape($p->area) : ''; ?></li>
+                                            <li><?php echo $this->escape(implode(' · ', array_filter([$f->time($p->time), $p->state, $p->verify, $p->device, $p->area]))); ?></li>
                                         <?php endforeach; ?>
                                     </ol>
                                 </details>

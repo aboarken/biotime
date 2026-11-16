@@ -64,11 +64,6 @@
             <option value="0">JNO</option>
             <option value="1">JYES</option>
         </field>
-        <field name="module_exports" type="radio" label="COM_BIOTIME_SETTINGS_MODULE_EXPORTS" description="COM_BIOTIME_SETTINGS_MODULE_EXPORTS_DESC"
-               layout="joomla.form.field.radio.switcher" default="1" filter="integer">
-            <option value="0">JNO</option>
-            <option value="1">JYES</option>
-        </field>
         <field name="module_leave" type="radio" label="COM_BIOTIME_SETTINGS_MODULE_LEAVE" description="COM_BIOTIME_SETTINGS_MODULE_LEAVE_DESC"
                layout="joomla.form.field.radio.switcher" default="1" filter="integer">
             <option value="0">JNO</option>
@@ -151,10 +146,16 @@
         <field name="server_timezone" type="timezone" label="COM_BIOTIME_SETTINGS_SERVER_TIMEZONE" description="COM_BIOTIME_SETTINGS_SERVER_TIMEZONE_DESC">
             <option value="">COM_BIOTIME_SETTINGS_TIMEZONE_JOOMLA</option>
         </field>
-        <field name="report_max_days" type="number" label="COM_BIOTIME_SETTINGS_REPORT_MAX_DAYS" description="COM_BIOTIME_SETTINGS_REPORT_MAX_DAYS_DESC"
-               default="93" min="1" max="366" filter="integer" required="true" />
-        <field name="export_per_hour" type="number" label="COM_BIOTIME_SETTINGS_EXPORT_PER_HOUR" description="COM_BIOTIME_SETTINGS_EXPORT_PER_HOUR_DESC"
-               default="10" min="1" max="1000" filter="integer" required="true" />
+        <field name="weekend_days" type="checkboxes" label="COM_BIOTIME_SETTINGS_WEEKEND_DAYS" description="COM_BIOTIME_SETTINGS_WEEKEND_DAYS_DESC"
+               default="5,6" multiple="true">
+            <option value="1">MONDAY</option>
+            <option value="2">TUESDAY</option>
+            <option value="3">WEDNESDAY</option>
+            <option value="4">THURSDAY</option>
+            <option value="5">FRIDAY</option>
+            <option value="6">SATURDAY</option>
+            <option value="7">SUNDAY</option>
+        </field>
         <field name="page_size" type="number" label="COM_BIOTIME_SETTINGS_PAGE_SIZE"
                description="COM_BIOTIME_SETTINGS_PAGE_SIZE_DESC" default="100" min="1" max="1000" filter="integer" required="true" />
         <field name="max_pages" type="number" label="COM_BIOTIME_SETTINGS_MAX_PAGES"

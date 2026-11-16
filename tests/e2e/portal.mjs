@@ -2,7 +2,7 @@
 // component installed, tests/e2e/fake-zkbiotime.php serving on FAKE_URL, and these test users
 // (all Registered, password USER_PASS): sara (custom field employeeid = FIXTURE1),
 // omar (omar@example.test), shared (shared@example.test, two employees), nobody.
-// The seven zkb.* permissions must be allowed for Registered.
+// The four zkb.* permissions must be allowed for Registered.
 //
 //   BASE_URL=http://127.0.0.1:8090 ADMIN_PASS=... USER_PASS=... OUT=tests/output node tests/e2e/portal.mjs
 import { createRequire } from 'node:module';
@@ -44,8 +44,6 @@ await admin.fill('#jform_daily_status_map', '');
 await admin.fill('#jform_leave_path', '/att/api/fixture_leave/');
 await admin.fill('#jform_leave_fields', 'emp_code = emp_code\nstart = start\nend = end\ntype = category\nduration = days\nstatus = approval');
 await admin.fill('#jform_leave_status_map', 'Approved = approved');
-// Repeated test runs export many reports; the per-user hourly limit is tested separately.
-await admin.fill('#jform_export_per_hour', '1000');
 await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('#toolbar-apply button, button.button-apply')]);
 const saved = await admin.locator('#system-message-container').innerText();
 check(/Settings saved/.test(saved), `settings with data sources saved (${saved.replace(/\s+/g, ' ').slice(0, 160)})`);
@@ -103,14 +101,21 @@ await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.
 check(/fixed parameters must be/.test(await admin.locator('#system-message-container').innerText()), 'free-form query in a source refused');
 await admin.goto(settingsUrl, { waitUntil: 'networkidle' });
 await admin.fill('#jform_daily_extra', '');
+// The portal checks below use the punches only, as on ZKBioTime 9.5 (no daily source).
+await admin.fill('#jform_daily_path', '');
+await admin.fill('#jform_daily_fields', '');
+await admin.fill('#jform_daily_status_map', '');
 await admin.fill('#jform_api_password', 'Fixture-Pass-123');
 await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('#toolbar-apply button, button.button-apply')]);
 
 // Menu item types.
 await admin.goto(`${BASE}/administrator/index.php?option=com_menus&view=menutypes&tmpl=component&client_id=0&menutype=mainmenu`, { waitUntil: 'networkidle' });
 const types = await admin.evaluate(() => document.body.textContent);
-for (const t of ['My Dashboard', 'My Attendance', 'Attendance Calendar', 'My Schedules', 'Attendance Reports', 'My Profile']) {
+for (const t of ['My Dashboard', 'My Attendance', 'Attendance Calendar', 'Biometric Devices']) {
   check(types.includes(t), `menu item type "${t}"`);
+}
+for (const t of ['My Schedules', 'Attendance Reports', 'My Profile']) {
+  check(!types.includes(t), `removed menu item type "${t}" is gone`);
 }
 
 // Unmatched users report: everyone without a mapping yet.
@@ -129,7 +134,7 @@ async function login(username) {
   return { ctx, page };
 }
 
-const views = ['dashboard', 'attendance', 'calendar', 'schedules', 'reports', 'profile'];
+const views = ['dashboard', 'attendance', 'calendar', 'devices'];
 const pageUrl = (q) => `${BASE}/index.php?option=com_biotime&${q}`;
 
 // Guests are sent to the login page.
@@ -150,58 +155,51 @@ for (const view of views) {
 
 await sara.goto(pageUrl(`view=attendance&month=${ym}`), { waitUntil: 'networkidle' });
 let text = await sara.innerText('main, body');
-check(text.includes('Day Shift') && text.includes('Late Shift'), 'attendance: schedule applied per day');
-check(text.includes('07:58') && text.includes('17:02'), 'attendance: check-in / check-out');
-check(text.includes('0:20') && text.includes('2:30'), 'attendance: late-in 0:20 and early-out 2:30 from ZKBioTime');
+check(text.includes('07:58') && text.includes('17:02') && text.includes('Main Gate'), 'attendance: check-in / check-out with the device');
+check(!/Schedule|Late-In|Early-Out|Worked Hours|Overtime/.test(text), 'attendance: no fields ZKBioTime 9.5 does not provide');
 check(/Duplicate punch/.test(text), 'attendance: duplicate punch exception');
-check(/Absent/.test(text) && /Rest Day/.test(text), 'attendance: absent and rest day statuses');
-await sara.goto(pageUrl(`view=attendance&month=${ym}&status=late`), { waitUntil: 'networkidle' });
-check((await sara.locator('table tbody tr').count()) === 1, 'attendance: status filter (late) shows one day');
+check(/Present/.test(text) && /Incomplete/.test(text) && /Weekend/.test(text), 'attendance: present, incomplete and weekend statuses');
+check(/Absent/.test(text) || Number(new Date().getDate()) <= 2, 'attendance: past working days without punches are absent');
+await sara.goto(pageUrl(`view=attendance&month=${ym}&status=incomplete`), { waitUntil: 'networkidle' });
+check((await sara.locator('table tbody tr').count()) >= 1, 'attendance: status filter (incomplete)');
 
 await sara.goto(pageUrl(`view=dashboard&month=${ym}`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
-check(/Present Days/.test(text) && /Late-In Occurrences/.test(text) && /Worked Hours/.test(text), 'dashboard: summary cards');
+check(/Days Attended/.test(text) && /Days Absent/.test(text) && /Average Check-In/.test(text), 'dashboard: summary cards');
+check(!/Late-In|Worked Hours|Overtime/.test(text), 'dashboard: no fields ZKBioTime 9.5 does not provide');
 check((await sara.locator('svg.biotime-chart').count()) === 1, 'dashboard: chart');
+check(/Today:/.test(text), 'dashboard: today card');
 check(/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard: recent activity and updated time');
 
 // A day with only a check-out punch: the time is under Check-Out, never Check-In.
 await sara.goto(pageUrl(`view=day&date=${ym}-09`), { waitUntil: 'networkidle' });
-const facts = await sara.locator('dl.biotime-facts').innerText();
-check(/Check-In\s*—/.test(facts) && /Check-Out\s*17:10/.test(facts), `check-out alone shown under Check-Out (${facts.replace(/\s+/g, ' ').slice(0, 200)})`);
-check(/Missing check-in/.test(await sara.innerText('body')), 'check-out alone: missing check-in exception');
+text = await sara.innerText('body');
+check(/Check-In\s*Missing/.test(text) && /Check-Out\s*↗?\s*17:10/.test(text), `check-out alone shown under Check-Out (${text.replace(/\s+/g, ' ').slice(0, 200)})`);
+check(/Incomplete/.test(text), 'check-out alone: incomplete day');
 
 // "Check In" then "Unknown" (state 255), as the real terminals record.
 await sara.goto(pageUrl(`view=day&date=${ym}-12`), { waitUntil: 'networkidle' });
-const facts12 = await sara.locator('dl.biotime-facts').innerText();
-check(/Check-In\s*07:45/.test(facts12) && /Check-Out\s*15:20/.test(facts12), `Check In + Unknown punches give check-in and check-out (${facts12.replace(/\s+/g, ' ').slice(0, 120)})`);
+text = await sara.innerText('body');
+check(/07:45/.test(text) && /15:20/.test(text) && /7:35/.test(text), 'Check In + Unknown punches give check-in, check-out and the time between');
 
 await sara.goto(pageUrl(`view=day&date=${ym}-03`), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
-check(/Late Shift/.test(text) && /Side Door/.test(text) && /All Punches/.test(text), 'day details: schedule and all punches');
+check(/Side Door/.test(text) && /All Punches/.test(text), 'day details: all punches');
 
-await sara.goto(pageUrl(`view=profile`), { waitUntil: 'networkidle' });
+// Biometric Devices: names, locations and health; no secrets.
+await sara.goto(pageUrl('view=devices'), { waitUntil: 'networkidle' });
 text = await sara.innerText('body');
-check(text.includes('FIXTURE1') && text.includes('Finance') && text.includes('Accountant'), 'profile: own record');
-check(!/44556677|1112223334/.test(await sara.content()), 'profile: no card number or national id');
+check(/Main Gate/.test(text) && /Head Office/.test(text) && /Sports Hall/.test(text), 'devices: names and locations');
+check(/Online/.test(text) && /Delayed/.test(text) && /Offline/.test(text), 'devices: health');
+check(!/FIXTURE-SECRET|10\.0\.0\.21|FIXTURE-SN-1/.test(await sara.content()), 'devices: no technical details by default');
+await sara.goto(pageUrl('view=devices&health=offline'), { waitUntil: 'networkidle' });
+check((await sara.locator('table tbody tr').count()) === 1, 'devices: health filter');
 
-await sara.goto(pageUrl(`view=reports&mode=month&month=${ym}`), { waitUntil: 'networkidle' });
-text = await sara.innerText('body');
-check(/Late-In Report/.test(text) && /Leave Summary/.test(text) && /Annual Leave/.test(text), 'reports: sections and leave');
-for (const [label, magic] of [['Download PDF', '%PDF'], ['Download Excel', 'PK']]) {
-  const [dl] = await Promise.all([sara.waitForEvent('download'), sara.click(`button:has-text("${label}")`)]);
-  const file = `${OUT}/export-${magic === 'PK' ? 'xlsx' : 'pdf'}`;
-  await dl.saveAs(file);
-  const head = fs.readFileSync(file).subarray(0, 4).toString('latin1');
-  const body = fs.readFileSync(file).toString('latin1');
-  check(head.startsWith(magic), `export ${label}: file type`);
-  check(!body.includes('OTHER-EMPLOYEE'), `export ${label}: no other employee's data`);
+// Removed pages are gone.
+for (const view of ['schedules', 'reports', 'profile']) {
+  const r = await sara.goto(pageUrl(`view=${view}`), { waitUntil: 'networkidle' });
+  check(r.status() === 404, `removed page ${view}: HTTP ${r.status()}`);
 }
-await sara.goto(pageUrl(`view=reports&mode=range&from=${ym}-01&to=2099-12-31`), { waitUntil: 'networkidle' });
-check(/too long/.test(await sara.innerText('body')), 'reports: range limit');
-
-// CSRF: an export without the token is refused.
-const csrf = await sara.request.post(pageUrl('task=report.export'), { form: { format: 'pdf', mode: 'month', month: ym } });
-check(!(csrf.headers()['content-type'] ?? '').includes('pdf'), 'export without CSRF token refused');
 
 // IDOR attempts: URL values never choose the employee.
 await sara.goto(pageUrl(`view=attendance&month=${ym}&emp_code=FIXTURE2&employee_id=2`), { waitUntil: 'networkidle' });
@@ -264,8 +262,8 @@ async function mapUser(username, code) {
 check(/already mapped/.test(await mapUser('nobody', 'FIXTURE1')), 'duplicate mapping refused');
 check(/is now mapped/.test(await mapUser('shared', 'FIXTURE3')), 'manual mapping by emp_code');
 const { ctx: sharedCtx, page: shared } = await login('shared');
-await shared.goto(pageUrl('view=profile'), { waitUntil: 'networkidle' });
-check((await shared.innerText('body')).includes('FIXTURE3'), 'manually mapped user sees their profile');
+await shared.goto(pageUrl('view=dashboard'), { waitUntil: 'networkidle' });
+check(!/could not be matched/.test(await shared.innerText('body')), 'manually mapped user sees their dashboard');
 await sharedCtx.close();
 
 // Re-match: the mapping is deleted and automatic matching runs on the next visit (also makes this
