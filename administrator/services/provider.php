@@ -20,7 +20,7 @@ use Joomla\DI\ServiceProviderInterface;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
-use BiotimePortal\Component\Biotime\Administrator\Cache\StoredUserCache;
+use BiotimePortal\Component\Biotime\Administrator\Cache\DbUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserFieldReader;
@@ -35,7 +35,6 @@ use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 return new class () implements ServiceProviderInterface {
-    private const CACHE_SESSION_KEY = 'com_biotime.cache';
 
 
     public function register(Container $container): void
@@ -107,12 +106,13 @@ return new class () implements ServiceProviderInterface {
             )
         );
 
-        // Per-user cache in the user's own session: never shared, gone at logout.
+        // Per-user cache in the component's own table: never shared between users, kept across
+        // logins, and not loaded with the session on every page of the site.
         $container->share(
             UserCacheInterface::class,
-            static fn (Container $c): UserCacheInterface => new StoredUserCache(
-                static fn (): array => (array) Factory::getApplication()->getSession()->get(self::CACHE_SESSION_KEY, []),
-                static fn (array $data) => Factory::getApplication()->getSession()->set(self::CACHE_SESSION_KEY, $data),
+            static fn (Container $c): UserCacheInterface => new DbUserCache(
+                $c->get(DatabaseInterface::class),
+                $c->get(JoomlaLogger::class),
                 $c->get(SettingsRepository::class)->load()->cacheTtl()
             )
         );

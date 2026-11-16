@@ -21,8 +21,12 @@ interface UserCacheInterface
     /** @return array<mixed>|null */
     public function get(Identity $identity, string $key): ?array;
 
-    /** @param array<mixed> $value */
-    public function set(Identity $identity, string $key, array $value): void;
+    /**
+     * @param array<mixed> $value
+     * @param int|null     $ttl   seconds to keep it instead of the cache time (e.g. a day for past
+     *                            months, which no longer change); ignored when the cache is off
+     */
+    public function set(Identity $identity, string $key, array $value, ?int $ttl = null): void;
 
     public function clear(Identity $identity, string $prefix = ''): void;
 }

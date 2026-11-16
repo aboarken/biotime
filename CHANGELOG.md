@@ -3,6 +3,17 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.6] - 2026-11-16
+
+### Changed
+- **Faster pages.**
+  - **Past months are kept for 24 hours**: their punches no longer change, so after the first read of the day, moving to a past month or opening My Punches does not ask ZKBioTime again. The current month still refreshes after the *Cache time* (default 5 minutes), so new punches appear as quickly as before.
+  - **Saved data in its own table** `#__biotime_cache` instead of the user's session: it survives logging out and is no longer loaded with the session on every page of the site. Expired entries are deleted automatically. Updating creates the table; the old session data is removed on each user's next visit.
+  - **One connection per page load**: all requests of a page reuse one HTTPS connection to ZKBioTime (one handshake instead of one per request).
+
+### Fixed
+- **Every page slow when ZKBioTime did not answer the daily employee check.** The failed check was retried on every page load, and each attempt waited for ZKBioTime. It is now tried again after an hour.
+
 ## [0.4.5] - 2026-11-16
 
 ### Fixed

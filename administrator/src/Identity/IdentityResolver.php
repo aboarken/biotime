@@ -40,6 +40,9 @@ final class IdentityResolver
     public const RECHECK_SECONDS  = 900;
     public const REVERIFY_SECONDS = 86400;
 
+    /** After a failed daily re-verification (ZKBioTime slow or unreachable), wait this long before trying again. */
+    public const REVERIFY_RETRY_SECONDS = 3600;
+
     /** @var array<int, Identity> */
     private array $memo = [];
 
@@ -229,8 +232,11 @@ final class IdentityResolver
                 return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
             }
 
-            // ZKBioTime unavailable: keep the verified mapping and try again on a later visit.
-            $this->logger->warning(\sprintf('Could not re-verify the mapping of Joomla user %d (%s)', $userId, $e->getKind()));
+            // ZKBioTime unavailable: keep the verified mapping and try again in an hour, not on every
+            // page load (each attempt waits for ZKBioTime, which made every page slow). The check
+            // time is set so that the mapping is due again after REVERIFY_RETRY_SECONDS.
+            $this->logger->warning(\sprintf('Could not re-verify the mapping of Joomla user %d (%s); trying again in %d minutes', $userId, $e->getKind(), intdiv(self::REVERIFY_RETRY_SECONDS, 60)));
+            $this->repository->save($mapping->with(['checkedAt' => $now->modify('-' . (self::REVERIFY_SECONDS - self::REVERIFY_RETRY_SECONDS) . ' seconds')]));
 
             return Identity::matched($userId, (string) $mapping->employeeId, (string) $mapping->empCode);
         }
