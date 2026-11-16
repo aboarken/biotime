@@ -43,7 +43,24 @@ final class Punch
     /** @param array{t: string, s?: ?string, c?: ?string, d?: ?string, a?: ?string, v?: ?string, n?: ?string, vc?: ?string} $row */
     public static function fromCache(array $row): self
     {
-        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $row['s'] ?? null, $row['d'] ?? null, $row['a'] ?? null, $row['c'] ?? null, $row['v'] ?? null, $row['n'] ?? null, $row['vc'] ?? null);
+        $text = static fn (string $key): ?string => self::known($row[$key] ?? null);
+
+        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $text('s'), $text('d'), $text('a'), $row['c'] ?? null, $text('v'), $text('n'), $row['vc'] ?? null);
+    }
+
+    /**
+     * A text value, or null when ZKBioTime only says "Unknown" (as many devices record the punch
+     * state, e.g. state 255): that word is not shown in the punch details.
+     */
+    public static function known(mixed $value): ?string
+    {
+        if (!\is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' || strcasecmp($value, 'unknown') === 0 ? null : $value;
     }
 
     /**

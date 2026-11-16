@@ -3,6 +3,12 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.5] - 2026-11-16
+
+### Fixed
+- **Date picker months**: clicking ← or → in the My Attendance date picker closed it, so it always reopened on the current month. It now stays open while you move between months, and opens on the month the page shows (e.g. October when October is selected) when no date is set.
+- **"Unknown" removed from punch details**: devices record many punches with the state "Unknown" (state 255); that word is no longer shown in the punch list or the day details (the punch still counts as check-in or check-out by its time).
+
 ## [0.4.4] - 2026-11-16
 
 ### Added

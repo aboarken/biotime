@@ -280,6 +280,20 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame(['fingerprint' => 1, 'face' => 2, 'total' => 3, 'last' => '2026-11-02 16:00:00'], array_intersect_key($stats->devices[0], ['fingerprint' => 0, 'face' => 0, 'total' => 0, 'last' => 0]));
     }
 
+    public function testTheWordUnknownIsNotShownInPunchDetails(): void
+    {
+        $this->zkb->list('/iclock/api/transactions/', [
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-12 07:45:00', 'punch_state' => 0, 'punch_state_display' => 'Check In', 'terminal_alias' => 'Main Gate'],
+            ['emp_code' => 'E1', 'punch_time' => '2026-11-12 15:20:00', 'punch_state' => 255, 'punch_state_display' => 'Unknown', 'verify_type_display' => 'unknown', 'terminal_alias' => 'Main Gate', 'area_alias' => ' Unknown '],
+        ]);
+
+        $day = $this->service()->month($this->alice, 2026, 11)->day('2026-11-12');
+
+        self::assertSame('Check In', $day->punches[0]->state);
+        self::assertSame([null, null, null, 'Main Gate'], [$day->punches[1]->state, $day->punches[1]->verify, $day->punches[1]->area, $day->punches[1]->device]);
+        self::assertSame(['07:45:00', '15:20:00'], [$day->checkIn, $day->checkOut], 'the punch still counts');
+    }
+
     public function testPunchDetailsIncludeHowAndWhere(): void
     {
         $this->zkb->list('/iclock/api/transactions/', [
