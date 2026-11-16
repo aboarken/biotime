@@ -61,6 +61,8 @@ return new class () implements ServiceProviderInterface {
                     'src/Devices',
                     // 0.4.4: leave is no longer read.
                     'src/Attendance/LeaveRecord.php',
+                    // 0.4.6: replaced by CurlTransport (one connection reused per page load).
+                    'src/Api/Transport/JoomlaHttpTransport.php',
                 ];
 
                 /** Settings rows of removed options. */

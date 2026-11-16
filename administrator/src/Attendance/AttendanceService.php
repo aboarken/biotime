@@ -44,6 +44,12 @@ final class AttendanceService
     /** Punches from this time of day on are check-outs; earlier punches are check-ins. */
     public const CHECK_OUT_FROM = '12:00:00';
 
+    /**
+     * How long a past month is kept in the cache: its punches no longer change, so it does not need
+     * the short cache time of the current month (Integration Settings). Only while the cache is on.
+     */
+    public const PAST_MONTH_TTL = 86400;
+
     /** The first year the portal offers (year lists, month navigation). */
     public const FIRST_YEAR = 2025;
 
@@ -357,8 +363,9 @@ final class AttendanceService
         $stat['read']   += \count($rows);
         $stat['hidden'] += $hidden;
 
-        $at = ($this->clock)()->getTimestamp();
-        $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => $result->truncated, 'at' => $at]);
+        $at   = ($this->clock)()->getTimestamp();
+        $past = $last->format('Y-m-d') < $this->today();
+        $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => $result->truncated, 'at' => $at], $past ? self::PAST_MONTH_TTL : null);
 
         return ['rows' => $rows, 'truncated' => $result->truncated, 'at' => $at, 'error' => null];
     }

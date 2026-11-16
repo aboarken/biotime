@@ -41,6 +41,13 @@ final class DisplayController extends BaseController
     {
         $this->noCache();
 
+        // Before 0.4.6 the saved ZKBioTime data lived in the session; it is now in its own table.
+        $session = $this->app->getSession();
+
+        if ($session->has('com_biotime.cache')) {
+            $session->remove('com_biotime.cache');
+        }
+
         if (!$this->requireLogin()) {
             return $this;
         }

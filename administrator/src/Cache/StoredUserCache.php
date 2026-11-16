@@ -53,7 +53,7 @@ final class StoredUserCache implements UserCacheInterface
         return $entry['v'];
     }
 
-    public function set(Identity $identity, string $key, array $value): void
+    public function set(Identity $identity, string $key, array $value, ?int $ttl = null): void
     {
         if ($this->ttl <= 0 || !$identity->isMatched()) {
             return;
@@ -62,7 +62,7 @@ final class StoredUserCache implements UserCacheInterface
         $now   = ($this->clock)();
         $store = array_filter(($this->load)(), static fn ($e) => \is_array($e) && ($e['e'] ?? 0) > $now);
 
-        $store[$this->key($identity, $key)] = ['e' => $now + $this->ttl, 'v' => $value];
+        $store[$this->key($identity, $key)] = ['e' => $now + max(1, $ttl ?? $this->ttl), 'v' => $value];
 
         if (\count($store) > self::MAX_ENTRIES) {
             uasort($store, static fn (array $a, array $b): int => $a['e'] <=> $b['e']);

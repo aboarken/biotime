@@ -14,7 +14,7 @@ use Psr\Log\LoggerInterface;
 use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Api\TokenStoreInterface;
-use BiotimePortal\Component\Biotime\Administrator\Api\Transport\JoomlaHttpTransport;
+use BiotimePortal\Component\Biotime\Administrator\Api\Transport\CurlTransport;
 use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportInterface;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
@@ -31,6 +31,13 @@ use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 final class ZkbClientFactory
 {
     private ?KeyVault $vault = null;
+
+    /**
+     * The client shared by everything on one page load (identity check, every month read), so one
+     * connection to ZKBioTime is opened and reused. Test Connection, which passes its own token
+     * store, always gets a fresh client.
+     */
+    private ?ZkbClient $shared = null;
 
     /**
      * @param  (\Closure(ClientConfig): TransportInterface)|null  $transportFactory  Injected for tests
@@ -52,6 +59,10 @@ final class ZkbClientFactory
      */
     public function create(?TokenStoreInterface $tokens = null): ZkbClient
     {
+        if ($tokens === null && $this->shared !== null) {
+            return $this->shared;
+        }
+
         $settings = $this->settings->load();
 
         if (!$settings->isConfigured()) {
@@ -83,12 +94,15 @@ final class ZkbClientFactory
             throw new ZkbException(ZkbException::NOT_CONFIGURED, 'ZKBioTime credentials are incomplete', 0, '', $e);
         }
 
-        $transport = $this->transportFactory !== null ? ($this->transportFactory)($config) : new JoomlaHttpTransport($config);
+        $shared    = $tokens === null;
+        $transport = $this->transportFactory !== null ? ($this->transportFactory)($config) : new CurlTransport($config);
         $tokens  ??= $this->tokenStoreFactory !== null
             ? ($this->tokenStoreFactory)($this->vault())
             : new DbTokenStore($this->settings, $this->vault(), $this->logger);
 
-        return new ZkbClient($transport, $config, $credentials, $tokens, $this->logger, $settings->pageSize(), $settings->maxPages());
+        $client = new ZkbClient($transport, $config, $credentials, $tokens, $this->logger, $settings->pageSize(), $settings->maxPages());
+
+        return $shared ? $this->shared = $client : $client;
     }
 
     public function vault(): KeyVault

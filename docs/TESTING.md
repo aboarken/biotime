@@ -111,6 +111,13 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.4.6 – Speed
+- [ ] After the update, the table `#__biotime_cache` exists (*System → Information → Database* or phpMyAdmin) and fills while the portal is used.
+- [ ] `administrator/logs/com_biotime.php`: opening My Dashboard twice within 5 minutes reads ZKBioTime only once ("cached" on the second page line); a previous month opened again later the same day says "cached".
+- [ ] Log out and in again: the pages are still "cached".
+- [ ] Block ZKBioTime briefly after the daily check is due: one warning "Could not re-verify … trying again in 60 minutes", then pages are fast again (no new attempt for an hour).
+- [ ] New punches appear within the Cache time.
+
 ### 0.4.5 – Date picker months, no "Unknown"
 - [ ] My Attendance → Date: open the calendar, click ← to go to the previous month: it stays open; choose a day there and the page shows that day.
 - [ ] With October selected in the Month list, the date calendar opens on October.

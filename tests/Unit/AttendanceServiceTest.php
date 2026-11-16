@@ -338,6 +338,33 @@ final class AttendanceServiceTest extends TestCase
         self::assertNotSame([], $this->zkb->calls, 'cache time 0 reads again');
     }
 
+    public function testPastMonthsAreKeptForADayTheCurrentMonthForTheCacheTime(): void
+    {
+        $time    = strtotime('2026-11-20 12:00:00 UTC');
+        $service = new AttendanceService(
+            fn () => Fakes::client($this->zkb),
+            SourceConfig::parse('daily', []),
+            Fakes::cache($this->session, 300, static function () use (&$time): int {
+                return $time;
+            }),
+            $this->log,
+            new \DateTimeZone('Asia/Riyadh'),
+            static fn () => new \DateTimeImmutable('2026-11-20 12:00:00', new \DateTimeZone('UTC'))
+        );
+        $reads = fn (): int => \count($this->zkb->queries('/iclock/api/transactions/'));
+
+        $service->range($this->alice, new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-20'));
+        self::assertSame(2, $reads(), 'October and November read');
+
+        $time += 600; // 10 minutes later: past the 5-minute cache time
+        $service->range($this->alice, new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-20'));
+        self::assertSame(3, $reads(), 'only November (the current month) is read again');
+
+        $time += 86400; // a day later: October is read again too
+        $service->range($this->alice, new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-20'));
+        self::assertSame(5, $reads());
+    }
+
     public function testOneFailingPartDoesNotHideTheOthers(): void
     {
         $this->zkb->on(self::DAILY_PATH, static fn () => [500, ['detail' => 'boom']]);

@@ -186,6 +186,40 @@ final class IdentityResolverTest extends TestCase
         self::assertSame(UserMapping::STATUS_SUSPENDED, $this->resolver()->resolve(5, 'a@x.com')->status);
     }
 
+    /** A failed daily re-verification is not retried on every page load (each try waits for ZKBioTime). */
+    public function testFailedReverificationIsRetriedAfterAnHourNotOnEveryPage(): void
+    {
+        $this->fields->values[5] = 'E1';
+        $this->resolver()->resolve(5, 'a@x.com');
+
+        $this->zkb->on('/personnel/api/employees/11/', static fn () => [503, ['detail' => 'down']]);
+        $this->now = $this->now->modify('+25 hours');
+        $tries     = fn (): int => \count($this->zkb->queries('/personnel/api/employees/11/'));
+
+        self::assertTrue($this->resolver()->resolve(5, 'a@x.com')->isMatched(), 'the verified mapping is kept');
+        $after = $tries();
+        self::assertGreaterThan(0, $after);
+
+        $failedAt = $this->now;
+
+        foreach ([1, 30, 59] as $minutes) {
+            $this->now = $failedAt->modify("+{$minutes} minutes");
+            self::assertTrue($this->resolver()->resolve(5, 'a@x.com')->isMatched());
+        }
+
+        self::assertSame($after, $tries(), 'no new attempt within the hour');
+
+        $this->zkb->on('/personnel/api/employees/11/', fn () => [200, $this->employees[0]]);
+        $this->now = $failedAt->modify('+61 minutes');
+        self::assertTrue($this->resolver()->resolve(5, 'a@x.com')->isMatched());
+        self::assertGreaterThan($after, $tries(), 'tried again after an hour');
+
+        $before    = $tries();
+        $this->now = $this->now->modify('+2 hours');
+        $this->resolver()->resolve(5, 'a@x.com');
+        self::assertSame($before, $tries(), 'verified again: next check in a day');
+    }
+
     public function testAdministratorMapsByExactCodeAndDuplicatesAreRefused(): void
     {
         $manager = new MappingManager($this->repo, fn () => Fakes::client($this->zkb), $this->audit, fn () => $this->now);

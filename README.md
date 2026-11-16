@@ -259,11 +259,22 @@ Biometric Devices menu items into My Punches and moves its permission to *View M
 
 ## Cache and performance
 
-Each data type (punches, calculated attendance) is read once per user and month and
-kept in the user's own session for the cache time (default 5 minutes), so My Dashboard, My
-Attendance, the Calendar and day details share it. The device list is kept the same way. Pages show
-"Updated hh:mm". With cache time 0 every page reads ZKBioTime again, which makes the Dashboard
-slow.
+What the portal reads from ZKBioTime is kept per user in the component's own table
+`#__biotime_cache`, so My Dashboard, My Attendance, the Calendar, day details and My Punches share
+it, and it survives logging out. Each entry belongs to one Joomla user and one employee code.
+
+- **The current month** is kept for the *Cache time* (default 5 minutes), so a new punch appears
+  within that time.
+- **Past months** are kept for **24 hours**: their punches no longer change. (Only while the cache
+  is on; *Cache time* 0 turns everything off.)
+- Expired entries are deleted automatically; the table holds only what was read recently (a few KB
+  per employee and month, a few MB for a whole school).
+- **One connection per page load**: all requests of a page reuse the same HTTPS connection to
+  ZKBioTime instead of a new handshake each time.
+- **Daily employee check**: once a day each user's mapping is checked against ZKBioTime. If
+  ZKBioTime does not answer, the check is tried again after an hour, not on every page.
+
+Pages show "Updated hh:mm" (when ZKBioTime was read).
 
 API calls per page load, for one month (cold cache; a warm cache makes **0** calls):
 
@@ -271,8 +282,8 @@ API calls per page load, for one month (cold cache; a warm cache makes **0** cal
 |---|---|
 | Any page, first visit of a user | Employee code field: 1 (employee list filtered by code). E-mail: one per page of the employee list. Then 0 while the mapping is active (1 per day to re-verify). |
 | Login | 1 per token lifetime (the token is cached on the server, encrypted). |
-| Dashboard, My Attendance, Calendar, day details | punches (+ daily source when set) = **1** on 9.5, at most 2 (more only when a month has more rows than the page size). |
-| My Punches | 1 per month of the year up to today (cached like the other pages). |
+| Dashboard, My Attendance, Calendar, day details | punches (+ daily source when set) = **1** on 9.5 for the current month, at most 2 (more only when a month has more rows than the page size). Past months: 0 for a day after the first read. |
+| My Punches | 1 per month of the year up to today on the first load of the day; then only the current month. |
 
 ## Security
 
