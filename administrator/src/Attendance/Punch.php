@@ -43,7 +43,8 @@ final class Punch
     /**
      * Whether this punch is a check-in, a check-out or a break punch, as ZKBioTime recorded it;
      * null when unknown. Overtime in/out count as in/out. The state text decides; the code only
-     * when there is no text (ZKTeco codes 0/4 = in, 1/5 = out, 2/3 = break; UNVERIFIED on 9.5).
+     * when there is no text (ZKTeco codes 0/4 = in, 1/5 = out, 2/3 = break). UNVERIFIED: the 9.5
+     * manual does not list the codes; the real server shows 0 = "Check In", 255 = "Unknown".
      */
     public function direction(): ?string
     {

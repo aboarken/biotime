@@ -25,7 +25,7 @@ final class ProfileService
 {
     /**
      * Portal field => ZKBioTime employee field (dots for nested objects; "[]" for a list of objects).
-     * UNVERIFIED on 9.5. Source: ZKBioTime API User Manual, "Employee" (see docs/API-MAPPING.md).
+     * VERIFIED: BioTime 9.5 API User Manual (16 Aug 2024), 5.1, and the field names seen on the real server (see docs/API-MAPPING.md).
      */
     public const FIELDS = [
         'emp_code'   => 'emp_code',
