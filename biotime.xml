@@ -6,7 +6,7 @@
     <creationDate>2026-11</creationDate>
     <copyright>(C) 2026</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <version>0.3.2</version>
+    <version>0.3.3</version>
     <description>COM_BIOTIME_XML_DESCRIPTION</description>
     <namespace path="src">BiotimePortal\Component\Biotime</namespace>
 
@@ -41,6 +41,7 @@
     <media destination="com_biotime" folder="media">
         <filename>joomla.asset.json</filename>
         <folder>css</folder>
+        <folder>js</folder>
     </media>
 
     <!-- Joomla checks this for updates (System > Update > Extensions). The file is attached to every

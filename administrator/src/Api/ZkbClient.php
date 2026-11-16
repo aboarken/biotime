@@ -85,6 +85,16 @@ final class ZkbClient
         'corejson' => 'application/coreapi+json, application/vnd.coreapi+json;q=0.9, application/json;q=0.8',
     ];
 
+    /**
+     * Calculated-attendance paths that Diagnostics also checks, because the API description of
+     * the 9.5 server under test lists no attendance endpoints at all (not even transactions).
+     * Diagnostics only reports whether they answer and which field names they return; nothing is
+     * read from them until the administrator saves one as the Daily Attendance Source.
+     * UNVERIFIED on 9.5. Source: BioTimeCloud API User Manual 1.0 (Aug 2023), "Att API":
+     * GET /att/api/totalTimeCardReport/ with page, page_size, start_date, end_date.
+     */
+    private const DIAG_ATT_PATHS = ['/att/api/totalTimeCardReport/'];
+
     /** Paging query parameters. UNVERIFIED on 9.5 (manual, list endpoints). */
     private const PARAM_PAGE      = 'page';
     private const PARAM_PAGE_SIZE = 'page_size';
@@ -452,6 +462,48 @@ final class ZkbClient
         }
 
         return $this->listPage($path, $query, 1, max(1, min(50, $rows)));
+    }
+
+    /**
+     * A few punch rows of one employee (or of anyone the API user may see, without a code), for
+     * Diagnostics: shows that the punch endpoint answers and which fields it returns.
+     *
+     * @throws ZkbException
+     */
+    public function probeTransactions(?string $empCode, \DateTimeImmutable $from, \DateTimeImmutable $to, int $rows = 5): ListPage
+    {
+        $query = [
+            self::PARAM_TX_START => $from->format('Y-m-d 00:00:00'),
+            self::PARAM_TX_END   => $to->format('Y-m-d 23:59:59'),
+        ];
+
+        if ($empCode !== null && $empCode !== '') {
+            $query[self::PARAM_TX_EMP] = self::empCode($empCode);
+        }
+
+        return $this->listPage(self::PATH_TRANSACTIONS, $query, 1, max(1, min(50, $rows)));
+    }
+
+    /** The employee list's first page (one row), for Diagnostics: total employees the API user sees. */
+    public function probeEmployees(): ListPage
+    {
+        return $this->listPage(self::PATH_EMPLOYEES, [], 1, 1);
+    }
+
+    /**
+     * Calculated-attendance paths Diagnostics checks besides the ones in the API description.
+     *
+     * @return list<string>
+     */
+    public static function diagnosticPaths(): array
+    {
+        return self::DIAG_ATT_PATHS;
+    }
+
+    /** The punch endpoint's path, for display in Diagnostics. */
+    public static function transactionsPath(): string
+    {
+        return self::PATH_TRANSACTIONS;
     }
 
     /**

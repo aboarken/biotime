@@ -86,6 +86,15 @@ await admin.fill('#biotime-pt', 'end_time');
 await admin.selectOption('#biotime-df', 'Y-m-d H:i:s');
 await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('button:has-text("Check")')]);
 check(/already reads this endpoint/.test(await admin.innerText('body')) && (await admin.locator('button:has-text("Save as Daily Attendance Source")').count()) === 0, 'punch list: shown but cannot be saved as a source');
+
+// Diagnostics: one report with every check, no personal values.
+await admin.fill('#biotime-diag-emp', 'FIXTURE1');
+await Promise.all([admin.waitForNavigation({ waitUntil: 'networkidle' }), admin.click('#biotime-diag-run')]);
+const diag = await admin.inputValue('#biotime-diag-report');
+check(/1\. Connection[\s\S]*OK/.test(diag) && /3\. Punches \/iclock\/api\/transactions\/\n\s+OK/.test(diag), 'Diagnostics: connection and punches checked');
+check(/\/att\/api\/fixture_daily\/[\s\S]*- att_status \(text\)/.test(diag) && /\/att\/api\/totalTimeCardReport\/[\s\S]*FAILED: bad_response/.test(diag), 'Diagnostics: attendance endpoints checked');
+check(!/FIXTURE1|Fixture-Pass|Sara|example\.test|\d{2}:\d{2}:\d{2}/.test(diag), 'Diagnostics: no codes, secrets, names or times in the report');
+check((await untranslated(admin)).length === 0, 'Diagnostics translated');
 await admin.goto(settingsUrl, { waitUntil: 'networkidle' });
 
 // Invalid source refused.

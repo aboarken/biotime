@@ -46,6 +46,8 @@ page says so when the user's own Joomla time zone differs. Times are never shift
   **Read Certificate Pin**, **Close**, **Options**.
 - **Find Endpoints**: reads the API list from ZKBioTime, checks an endpoint (field names, kinds of
   values and status texts only) and saves it as the Daily Attendance or Leave Source.
+  **Run Diagnostics** runs every check in one click and gives a report to copy (paths, results,
+  field names and kinds only).
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
   source filters, and pages. **New** (map by employee code), **Confirm**, **Suspend**,
   **Re-match**. The status filter *No mapping yet* lists Joomla users that are not matched.
@@ -198,6 +200,11 @@ select with an employee code and dates, shows its field names, kinds of values a
 (never personal values), suggests all the lines above, and saves them as the Daily Attendance or
 Leave Source after you review them. If your ZKBioTime publishes no readable API list, type the
 path from `/api/docs/` there.
+
+**Not sure which endpoint?** Click **Run Diagnostics** at the top of Find Endpoints, then
+**Copy report** and send the text to whoever supports the portal. It checks the connection, the
+API list, the punch endpoint and the known calculated-attendance endpoints from your Joomla
+server, and contains no passwords, tokens, names, employee codes or times.
 
 Until the daily source is set, the portal shows punches and "—" for schedule, status, late-in,
 early-out, worked hours and overtime, with a note saying so. Check-in and check-out then come from

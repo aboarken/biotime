@@ -29,6 +29,9 @@ final class HtmlView extends BaseHtmlView
     /** @var array<string, mixed>|null */
     public ?array $check = null;
 
+    /** @var array{report: string, emp_code: string, from: string, to: string}|null */
+    public ?array $diagnostics = null;
+
     public string $filter = '';
 
     public bool $showAll = false;
@@ -41,6 +44,8 @@ final class HtmlView extends BaseHtmlView
         $check         = $app->getUserState(EndpointsController::STATE_CHECK);
         $this->catalog = \is_array($catalog) ? $catalog : null;
         $this->check   = \is_array($check) ? $check : null;
+        $diag          = $app->getUserState(EndpointsController::STATE_DIAG);
+        $this->diagnostics = \is_array($diag) ? $diag : null;
         $this->filter  = mb_substr(trim($app->getInput()->getString('filter', '')), 0, 60);
         $this->showAll = $app->getInput()->getInt('all', 0) === 1;
 
@@ -58,6 +63,7 @@ final class HtmlView extends BaseHtmlView
         $assets = $this->getDocument()->getWebAssetManager();
         $assets->getRegistry()->addExtensionRegistryFile('com_biotime');
         $assets->useStyle('com_biotime.admin');
+        $assets->useScript('com_biotime.admin');
 
         parent::display($tpl);
     }
