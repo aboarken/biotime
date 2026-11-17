@@ -27,7 +27,7 @@ use BiotimePortal\Component\Biotime\Administrator\Api\Transport\TransportRespons
  * report or leave API: only login, devices, personnel and transactions. The portal reads the
  * login, employees and transactions.
  */
-final class ZkbClient
+final class ZkbClient implements EmployeeDirectoryInterface
 {
     /**
      * JWT login: POST {"username", "password"} -> {"token"}; requests then send "Authorization: JWT <token>".

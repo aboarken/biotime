@@ -24,6 +24,8 @@ use BiotimePortal\Component\Biotime\Administrator\Cache\DbUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbEmployeeDirectory;
+use BiotimePortal\Component\Biotime\Administrator\Database\Query;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserFieldReader;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserMapRepository;
@@ -81,6 +83,25 @@ return new class () implements ServiceProviderInterface {
 
         $client = static fn (Container $c): \Closure => static fn () => $c->get(ZkbClientFactory::class)->create();
 
+        // One read-only connection to ZKBioTime's database per page load, opened when first needed
+        // (attendance and employee lookups share it).
+        $container->share(
+            Query::class,
+            static fn (Container $c): Query => (new DbConnector())->connect(
+                $c->get(SettingsRepository::class)->load()->dbConfig($c->get(ZkbClientFactory::class)->vault())
+            )
+        );
+
+        // Employees for matching Joomla users: from the database when the pages read it (0.6.1),
+        // else from the API. The ids are the same in both, so mappings stay valid either way.
+        $container->share(
+            DbEmployeeDirectory::class,
+            static fn (Container $c): DbEmployeeDirectory => new DbEmployeeDirectory(static fn (): Query => $c->get(Query::class))
+        );
+        $directory = static fn (Container $c): \Closure => $c->get(SettingsRepository::class)->load()->readsDatabase()
+            ? static fn () => $c->get(DbEmployeeDirectory::class)
+            : $client($c);
+
         $container->share(
             UserMapRepositoryInterface::class,
             static fn (Container $c): UserMapRepositoryInterface => new DbUserMapRepository($c->get(DatabaseInterface::class))
@@ -90,7 +111,7 @@ return new class () implements ServiceProviderInterface {
             IdentityResolver::class,
             static fn (Container $c): IdentityResolver => new IdentityResolver(
                 $c->get(UserMapRepositoryInterface::class),
-                $client($c),
+                $directory($c),
                 $c->get(AuditLogInterface::class),
                 $c->get(JoomlaLogger::class),
                 $c->get(SettingsRepository::class)->load()->autoMatch(),
@@ -103,7 +124,7 @@ return new class () implements ServiceProviderInterface {
             MappingManager::class,
             static fn (Container $c): MappingManager => new MappingManager(
                 $c->get(UserMapRepositoryInterface::class),
-                $client($c),
+                $directory($c),
                 $c->get(AuditLogInterface::class)
             )
         );
@@ -138,12 +159,12 @@ return new class () implements ServiceProviderInterface {
                 $database = null;
 
                 // Attendance from ZKBioTime's database (0.6.0): one reader, and at most one
-                // connection, per page load. Identities are still checked through the API.
+                // connection, per page load.
                 if ($settings->readsDatabase()) {
                     $reader   = null;
                     $database = static function () use (&$reader, $c, $settings, $zoneName): AttendanceReader {
                         return $reader ??= new AttendanceReader(
-                            static fn () => (new DbConnector())->connect($settings->dbConfig($c->get(ZkbClientFactory::class)->vault())),
+                            static fn (): Query => $c->get(Query::class),
                             \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
                             $settings->dbDurationUnit()
                         );

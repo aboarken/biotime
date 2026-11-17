@@ -59,11 +59,20 @@ final class SettingsValidator
         // Server URL, including its port (https://zkb.example.com:5555).
         $url = rtrim($text('server_url', 500), '/');
 
+        // Reading everything from the database (0.6.1): the API may be left empty. When a server
+        // URL is entered it is still checked in full.
+        $noApi = $url === '' && self::str($input['data_source'] ?? '') === 'database'
+            && self::str($input['db_engine'] ?? '') === DbConfig::ENGINE_PGSQL;
+
         try {
             $base                 = ClientConfig::buildBaseUrl($url);
             $values['server_url'] = $url;
         } catch (\InvalidArgumentException) {
-            $errors[] = $url === '' ? 'COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED' : 'COM_BIOTIME_SETTINGS_ERR_URL';
+            if (!$noApi) {
+                $errors[] = $url === '' ? 'COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED' : 'COM_BIOTIME_SETTINGS_ERR_URL';
+            }
+
+            $values['server_url'] = $noApi ? '' : ($values['server_url'] ?? '');
             $base     = '';
         }
 
@@ -161,11 +170,11 @@ final class SettingsValidator
 
         $login = $username !== '' && $hasPassword;
 
-        if ($method === Credentials::METHOD_JWT && !$login) {
+        if ($method === Credentials::METHOD_JWT && !$login && !$noApi) {
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_JWT_CREDENTIALS';
         }
 
-        if ($method === Credentials::METHOD_TOKEN && !$login && !$hasToken) {
+        if ($method === Credentials::METHOD_TOKEN && !$login && !$hasToken && !$noApi) {
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_TOKEN_CREDENTIALS';
         }
 
