@@ -62,6 +62,10 @@ final class AttendanceReaderTest extends TestCase
                 $base('2026-11-11', '07:30:00', '11:30:00', '07:35:00', '11:30:00', 5, 0, 235, ['timetable' => 'Morning']),
                 $base('2026-11-11', '13:00:00', '17:00:00', '13:10:00', '16:50:00', 10, 10, 220, ['timetable' => 'Afternoon']),
             ],
+            // ZKBioTime 9.5's own tables (empty here: this server version keeps att_payloadbase).
+            'FROM att_payloadtimecard' => [],
+            'FROM att_payloadpaycode'  => [],
+            'FROM att_payloadattcode'  => [],
             // Schedules for the dates ZKBioTime has not calculated.
             'FROM att_tempschedule'   => [['d' => '2026-11-23', 's' => '09:00:00', 'e' => '13:00:00', 'alias' => 'Exam duty', 'in_above_margin' => 60]],
             'FROM att_temporaryschedule' => [],
@@ -135,6 +139,62 @@ final class AttendanceReaderTest extends TestCase
         // Punches in the API's field names, with the state and verification as ZKBioTime shows them.
         $p = $this->reader(new CatalogueQuery('pgsql', $this->answers()))->punches('E1', new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30'))[0];
         self::assertSame(['2026-11-02 07:42:10', 'Check In', 'Face', '15'], [$p['punch_time'], $p['punch_state_display'], $p['verify_type_display'], $p['verify_type']]);
+    }
+
+    /**
+     * ZKBioTime 9.5 as on the real server: att_payloadbase empty; the calculation in the time cards
+     * (timetable, scheduled times), pay codes (Late In = L, Early Out = E, Absence, HOLIDAY, WEEKEND,
+     * leave, minutes) and attendance codes (Worked Hours).
+     */
+    public function testZkbioTime95KeepsItsCalculationInTimeCardsAndPayCodes(): void
+    {
+        $answers = $this->answers();
+        $answers['FROM att_payloadbase'] = [];
+        $answers['FROM att_payloadtimecard'] = [
+            ['d' => '2026-11-02', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240],
+            ['d' => '2026-11-04', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240],
+            ['d' => '2026-11-05', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240],
+            ['d' => '2026-11-06', 'time_table_alias' => null, 's' => null, 'e' => null, 'in_above_margin' => null],
+        ];
+        $answers['FROM att_payloadpaycode'] = [
+            ['d' => '2026-11-02', 'name' => 'Late In', 'symbol' => 'L', 'minutes' => '12.0'],
+            ['d' => '2026-11-02', 'name' => 'Early Out', 'symbol' => 'E', 'minutes' => '25.0'],
+            ['d' => '2026-11-02', 'name' => 'Regular', 'symbol' => 'P', 'minutes' => '443.0'],
+            ['d' => '2026-11-04', 'name' => 'Absence', 'symbol' => 'A', 'minutes' => '480.0'],
+            ['d' => '2026-11-05', 'name' => 'Annual Leave', 'symbol' => null, 'minutes' => '480.0'],
+            ['d' => '2026-11-06', 'name' => 'WEEKEND', 'symbol' => 'W', 'minutes' => '1440.0'],
+            ['d' => '2026-11-08', 'name' => 'HOLIDAY', 'symbol' => 'H', 'minutes' => '0.0'],
+        ];
+        $answers['FROM att_payloadattcode'] = [['d' => '2026-11-02', 'minutes' => '443.0']];
+
+        $r    = $this->reader(new CatalogueQuery('pgsql', $answers));
+        $days = array_column($r->days($r->employee('E1'), new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30')), null, 'date');
+
+        self::assertSame(['IN07:30-OUT15:30', '07:30:00', '15:30:00', '11:30:00', 12, 25, 443], [
+            $days['2026-11-02']['schedule'], $days['2026-11-02']['sched_start'], $days['2026-11-02']['sched_end'], $days['2026-11-02']['cutoff'],
+            $days['2026-11-02']['late'], $days['2026-11-02']['early'], $days['2026-11-02']['worked'],
+        ]);
+        self::assertTrue($days['2026-11-04']['absent']);
+        self::assertSame('Annual Leave', $days['2026-11-05']['leave_name']);
+        self::assertTrue($days['2026-11-06']['off']);
+        self::assertSame('Holiday', $days['2026-11-08']['holiday'], 'a HOLIDAY pay code');
+        self::assertSame('National Day', $days['2026-11-15']['holiday'], 'att_holiday gives the name');
+
+        $period = (new AttendanceService(
+            static fn () => throw new \LogicException('no API'),
+            SourceConfig::parse('daily', []),
+            Fakes::cache($this->cache),
+            new ArrayLogger(),
+            new \DateTimeZone('Asia/Riyadh'),
+            static fn () => new \DateTimeImmutable('2026-11-20 12:00:00', new \DateTimeZone('UTC')),
+            [5, 6],
+            fn () => $this->reader(new CatalogueQuery('pgsql', $answers))
+        ))->month(Identity::matched(5, '11', 'E1'), 2026, 11);
+
+        self::assertSame([12, 25, '07:42:10', 'IN07:30-OUT15:30'], [$period->day('2026-11-02')->late, $period->day('2026-11-02')->early, $period->day('2026-11-02')->checkIn, $period->day('2026-11-02')->schedule]);
+        self::assertSame(['other', 'Annual Leave'], [$period->day('2026-11-05')->status, $period->day('2026-11-05')->statusRaw], 'leave, not absent');
+        self::assertSame('absent', $period->day('2026-11-04')->status);
+        self::assertSame([12, 25], [$period->summary()->lateMinutes, $period->summary()->earlyMinutes]);
     }
 
     public function testNoOrTwoEmployeesWithTheCodeShowNothing(): void
@@ -233,5 +293,6 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame(['Exam duty', '09:00:00', '13:00:00', '10:00:00'], [$days['2026-11-23']['schedule'], $days['2026-11-23']['sched_start'], $days['2026-11-23']['sched_end'], $days['2026-11-23']['cutoff']], 'temporary schedule, in local time');
         self::assertSame(['National Day', 'National Day', 'Group Day'], [$days['2026-11-08']['holiday'], $days['2026-11-09']['holiday'], $days['2026-11-15']['holiday']]);
         self::assertArrayNotHasKey('holiday', $days['2026-11-12'], 'HR Day is for another department');
+        self::assertSame([7, 0, 'IN07:30-OUT15:30', 'Annual Leave'], [$days['2026-11-03']['late'], $days['2026-11-03']['early'], $days['2026-11-03']['schedule'], $days['2026-11-24']['leave_name']], 'ZKBioTime 9.5 time card and pay codes');
     }
 }

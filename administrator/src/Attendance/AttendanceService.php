@@ -261,6 +261,9 @@ final class AttendanceService
             if ($db && !$punched && isset($row['holiday'])) {
                 // A holiday of ZKBioTime (for everyone, the department or the group): not absent.
                 [$status, $derived] = ['holiday', false];
+            } elseif ($db && !$punched && isset($row['leave_name'])) {
+                // Leave as ZKBioTime calculated it (e.g. "Annual Leave"): shown by its name, not absent.
+                [$status, $derived, $raw] = ['other', false, (string) $row['leave_name']];
             } elseif ($db && !$punched && !$weekend && !empty($row['off'])) {
                 // A day off in the employee's schedule.
                 [$status, $derived] = ['rest', false];

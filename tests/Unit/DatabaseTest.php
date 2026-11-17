@@ -155,7 +155,8 @@ final class DatabaseTest extends TestCase
             ],
             'FROM pg_attribute'   => static fn (array $p): array => [['name' => 'col' . $p[':id'], 'type' => 'integer']],
             'FROM att_attshift'   => [['alias' => 'Week Sun-Thu', 'cycle_unit' => 1, 'shift_cycle' => 1, 'days' => '0=Day, 1=Day, 2=Day, 3=Day, 4=Day']],
-            'FROM att_payloadbase' => [['count' => 42]],
+            'FROM att_payloadtimecard' => [['count' => 42]],
+            'FROM att_payloadbase' => [['count' => 0]],
         ]);
 
         $r = (new SchemaInspector())->inspect($q);
@@ -174,7 +175,7 @@ final class DatabaseTest extends TestCase
             // Only shift settings and a count of calculated days: no employee or punch data.
             self::assertDoesNotMatchRegularExpression('/\bFROM\s+(iclock_|personnel_|auth_)/i', $sql, 'never reads employees, punches or accounts');
 
-            if (preg_match('/\bFROM\s+att_payloadbase\b/i', $sql)) {
+            if (preg_match('/\bFROM\s+att_payload(base|timecard)\b/i', $sql)) {
                 self::assertStringStartsWith('SELECT COUNT(*)', trim($sql));
             }
         }
@@ -191,6 +192,7 @@ final class DatabaseTest extends TestCase
             'FROM pg_class'          => [['id' => 3, 'name' => 'iclock_transaction', 'readable' => true, 'writable' => true]],
             'FROM pg_attribute'      => [],
             'FROM att_attshift'      => [],
+            'FROM att_payloadtimecard' => [['count' => 0]],
             'FROM att_payloadbase'   => [['count' => 0]],
         ]);
 
@@ -211,6 +213,7 @@ final class DatabaseTest extends TestCase
             'has_database_privilege' => [['?column?' => false]],
             'FROM pg_class'          => [],
             'FROM att_attshift'      => [],
+            'FROM att_payloadtimecard' => [['count' => 0]],
             'FROM att_payloadbase'   => [['count' => 0]],
         ]);
 
