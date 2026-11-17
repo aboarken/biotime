@@ -16,7 +16,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
   - Attendance Calendar: late and early per day, Holiday and Rest Day in the legend. Day details: schedule, late in, early out, both together, worked, overtime.
   - Duration unit: Automatic (tells seconds from minutes per month), or set to minutes or seconds.
 - **Missing Morning Punch** and **Missing Afternoon Punch** cards (My Dashboard and My Attendance, also with the API) instead of the one Missing Punch Days card: days present without a check-in, and without a check-out. Each opens My Attendance filtered to those days (new filters of the same names). Monthly Overview shows the same two tiles instead of one Missing Punch tile.
-- **Clearer Monthly Overview colours:** every tile has its own colour (Missing Morning Punch orange, Missing Afternoon Punch gold), shown as a coloured edge and a dot that match its part of the bar; the bar is taller with a gap between parts; a tile with 0 keeps its colour, only fainter, instead of turning grey like Weekend. On My Dashboard (database), Weekend Days Worked stays in the Monthly Overview, so the cards stay 6 + 6.
+- **Clearer Monthly Overview colours:** Missing Morning Punch is orange and Missing Afternoon Punch pink, each with its own part of the bar in the same colour, so every tile has a colour of its own. On My Dashboard (database), Weekend Days Worked stays in the Monthly Overview, so the cards stay 6 + 6.
 - docs/DATABASE.md: which table each value comes from.
 
 ### Notes
