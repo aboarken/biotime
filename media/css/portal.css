@@ -34,6 +34,9 @@
 .com-biotime .bt-tone-teal { --bt-tone: #0f766e; --bt-tone-soft: #f0fdfa; }
 .com-biotime .bt-tone-slate { --bt-tone: #475569; --bt-tone-soft: #f1f5f9; }
 .com-biotime .bt-tone-muted { --bt-tone: #6b7280; --bt-tone-soft: #f3f4f6; }
+/* Monthly Overview: the two missing punches in two clearly different colours. */
+.com-biotime .bt-tone-orange { --bt-tone: #c2410c; --bt-tone-soft: #fff7ed; }
+.com-biotime .bt-tone-pink { --bt-tone: #be185d; --bt-tone-soft: #fdf2f8; }
 
 /* Page heading row: title (and meta line) left, month navigation or action right */
 .com-biotime .bt-head {
@@ -636,6 +639,31 @@
   color: #9ca3af;
 }
 
+/* ZKBioTime's calculation (from the database, 0.6.0): late-in / early-out and the schedule */
+.com-biotime .bt-late {
+  font-weight: 600;
+  color: #b45309;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-sched {
+  display: block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-today .bt-sub,
+.com-biotime .bt-sched + .bt-sub {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-profile {
+  margin: -0.5rem 0 1rem;
+  color: var(--bt-text-muted);
+}
+
 .com-biotime .bt-check-device {
   display: block;
   font-size: 0.8125rem;
@@ -750,6 +778,14 @@
   display: flex;
 }
 
+.com-biotime .bt-cal-late {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
 .com-biotime .bt-cal-tag {
   display: block;
   margin: 0 0 0.25rem;
@@ -788,7 +824,8 @@
 
   /* Phones: the status symbol (explained by the legend) instead of the word. */
   .com-biotime .bt-cal-status .bt-cal-label,
-  .com-biotime .bt-cal-tag {
+  .com-biotime .bt-cal-tag,
+  .com-biotime .bt-cal-late {
     display: none;
   }
 

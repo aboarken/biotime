@@ -93,6 +93,18 @@ final class Day
         return $this->checkIn === null || $this->checkOut === null;
     }
 
+    /** Missing Punch because the check-in (the morning punch) is missing. */
+    public function missingMorning(): bool
+    {
+        return $this->missingPunch() && $this->checkIn === null;
+    }
+
+    /** Missing Punch because the check-out (the afternoon punch) is missing. */
+    public function missingAfternoon(): bool
+    {
+        return $this->missingPunch() && $this->checkOut === null;
+    }
+
     /** A weekend day on which the employee punched (the weekend tag is then not shown). */
     public function workedOnWeekend(): bool
     {

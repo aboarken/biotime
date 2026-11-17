@@ -31,6 +31,15 @@ final class Summary
      * @param ?string $avgCheckOut    average check-out time
      * @param ?string $firstCheckIn   earliest check-in
      * @param ?string $lastCheckOut   latest check-out
+     * @param int     $lateMinutes    total late-in (ZKBioTime's calculation, from the database)
+     * @param int     $earlyMinutes   total early-out
+     * @param int     $lateDays       days with late-in
+     * @param int     $earlyDays      days with early-out
+     * @param ?int    $workedMinutes  total worked time as ZKBioTime calculated it; null without it
+     * @param int     $overtimeMinutes total overtime
+     * @param int     $holidayDays    holidays without punches
+     * @param int     $missingMorningDays   missing-punch days without a check-in (morning)
+     * @param int     $missingAfternoonDays missing-punch days without a check-out (afternoon)
      */
     public function __construct(
         public readonly int $workingDays,
@@ -47,7 +56,16 @@ final class Summary
         public readonly ?string $avgCheckIn,
         public readonly ?string $avgCheckOut,
         public readonly ?string $firstCheckIn,
-        public readonly ?string $lastCheckOut
+        public readonly ?string $lastCheckOut,
+        public readonly int $lateMinutes = 0,
+        public readonly int $earlyMinutes = 0,
+        public readonly int $lateDays = 0,
+        public readonly int $earlyDays = 0,
+        public readonly ?int $workedMinutes = null,
+        public readonly int $overtimeMinutes = 0,
+        public readonly int $holidayDays = 0,
+        public readonly int $missingMorningDays = 0,
+        public readonly int $missingAfternoonDays = 0
     ) {
     }
 
@@ -82,8 +100,23 @@ final class Summary
             self::averageTime($ins),
             self::averageTime($outs),
             $ins === [] ? null : min($ins),
-            $outs === [] ? null : max($outs)
+            $outs === [] ? null : max($outs),
+            array_sum(array_map(static fn (Day $d): int => $d->late ?? 0, $days)),
+            array_sum(array_map(static fn (Day $d): int => $d->early ?? 0, $days)),
+            $count(static fn (Day $d): bool => ($d->late ?? 0) > 0),
+            $count(static fn (Day $d): bool => ($d->early ?? 0) > 0),
+            array_filter($days, static fn (Day $d): bool => $d->worked !== null) === [] ? null : array_sum(array_map(static fn (Day $d): int => $d->worked ?? 0, $days)),
+            array_sum(array_map(static fn (Day $d): int => $d->overtime ?? 0, $days)),
+            $count(static fn (Day $d): bool => $d->status === 'holiday' && $d->punches === []),
+            $count(static fn (Day $d): bool => $d->missingMorning()),
+            $count(static fn (Day $d): bool => $d->missingAfternoon())
         );
+    }
+
+    /** Late-in and early-out together. */
+    public function lateEarlyMinutes(): int
+    {
+        return $this->lateMinutes + $this->earlyMinutes;
     }
 
     /** @param list<string> $times "HH:MM:SS" */

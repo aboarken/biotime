@@ -22,6 +22,8 @@ final class Period
      * @param list<Day>         $days      every date of the range, oldest first
      * @param array<string, ?string> $errors    data type => ZkbException kind (or null)
      * @param array<string, bool>    $truncated data type => cut off at the safety maximum
+     * @param bool                   $calculated read from ZKBioTime's database: days carry ZKBioTime's
+     *                                           schedule, late, early leave and worked time
      */
     public function __construct(
         public readonly string $from,
@@ -31,7 +33,8 @@ final class Period
         public readonly array $errors,
         public readonly array $truncated,
         public readonly ?int $fetchedAt,
-        public readonly string $today = '9999-12-31'
+        public readonly string $today = '9999-12-31',
+        public readonly bool $calculated = false
     ) {
     }
 

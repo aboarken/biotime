@@ -12,6 +12,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
+use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
@@ -76,6 +77,10 @@ final class Settings
         'db_password_enc'  => '',
         'db_ssl'           => 'verify',
         'db_ca'            => '',
+        // Where the portal pages read attendance: 'api' or 'database' (0.6.0)
+        'data_source'      => 'api',
+        // Unit of ZKBioTime's duration columns: auto, minutes or seconds
+        'db_duration_unit' => 'auto',
         // System
         'detailed_log'     => '1',
         'cache_minutes'    => '5',
@@ -253,6 +258,17 @@ final class Settings
         }
 
         return [$via, 0];
+    }
+
+    /** Pages read attendance from the database (PostgreSQL only), not the API. */
+    public function readsDatabase(): bool
+    {
+        return $this->get('data_source') === 'database' && $this->dbEngine() === DbConfig::ENGINE_PGSQL;
+    }
+
+    public function dbDurationUnit(): string
+    {
+        return \in_array($this->get('db_duration_unit'), AttendanceReader::UNITS, true) ? $this->get('db_duration_unit') : 'auto';
     }
 
     public function hasDbPassword(): bool

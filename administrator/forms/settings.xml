@@ -93,6 +93,10 @@
     </fieldset>
 
     <fieldset name="database" label="COM_BIOTIME_SETTINGS_FIELDSET_DATABASE">
+        <field name="data_source" type="list" label="COM_BIOTIME_SETTINGS_DATA_SOURCE" description="COM_BIOTIME_SETTINGS_DATA_SOURCE_DESC" default="api" validate="options">
+            <option value="api">COM_BIOTIME_SETTINGS_DATA_SOURCE_API</option>
+            <option value="database">COM_BIOTIME_SETTINGS_DATA_SOURCE_DATABASE</option>
+        </field>
         <field name="db_engine" type="list" label="COM_BIOTIME_SETTINGS_DB_ENGINE" description="COM_BIOTIME_SETTINGS_DB_ENGINE_DESC" default="" validate="options">
             <option value="">COM_BIOTIME_SETTINGS_DB_ENGINE_OFF</option>
             <option value="pgsql">PostgreSQL</option>
@@ -117,6 +121,11 @@
         </field>
         <field name="db_ca" type="text" label="COM_BIOTIME_SETTINGS_DB_CA" description="COM_BIOTIME_SETTINGS_DB_CA_DESC"
                filter="path" size="60" showon="db_engine!:[AND]db_ssl!:off" />
+        <field name="db_duration_unit" type="list" label="COM_BIOTIME_SETTINGS_DB_UNIT" description="COM_BIOTIME_SETTINGS_DB_UNIT_DESC" default="auto" validate="options" showon="data_source:database">
+            <option value="auto">COM_BIOTIME_SETTINGS_DB_UNIT_AUTO</option>
+            <option value="minutes">COM_BIOTIME_SETTINGS_UNIT_MINUTES</option>
+            <option value="seconds">COM_BIOTIME_SETTINGS_UNIT_SECONDS</option>
+        </field>
     </fieldset>
 
     <fieldset name="system" label="COM_BIOTIME_SETTINGS_FIELDSET_SYSTEM">

@@ -47,6 +47,9 @@ final class HtmlView extends BaseHtmlView
     /** The month's punches per device, by fingerprint and face. */
     public PunchStats $punchStats;
 
+    /** @var array{department: ?string, position: ?string, hire_date: ?string}|null from the database */
+    public ?array $profile = null;
+
     public function display($tpl = null): void
     {
         /** @var DashboardModel $model */
@@ -67,6 +70,7 @@ final class HtmlView extends BaseHtmlView
 
         // Every device used in the selected month (most used first), by fingerprint and face.
         $this->punchStats = PunchStats::of($this->period->days);
+        $this->profile    = $model->attendance()->profile($model->identity());
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
         $model->logPage('dashboard', \sprintf('%04d-%02d', $this->year, $this->month));

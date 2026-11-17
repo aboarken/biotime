@@ -29,7 +29,7 @@ final class HtmlView extends BaseHtmlView
     public const PAGE_SIZE = 31;
 
     /** Status filter values. */
-    public const FILTERS = ['attended', 'present', 'missingpunch', 'absent', 'weekend', 'weekendworked', 'exceptions', 'punches', 'nopunches'];
+    public const FILTERS = ['attended', 'present', 'missingpunch', 'missingmorning', 'missingafternoon', 'absent', 'weekend', 'weekendworked', 'late', 'early', 'holiday', 'exceptions', 'punches', 'nopunches'];
 
     public Period $period;
 
@@ -114,6 +114,10 @@ final class HtmlView extends BaseHtmlView
             'nopunches'     => $d->punches === [],
             'weekendworked' => $d->workedOnWeekend(),
             'missingpunch'  => $d->missingPunch(),
+            'missingmorning'   => $d->missingMorning(),
+            'missingafternoon' => $d->missingAfternoon(),
+            'late'          => ($d->late ?? 0) > 0,
+            'early'         => ($d->early ?? 0) > 0,
             default         => $d->status === $this->status,
         };
     }
