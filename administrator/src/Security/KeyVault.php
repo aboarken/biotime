@@ -24,6 +24,7 @@ final class KeyVault
     public const CONTEXT_PASSWORD     = 'api-password';
     public const CONTEXT_STATIC_TOKEN = 'api-static-token';
     public const CONTEXT_TOKEN_CACHE  = 'api-token-cache';
+    public const CONTEXT_DB_PASSWORD  = 'db-password';
 
     private const VERSION = 'v1';
     private const CIPHER  = 'aes-256-gcm';

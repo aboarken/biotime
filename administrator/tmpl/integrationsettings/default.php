@@ -33,6 +33,7 @@ $stored = static fn (bool $set): string => Text::_($set ? 'COM_BIOTIME_SETTINGS_
             <ul class="list-unstyled mb-0">
                 <li><?php echo Text::_('COM_BIOTIME_SETTINGS_PASSWORD_STATUS'); ?>: <strong><?php echo $stored($this->hasPassword); ?></strong></li>
                 <li><?php echo Text::_('COM_BIOTIME_SETTINGS_TOKEN_STATUS'); ?>: <strong><?php echo $stored($this->hasToken); ?></strong></li>
+                <li><?php echo Text::_('COM_BIOTIME_SETTINGS_DB_PASSWORD_STATUS'); ?>: <strong><?php echo $stored($this->hasDbPassword); ?></strong></li>
                 <li><?php echo Text::_('COM_BIOTIME_SETTINGS_SECRET_SOURCE'); ?>: <strong><?php echo Text::_($secretLabel); ?></strong></li>
             </ul>
         </div>
@@ -79,6 +80,16 @@ $stored = static fn (bool $set): string => Text::_($set ? 'COM_BIOTIME_SETTINGS_
             <?php echo $this->form->renderFieldset($set); ?>
         </fieldset>
     <?php endforeach; ?>
+
+    <fieldset class="options-form" id="biotime-database">
+        <legend><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_DATABASE'); ?></legend>
+        <p class="small"><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_DATABASE_HELP'); ?></p>
+        <?php echo $this->form->renderFieldset('database'); ?>
+    </fieldset>
+
+    <?php if ($this->dbReport !== null) : ?>
+        <?php echo $this->loadTemplate('database'); ?>
+    <?php endif; ?>
 
     <fieldset class="options-form">
         <legend><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_SYSTEM'); ?></legend>

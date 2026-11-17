@@ -1,0 +1,1 @@
+-- No schema changes in 0.5.0 (database settings are rows of #__biotime_settings).

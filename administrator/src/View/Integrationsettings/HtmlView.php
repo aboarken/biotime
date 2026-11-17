@@ -14,7 +14,9 @@ use Joomla\CMS\Form\Form;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 use Joomla\CMS\Toolbar\ToolbarHelper;
+use BiotimePortal\Component\Biotime\Administrator\Controller\SettingsController;
 use BiotimePortal\Component\Biotime\Administrator\Model\IntegrationsettingsModel;
+use Joomla\CMS\Factory;
 
 final class HtmlView extends BaseHtmlView
 {
@@ -34,6 +36,11 @@ final class HtmlView extends BaseHtmlView
 
     public bool $secretEnvTooShort = false;
 
+    public bool $hasDbPassword = false;
+
+    /** @var array<string, mixed>|null the last Test Database report (names only) */
+    public ?array $dbReport = null;
+
     public function display($tpl = null): void
     {
         /** @var IntegrationsettingsModel $model */
@@ -48,6 +55,9 @@ final class HtmlView extends BaseHtmlView
         $this->insecureTls       = !$settings->verifyTls() && !$this->isPinned && $settings->isHttps();
         $this->secretSource      = $model->secretSource();
         $this->secretEnvTooShort = $model->secretEnvTooShort();
+        $this->hasDbPassword     = $settings->hasDbPassword();
+        $report                  = Factory::getApplication()->getUserState(SettingsController::STATE_DB);
+        $this->dbReport          = \is_array($report) ? $report : null;
 
         $this->addToolbar();
 
@@ -69,6 +79,11 @@ final class HtmlView extends BaseHtmlView
         $toolbar->standardButton('test', 'COM_BIOTIME_TEST_CONNECTION')
             ->task('settings.test')
             ->icon('icon-plug')
+            ->listCheck(false);
+
+        $toolbar->standardButton('testdb', 'COM_BIOTIME_DB_TEST')
+            ->task('settings.testDatabase')
+            ->icon('icon-database')
             ->listCheck(false);
 
         $toolbar->standardButton('readpin', 'COM_BIOTIME_READ_PIN')

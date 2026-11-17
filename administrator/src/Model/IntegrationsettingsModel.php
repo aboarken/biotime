@@ -17,6 +17,9 @@ use BiotimePortal\Component\Biotime\Administrator\Api\ConnectionReport;
 use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
 use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
 use BiotimePortal\Component\Biotime\Administrator\Controller\SettingsController;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
+use BiotimePortal\Component\Biotime\Administrator\Database\SchemaInspector;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
@@ -41,6 +44,8 @@ final class IntegrationsettingsModel extends FormModel
         $data['api_token']      = '';
         $data['clear_password'] = '0';
         $data['clear_token']    = '0';
+        $data['db_password']       = '';
+        $data['clear_db_password'] = '0';
 
         return $data;
     }
@@ -87,6 +92,32 @@ final class IntegrationsettingsModel extends FormModel
     {
         // A token store of its own: the test always logs in afresh and leaves the shared cache alone.
         return $this->component()->getClientFactory()->create(new MemoryTokenStore())->testConnection();
+    }
+
+    /**
+     * Connect to ZKBioTime's database with the saved settings and describe what the portal's user
+     * can see: names only, never a row of data (SchemaInspector).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws DbException
+     */
+    public function testDatabase(): array
+    {
+        $config  = $this->settings()->dbConfig($this->component()->getClientFactory()->vault());
+        $started = hrtime(true);
+        $report  = (new SchemaInspector())->inspect((new DbConnector())->connect($config));
+
+        return $report + [
+            'engine'     => $config->engine,
+            'host'       => $config->host,
+            'port'       => $config->port,
+            'database'   => $config->database,
+            'user'       => $config->user,
+            'ssl_mode'   => $config->ssl,
+            'elapsed_ms' => (int) ((hrtime(true) - $started) / 1_000_000),
+            'at'         => time(),
+        ];
     }
 
     /**

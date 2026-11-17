@@ -19,6 +19,7 @@ use BiotimePortal\Component\Biotime\Administrator\Api\ConnectionReport;
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Model\IntegrationsettingsModel;
 use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
@@ -29,6 +30,9 @@ use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
 final class SettingsController extends BaseController
 {
     public const STATE_KEY = 'com_biotime.edit.settings.data';
+
+    /** The last Test Database report (names only), kept in the administrator's session. */
+    public const STATE_DB = 'com_biotime.settings.database';
 
     private const URL = 'index.php?option=com_biotime&view=integrationsettings';
 
@@ -48,7 +52,7 @@ final class SettingsController extends BaseController
             $this->app->enqueueMessage(Text::_('COM_BIOTIME_SETTINGS_SAVED'), 'success');
         } catch (ValidationFailed $e) {
             // Keep the entered values for the form, but never a password or token.
-            unset($data['api_password'], $data['api_token']);
+            unset($data['api_password'], $data['api_token'], $data['db_password']);
             $this->app->setUserState(self::STATE_KEY, $data);
 
             foreach ($e->getKeys() as $key) {
@@ -82,6 +86,34 @@ final class SettingsController extends BaseController
         }
 
         $this->setRedirect(Route::_(self::URL, false));
+    }
+
+    /**
+     * Connect to ZKBioTime's database and list what the portal's user can see (names only).
+     */
+    public function testDatabase(): void
+    {
+        $this->guard();
+
+        if (!$this->allowed('settings.testdb')) {
+            return;
+        }
+
+        $audit = $this->component()->getAuditLog();
+
+        try {
+            $report = $this->model()->testDatabase();
+            $this->app->setUserState(self::STATE_DB, $report + ['error' => null, 'detail' => '']);
+            $audit->record($this->actorId(), 'settings.testdb', AuditLogInterface::RESULT_OK, $report['engine'] . ($report['safe'] ? ' safe' : ' not-read-only'));
+            $this->app->enqueueMessage(Text::sprintf('COM_BIOTIME_DB_TEST_OK', $report['elapsed_ms']), $report['safe'] ? 'success' : 'warning');
+        } catch (DbException $e) {
+            $this->app->setUserState(self::STATE_DB, ['error' => $e->getKind(), 'detail' => $e->getDetail(), 'at' => time()]);
+            $audit->record($this->actorId(), 'settings.testdb', $e->getKind() === DbException::NOT_CONFIGURED ? AuditLogInterface::RESULT_DENIED : AuditLogInterface::RESULT_ERROR, $e->getKind());
+            $this->component()->getLogger()->warning('Test Database: ' . $e->getKind() . ($e->getDetail() !== '' ? ' (' . $e->getDetail() . ')' : ''));
+            $this->app->enqueueMessage(Text::_($e->getLanguageKey()), 'error');
+        }
+
+        $this->setRedirect(Route::_(self::URL . '#biotime-db-report', false));
     }
 
     /**

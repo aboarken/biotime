@@ -188,6 +188,10 @@ re-verified against ZKBioTime once a day. Every administrative change is recorde
 
 ### 4. Calculated attendance (schedules, statuses, late-in, ...)
 
+> **Since 0.5.0:** the component can also connect to ZKBioTime's own database, read only, where
+> these values are kept. 0.5.0 adds the connection and *Test Database*; the pages follow in the
+> next versions. Setup: [docs/DATABASE.md](docs/DATABASE.md).
+
 **ZKBioTime 9.5 has no API for these.** Its API manual (BioTime 9.5 API User Manual, ZKTeco
 Middle East, 16 Aug 2024) documents login, devices, personnel and transactions (punches) only,
 and a real 9.5 server confirmed it. On 9.5, leave this source empty: the portal shows punches,
