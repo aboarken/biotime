@@ -154,13 +154,18 @@ final class SchemaInspector
     /** How many employee-days ZKBioTime calculated in the last 31 days (a count only), or null. */
     private function calculatedDays(Query $q): ?int
     {
-        try {
-            $count = $q->value("SELECT COUNT(*) FROM att_payloadbase WHERE att_date >= CURRENT_DATE - 31");
-        } catch (DbException) {
-            return null;
+        // ZKBioTime 9.5 keeps its calculation in the time cards; other builds in att_payloadbase.
+        $counts = [];
+
+        foreach (['att_payloadtimecard', 'att_payloadbase'] as $table) {
+            try {
+                $counts[] = (int) $q->value("SELECT COUNT(*) FROM {$table} WHERE att_date >= CURRENT_DATE - 31");
+            } catch (DbException) {
+                // Not on this server.
+            }
         }
 
-        return $count === null ? null : (int) $count;
+        return $counts === [] ? null : max($counts);
     }
 
     /**

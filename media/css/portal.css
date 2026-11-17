@@ -37,7 +37,7 @@
 /* Monthly Overview: the two missing punches in two clearly different colours. */
 .com-biotime .bt-tone-orange { --bt-tone: #c2410c; --bt-tone-soft: #fff7ed; }
 .com-biotime .bt-tone-pink { --bt-tone: #be185d; --bt-tone-soft: #fdf2f8; }
-/* Weekends: blue. Holidays: sky, a colour of their own. */
+/* Weekends: blue. Sky: Weekend Days Worked. Holidays are purple (bt-tone-purple). */
 .com-biotime .bt-tone-weekend { --bt-tone: #3b5998; --bt-tone-soft: #e6edf9; }
 .com-biotime .bt-tone-sky { --bt-tone: #0369a1; --bt-tone-soft: #dff3fc; }
 
@@ -484,9 +484,9 @@
   background: #e6edf9;
 }
 
-/* A holiday's whole row in the holiday colour, like weekend rows. */
+/* A holiday's whole row in the holiday colour (purple), like weekend rows. */
 .com-biotime .bt-table tr.bt-row-holiday > * {
-  background: #dff3fc;
+  background: #efe9fe;
 }
 
 .com-biotime .bt-table tfoot tr.bt-row-total > * {

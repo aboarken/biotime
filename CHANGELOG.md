@@ -3,6 +3,21 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.6.3] - 2026-11-18
+
+### Fixed
+- **Late In and Early Out were empty with ZKBioTime 9.5.** ZKBioTime 9.5 keeps its calculation in the time cards and pay codes, not in `att_payloadbase` (empty there). They are now read from there:
+  - **Late In** and **Early Out**: the minutes of the pay codes *Late In* (L) and *Early Out* (E) in `att_payloadpaycode`; nothing is calculated by the portal;
+  - **Worked time**: the attendance code *Worked Hours* (`att_payloadattcode`);
+  - **Schedule**: the timetable and scheduled times of the time card (`att_payloadtimecard`), with its check-in cut-off; days not calculated yet still come from the shifts;
+  - **Absence**, **HOLIDAY** and **WEEKEND** pay codes; **leave** pay codes (e.g. *Annual Leave*) show the leave's name instead of Absent.
+- Test Database → "Days calculated" counted only `att_payloadbase`; it now counts the time cards too.
+- My Dashboard → Today no longer shows the schedule; it stays in Recent Activity, My Attendance and the day details.
+- **Schedules showed 07:30–00:00** instead of 07:30–15:30: ZKBioTime stores 00:00 as a shift day's end when it is not set. An end that is not after the start is no longer used; the end is the start plus the timetable's length.
+
+### Changed
+- **Holidays are purple** (badge, Monthly Overview tile and bar, card, calendar, and the whole row in My Attendance and Recent Activity). Weekend Days Worked moves to sky blue so the two never look alike.
+
 ## [0.6.2] - 2026-11-18
 
 ### Changed

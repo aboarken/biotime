@@ -31,6 +31,23 @@ final class AttendanceReader
 {
     public const UNITS = ['auto', 'minutes', 'seconds'];
 
+    /**
+     * ZKBioTime's pay codes of a calculated day (att_payloadpaycode), by their symbol or, failing
+     * that, their name (case-insensitive), as on ZKBioTime 9.5: Late In = L, Early Out = E,
+     * Absence = A, HOLIDAY = H, WEEKEND = W, Regular = P; leave codes are named "… Leave".
+     */
+    private const PAY_CODES = [
+        'late'    => ['L', 'late in'],
+        'early'   => ['E', 'early out'],
+        'absent'  => ['A', 'absence'],
+        'holiday' => ['H', 'holiday'],
+        'weekend' => ['W', 'weekend'],
+        'regular' => ['P', 'regular'],
+    ];
+
+    /** The attendance code holding the worked time of a calculated day (att_payloadattcode). */
+    private const WORKED_CODE = 'worked hours';
+
     /** ZKTeco punch states and verify types, as ZKBioTime shows them. */
     private const STATES  = ['0' => 'Check In', '1' => 'Check Out', '2' => 'Break Out', '3' => 'Break In', '4' => 'Overtime In', '5' => 'Overtime Out'];
     private const VERIFY  = ['0' => 'Password', '1' => 'Fingerprint', '4' => 'Card', '15' => 'Face'];
@@ -171,7 +188,7 @@ final class AttendanceReader
                     to_char(b.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS sched_out,
                     CAST(EXTRACT(EPOCH FROM (b.check_out - b.check_in)) AS integer) AS sched_seconds,
                     b.duration, b.late, b.early_leave, b.total_worked, b.absent, b.leave, b.day_off,
-                    t.alias AS timetable, t.in_above_margin, o.total_ot
+                    t.alias AS timetable, t.in_above_margin, t.duration AS tt_duration, o.total_ot
                FROM att_payloadbase b
                LEFT JOIN att_timeinterval t ON t.id = b.timetable_id
                LEFT JOIN att_payloadovertime o ON o.uuid = b.overtime_id
@@ -197,7 +214,7 @@ final class AttendanceReader
             $d  ??= ['date' => $date, 'entries' => [], 'late' => 0, 'early' => 0, 'worked' => 0, 'overtime' => 0, 'absent' => false, 'leave' => false, 'off' => true];
 
             if ($r['sched_in'] !== null || self::text($r['timetable']) !== null) {
-                $d['entries'][] = self::entry($r['timetable'], $r['sched_in'], $r['sched_out'], null, $r['in_above_margin']);
+                $d['entries'][] = self::entry($r['timetable'], $r['sched_in'], $r['sched_out'], $r['tt_duration'], $r['in_above_margin']);
             }
 
             $d['late']     += $minutes($r['late']) ?? 0;
@@ -209,6 +226,15 @@ final class AttendanceReader
             // A day off only when every timetable row of the date is one.
             $d['off']       = $d['off'] && (int) $r['day_off'] > 0;
             unset($d);
+        }
+
+        // ZKBioTime 9.5 keeps its calculation in the time card and pay code tables instead of
+        // att_payloadbase (empty there): timetable and scheduled times per day, and the minutes of
+        // Late In, Early Out, Absence, leave, holiday and weekend codes.
+        foreach ($this->calculated($employee, $from, $to) as $date => $c) {
+            if (!isset($days[$date])) {
+                $days[$date] = $c;
+            }
         }
 
         // Dates ZKBioTime has not calculated (usually today and later): the schedules themselves.
@@ -245,6 +271,87 @@ final class AttendanceReader
 
             return array_filter($d, static fn ($v) => $v !== null);
         }, $days));
+    }
+
+    /**
+     * ZKBioTime's calculation from its time cards (att_payloadtimecard: timetable and scheduled
+     * start and end), pay codes (att_payloadpaycode: minutes per code) and attendance codes
+     * (att_payloadattcode: worked hours), per date. Missing or unreadable tables give nothing.
+     *
+     * @return array<string, array<string, mixed>> date => day as in days()
+     */
+    private function calculated(array $employee, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $range = [':emp' => $employee['id'], ':from' => $from->format('Y-m-d'), ':to' => $to->format('Y-m-d')];
+        $days  = [];
+        $day   = static function (array &$days, string $date): void {
+            $days[$date] ??= ['date' => $date, 'entries' => [], 'off' => false];
+        };
+
+        foreach ($this->optional(
+            "SELECT to_char(c.att_date, 'YYYY-MM-DD') AS d, c.time_table_alias,
+                    to_char(c.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
+                    to_char(c.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
+                    t.in_above_margin, t.duration
+               FROM att_payloadtimecard c
+               LEFT JOIN att_timeinterval t ON t.id = c.time_table_id
+              WHERE c.emp_id = :emp AND c.att_date >= CAST(:from AS date) AND c.att_date <= CAST(:to AS date)
+              ORDER BY c.att_date, c.check_in",
+            [':tz1' => $this->timezone, ':tz2' => $this->timezone] + $range
+        ) as $r) {
+            $date = (string) $r['d'];
+            $day($days, $date);
+
+            if ($r['s'] !== null || self::text($r['time_table_alias']) !== null) {
+                $days[$date]['entries'][] = self::entry($r['time_table_alias'], $r['s'], $r['e'], $r['duration'], $r['in_above_margin']);
+            }
+        }
+
+        $matches = static function (array $code, mixed $symbol, mixed $name): bool {
+            return strcasecmp(trim((string) $symbol), $code[0]) === 0 || strcasecmp(trim((string) $name), $code[1]) === 0;
+        };
+
+        foreach ($this->optional(
+            "SELECT to_char(att_date, 'YYYY-MM-DD') AS d, pay_code_alias AS name, pay_code_symbol AS symbol, minutes
+               FROM att_payloadpaycode
+              WHERE emp_id = :emp AND att_date >= CAST(:from AS date) AND att_date <= CAST(:to AS date)",
+            $range
+        ) as $r) {
+            $date    = (string) $r['d'];
+            $minutes = max(0, (int) round((float) $r['minutes']));
+            $day($days, $date);
+            $d = &$days[$date];
+
+            match (true) {
+                $matches(self::PAY_CODES['late'], $r['symbol'], $r['name'])    => $d['late'] = ($d['late'] ?? 0) + $minutes,
+                $matches(self::PAY_CODES['early'], $r['symbol'], $r['name'])   => $d['early'] = ($d['early'] ?? 0) + $minutes,
+                $matches(self::PAY_CODES['absent'], $r['symbol'], $r['name'])  => $d['absent'] = true,
+                $matches(self::PAY_CODES['holiday'], $r['symbol'], $r['name']) => $d['holiday'] ??= 'Holiday',
+                $matches(self::PAY_CODES['weekend'], $r['symbol'], $r['name']) => $d['off'] = true,
+                str_contains(strtolower((string) $r['name']), 'leave')         => $d['leave_name'] = self::text($r['name']),
+                default                                                        => null,
+            };
+
+            // Late-in and early-out exist (as 0) on every calculated working day.
+            $d['late']  ??= 0;
+            $d['early'] ??= 0;
+            unset($d);
+        }
+
+        foreach ($this->optional(
+            "SELECT to_char(att_date, 'YYYY-MM-DD') AS d, SUM(minutes) AS minutes
+               FROM att_payloadattcode
+              WHERE emp_id = :emp AND att_date >= CAST(:from AS date) AND att_date <= CAST(:to AS date)
+                AND LOWER(att_code_alias) = '" . self::WORKED_CODE . "'
+              GROUP BY att_date",
+            $range
+        ) as $r) {
+            $date = (string) $r['d'];
+            $day($days, $date);
+            $days[$date]['worked'] = max(0, (int) round((float) $r['minutes']));
+        }
+
+        return $days;
     }
 
     /**
@@ -345,7 +452,8 @@ final class AttendanceReader
             ) as $r) {
                 $details[(int) $r['shift_id']][(int) $r['day_index']][] = self::entry(
                     $r['alias'],
-                    $r['d_in'] ?? $r['t_in'],
+                    // A shift day's own start, unless unset (null or 00:00): then the timetable's.
+                    $r['d_in'] !== null && $r['d_in'] !== '00:00:00' ? $r['d_in'] : $r['t_in'],
                     $r['d_out'],
                     $r['duration'],
                     $r['in_above_margin']
@@ -418,8 +526,18 @@ final class AttendanceReader
         $start = \is_string($start) && $start !== '' ? $start : null;
         $end   = \is_string($end) && $end !== '' ? $end : null;
 
-        if ($end === null && $start !== null && (int) $duration > 0) {
-            $end = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . (int) $duration . ' minutes')->format('H:i:s');
+        // The timetable's length in minutes (a value over a day is taken as seconds).
+        $minutes = (int) $duration > 1440 ? intdiv((int) $duration, 60) : (int) $duration;
+
+        // ZKBioTime stores 00:00 where a shift day's end is not set: an end that is not after the
+        // start is not used. The end is then the start plus the timetable's length (which also
+        // gives the right end of a shift that runs past midnight).
+        if ($end !== null && $start !== null && $end <= $start) {
+            $end = null;
+        }
+
+        if ($end === null && $start !== null && $minutes > 0) {
+            $end = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . $minutes . ' minutes')->format('H:i:s');
         }
 
         $cutoff = null;

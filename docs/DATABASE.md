@@ -17,7 +17,8 @@ What the pages then show, per day and per month:
 | Punches (time, state, device, area, fingerprint or face) | `iclock_transaction` |
 | Schedule (timetable name, start and end) | ZKBioTime's calculation (`att_payloadbase` + `att_timeinterval`) where it exists; else the schedules: temporary schedule (`att_tempschedule`, `att_temporaryschedule`), then the employee's shift (`att_attschedule`), the attendance group's (`att_groupschedule`) or the department's (`att_departmentschedule`), with `att_attshift` + `att_shiftdetail` + `att_timeinterval`. So today and later days show their schedule too |
 | Check-in and check-out | From the punches: check-in is the first punch before the cut-off, check-out the last punch from it. The cut-off is the end of the day's timetable check-in window (start + `att_timeinterval.in_above_margin`), or 12:00 on days without a timetable (and with the API) |
-| Late in, early out, worked time | `att_payloadbase` (`late`, `early_leave`, `total_worked`), as ZKBioTime calculated them; nothing is calculated by the portal, so a day shows them once ZKBioTime has calculated it |
+| Late in, early out, worked time | ZKBioTime's calculation, nothing is calculated by the portal: ZKBioTime 9.5 keeps it in `att_payloadpaycode` (pay codes *Late In* = L, *Early Out* = E, in `minutes`) and `att_payloadattcode` (*Worked Hours*), with the day's timetable in `att_payloadtimecard`; other builds in `att_payloadbase` (`late`, `early_leave`, `total_worked`). A day shows them once ZKBioTime has calculated it (Auto Calculate, e.g. nightly) |
+| Leave | Leave pay codes (`att_payloadpaycode`, e.g. *Annual Leave*): the day shows the leave's name instead of Absent |
 | Overtime | `att_payloadovertime.total_ot` |
 | Absent, day off | `att_payloadbase` (`absent`, `day_off`) |
 | Holidays (for everyone, the department or the attendance group) | `att_holiday`, `att_attemployee.group_id` |

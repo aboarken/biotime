@@ -25,7 +25,7 @@ final class Ui
         'incomplete' => 'amber',
         'missing_punch' => 'amber',
         'absent'     => 'red',
-        'holiday'    => 'sky',
+        'holiday'    => 'purple',
         'rest'       => 'slate',
         'weekend'    => 'weekend',
         'other'      => 'muted',
