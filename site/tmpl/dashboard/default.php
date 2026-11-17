@@ -100,9 +100,6 @@ $days = array_sum(array_column($bar, 1));
                 <a class="bt-panel-link" href="<?php echo $this->url('view=day&date=' . $t->date); ?>"><?php echo Text::_('COM_BIOTIME_DAY_DETAILS'); ?> &rarr;</a>
             </div>
             <dl class="bt-today">
-                <?php if ($calc) : ?>
-                    <div><dt><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></dt><dd><?php echo LayoutHelper::render('biotime.schedule', ['day' => $t, 'f' => $f]); ?></dd></div>
-                <?php endif; ?>
                 <div><dt><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></dt><dd><?php echo $check($t, 'in', true); ?></dd></div>
                 <div><dt><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></dt><dd><?php echo $check($t, 'out', true); ?></dd></div>
                 <?php if ($calc) : ?>
