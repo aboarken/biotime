@@ -27,7 +27,7 @@ $calc  = $this->period->calculated;
             <h1 class="h2"><?php echo $e($this->pageHeading); ?></h1>
             <div class="bt-head-meta">
                 <?php echo LayoutHelper::render('biotime.status', ['day' => $d, 'f' => $f]); ?>
-                <?php if ($d->workedOnWeekend()) : ?><span class="bt-badge bt-tone-purple"><?php echo Text::_('COM_BIOTIME_WORKED_ON_WEEKEND'); ?></span><?php endif; ?>
+                <?php if ($d->workedOnWeekend()) : ?><span class="bt-badge bt-tone-sky"><?php echo Text::_('COM_BIOTIME_WORKED_ON_WEEKEND'); ?></span><?php endif; ?>
                 <?php if ($calc && $d->status === 'holiday' && $d->statusRaw !== null) : ?><span><?php echo $e($d->statusRaw); ?></span><?php endif; ?>
                 <span><?php echo $e(Text::plural('COM_BIOTIME_N_PUNCHES', count($d->punches))); ?></span>
             </div>

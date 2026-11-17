@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Holidays are purple** (badge, Monthly Overview tile and bar, card, calendar, and the whole row in My Attendance and Recent Activity). Weekend Days Worked moves to sky blue so the two never look alike.
+
 ## [0.6.2] - 2026-11-18
 
 ### Changed
