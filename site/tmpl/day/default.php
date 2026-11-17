@@ -16,7 +16,7 @@ $d     = $this->day;
 $e     = fn (string $text): string => $this->escape($text);
 $check = fn (string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $d, 'f' => $f, 'type' => $type, 'device' => true]);
 ?>
-<div class="com-biotime biotime-day">
+<div class="com-biotime biotime-day" data-bt-root="day">
     <?php if ($this->canAttendance) : ?><a class="bt-back" href="<?php echo $this->monthUrl('attendance', $this->year, $this->month); ?>">&larr; <?php echo Text::_('COM_BIOTIME_BACK_ATTENDANCE'); ?></a><?php endif; ?>
     <?php if ($this->canCalendar) : ?><a class="bt-back" href="<?php echo $this->monthUrl('calendar', $this->year, $this->month); ?>">&larr; <?php echo Text::_('COM_BIOTIME_BACK_CALENDAR'); ?></a><?php endif; ?>
 

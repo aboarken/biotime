@@ -24,7 +24,7 @@ $legend = [
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND')],
 ];
 ?>
-<div class="com-biotime biotime-calendar">
+<div class="com-biotime biotime-calendar" data-bt-root="calendar">
     <div class="bt-head">
         <?php if ($this->showPageHeading) : ?>
             <h1 class="h2"><?php echo $e($this->pageHeading); ?></h1>

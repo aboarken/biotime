@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.9] - 2026-11-17
+
+### Fixed
+- **Portal styles reached the rest of the page** on sites whose template puts the class `com-biotime` on the page `<body>` (e.g. Helix Ultimate and other templates that add the component name to the body): the portal's base styles (colours, word wrapping), the fallback heading and box-sizing rules and the pagination style applied to the whole page, including the site header, menus and modules. The portal content is now marked with its own `data-bt-root` attribute, and these styles are scoped to it.
+
 ## [0.4.8] - 2026-11-16
 
 ### Changed

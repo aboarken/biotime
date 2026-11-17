@@ -65,7 +65,7 @@ $cards = [
     [Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::countTone($s->punchCount, 'blue'), 'punches'],
 ];
 ?>
-<div class="com-biotime biotime-attendance">
+<div class="com-biotime biotime-attendance" data-bt-root="attendance">
     <div class="bt-head">
         <?php if ($this->showPageHeading) : ?>
             <h1 class="h2"><?php echo $e($this->pageHeading); ?></h1>
