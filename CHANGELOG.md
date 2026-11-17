@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] - 2026-11-17
+
+### Changed
+- **Database (direct read): Server and Connect via, as for the API.** Host and port are now one field, *Server* (e.g. `zkb-server.example.local:7496`), like the API's Server URL. The new optional *Connect via* (PostgreSQL) is the IP address and port Joomla really connects to, e.g. the firewall's public IP, while the certificate is still checked against the *Server* name. Changing either asks for the database password again. Settings saved with 0.5.0 are kept.
+
 ## [0.5.0] - 2026-11-17
 
 ### Added

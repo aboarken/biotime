@@ -91,6 +91,28 @@ final class DatabaseTest extends TestCase
         }
 
         self::assertTrue(DbConfig::validHost('2001:db8::1'));
+        self::assertSame(['db.example.com', 7496], DbConfig::parseAddress('DB.example.com', 7496));
+        self::assertSame(['10.0.0.5', 15432], DbConfig::parseAddress('10.0.0.5:15432', 7496));
+        self::assertSame(['2001:db8::1', 5432], DbConfig::parseAddress('[2001:db8::1]:5432', 7496));
+        self::assertSame(['2001:db8::1', 7496], DbConfig::parseAddress('2001:db8::1', 7496));
+
+        foreach (['db.example.com:0', 'db:x', 'postgres://db', 'db.example.com:7496/biotime', ''] as $bad) {
+            try {
+                DbConfig::parseAddress($bad, 7496);
+                self::fail('accepted ' . $bad);
+            } catch (\InvalidArgumentException) {
+                self::addToAssertionCount(1);
+            }
+        }
+
+        foreach ([['fw.example.com', 0], ['', 7496]] as [$ip, $port]) {
+            try {
+                new DbConfig('pgsql', 'db', 7496, 'b', 'u', 'pw', 'require', '', 5, 30, $ip, $port);
+                self::fail('connect via accepted ' . $ip);
+            } catch (\InvalidArgumentException) {
+                self::addToAssertionCount(1);
+            }
+        }
         self::assertStringContainsString('Server=[2001:db8::1],1433', (new DbConfig('sqlsrv', '2001:db8::1', 1433, 'b', 'u', 'pw'))->dsn());
     }
 

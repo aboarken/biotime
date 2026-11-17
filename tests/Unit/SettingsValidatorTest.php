@@ -93,8 +93,7 @@ final class SettingsValidatorTest extends TestCase
     {
         return $override + [
             'db_engine'   => 'pgsql',
-            'db_host'     => 'DB.Example.com',
-            'db_port'     => '7496',
+            'db_server'   => 'DB.Example.com:7496',
             'db_name'     => 'biotime',
             'db_user'     => 'joomla_portal',
             'db_password' => 'db secret 1',
@@ -116,7 +115,9 @@ final class SettingsValidatorTest extends TestCase
         self::assertStringNotContainsString('db secret 1', $config->dsn(), 'the password is never in the connection string');
         self::assertArrayNotHasKey('db_password_enc', (new Settings($values))->toFormData());
 
-        self::assertSame([], $this->errors(['db_engine' => '', 'db_host' => '', 'db_user' => '', 'db_password' => ''] + $this->database()), 'off: nothing required');
+        self::assertSame([], $this->errors(['db_engine' => '', 'db_server' => '', 'db_user' => '', 'db_password' => ''] + $this->database()), 'off: nothing required');
+        self::assertSame('db.example.com:7496', (new Settings($values))->toFormData()['db_server'], 'one field in the form');
+        self::assertSame(['db.example.com', '1433'], array_values(array_intersect_key($this->validator()->validate(['db_engine' => 'sqlsrv', 'db_server' => 'db.example.com', 'db_ca' => ''] + $this->database(), new Settings()), ['db_host' => 1, 'db_port' => 1])), 'default port of the engine');
         self::assertSame([], $this->errors($this->input()), 'forms without the database fields');
     }
 
@@ -124,9 +125,13 @@ final class SettingsValidatorTest extends TestCase
     {
         $cases = [
             [['db_engine' => 'mysql'], 'COM_BIOTIME_SETTINGS_ERR_DB_ENGINE'],
-            [['db_host' => 'db sslmode=disable'], 'COM_BIOTIME_SETTINGS_ERR_DB_HOST'],
-            [['db_host' => ''], 'COM_BIOTIME_SETTINGS_ERR_DB_HOST'],
-            [['db_port' => '70000'], 'COM_BIOTIME_SETTINGS_ERR_DB_PORT'],
+            [['db_server' => 'db sslmode=disable'], 'COM_BIOTIME_SETTINGS_ERR_DB_SERVER'],
+            [['db_server' => ''], 'COM_BIOTIME_SETTINGS_ERR_DB_SERVER'],
+            [['db_server' => 'db.example.com:70000'], 'COM_BIOTIME_SETTINGS_ERR_DB_SERVER'],
+            [['db_server' => 'https://db.example.com'], 'COM_BIOTIME_SETTINGS_ERR_DB_SERVER'],
+            [['db_connect_via' => 'fw.example.com:7496'], 'COM_BIOTIME_SETTINGS_ERR_DB_VIA'],
+            [['db_connect_via' => '203.0.113.10:x'], 'COM_BIOTIME_SETTINGS_ERR_DB_VIA'],
+            [['db_engine' => 'sqlsrv', 'db_ca' => '', 'db_connect_via' => '203.0.113.10'], 'COM_BIOTIME_SETTINGS_ERR_DB_VIA_SQLSRV'],
             [['db_name' => "biotime';x"], 'COM_BIOTIME_SETTINGS_ERR_DB_NAME'],
             [['db_user' => 'a b'], 'COM_BIOTIME_SETTINGS_ERR_DB_USER'],
             [['db_user' => 'Postgres'], 'COM_BIOTIME_SETTINGS_ERR_DB_ADMIN_USER'],
@@ -142,7 +147,7 @@ final class SettingsValidatorTest extends TestCase
         }
 
         self::assertSame([], $this->errors(['db_ssl' => 'require', 'db_ca' => ''] + $this->database()), 'Require needs no CA file');
-        self::assertSame([], $this->errors(['db_engine' => 'sqlsrv', 'db_port' => '1433', 'db_ca' => ''] + $this->database()), 'SQL Server checks against the system certificates');
+        self::assertSame([], $this->errors(['db_engine' => 'sqlsrv', 'db_server' => 'db.example.com:1433', 'db_ca' => ''] + $this->database()), 'SQL Server checks against the system certificates');
         self::assertContains('COM_BIOTIME_SETTINGS_ERR_DB_CA', (function (): array {
             try {
                 $this->validator(static fn (): bool => false)->validate($this->database(), new Settings());
@@ -154,6 +159,22 @@ final class SettingsValidatorTest extends TestCase
         })(), 'a CA file that does not exist');
     }
 
+    public function testDatabaseConnectViaIsAnIpAddressAndKeepsTheServerNameForTheCertificate(): void
+    {
+        $values = $this->validator()->validate(['db_server' => 'zkb-server.example.local:7496', 'db_connect_via' => ' 203.0.113.10:15432 '] + $this->database(), new Settings());
+
+        self::assertSame(['zkb-server.example.local', '7496', '203.0.113.10:15432'], [$values['db_host'], $values['db_port'], $values['db_connect_via']]);
+
+        $dsn = (new Settings($values))->dbConfig($this->vault)->dsn();
+        self::assertStringContainsString("host='zkb-server.example.local';port=15432", $dsn, 'certificate checked against the name, connection to the public port');
+        self::assertStringContainsString("hostaddr='203.0.113.10'", $dsn);
+
+        $noPort = $this->validator()->validate(['db_connect_via' => '203.0.113.10'] + $this->database(), new Settings());
+        self::assertSame('203.0.113.10:7496', $noPort['db_connect_via'], 'without a port: the server\'s port');
+        self::assertSame('[2001:db8::5]:7496', $this->validator()->validate(['db_connect_via' => '2001:db8::5'] + $this->database(), new Settings())['db_connect_via']);
+        self::assertStringNotContainsString('hostaddr', (new Settings($this->validator()->validate($this->database(), new Settings())))->dbConfig($this->vault)->dsn(), 'empty: direct');
+    }
+
     public function testStoredDatabasePasswordIsNotKeptForAnotherServer(): void
     {
         $current = new Settings($this->validator()->validate($this->database(), new Settings()));
@@ -162,11 +183,11 @@ final class SettingsValidatorTest extends TestCase
         self::assertSame([], $this->errors($same, $current), 'same server: kept');
         self::assertArrayNotHasKey('db_password_enc', $this->validator()->validate($same, $current), 'not overwritten: the stored one stays');
 
-        foreach ([['db_host' => 'attacker.example.com'], ['db_port' => '5432'], ['db_name' => 'other'], ['db_user' => 'someone'], ['db_engine' => 'sqlsrv', 'db_ca' => '']] as $override) {
+        foreach ([['db_server' => 'attacker.example.com:7496'], ['db_server' => 'db.example.com:5432'], ['db_connect_via' => '198.51.100.7'], ['db_name' => 'other'], ['db_user' => 'someone'], ['db_engine' => 'sqlsrv', 'db_ca' => '']] as $override) {
             self::assertContains('COM_BIOTIME_SETTINGS_ERR_REENTER_DB_PASSWORD', $this->errors($override + $same, $current), json_encode($override));
         }
 
-        self::assertSame([], $this->errors(['db_host' => 'db2.example.com'] + $this->database(), $current), 'typed again: fine');
+        self::assertSame([], $this->errors(['db_server' => 'db2.example.com'] + $this->database(), $current), 'typed again: fine');
         self::assertSame('', $this->validator()->validate(['clear_db_password' => '1', 'db_engine' => ''] + $same, $current)['db_password_enc'], 'removed');
     }
 

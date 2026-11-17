@@ -20,6 +20,11 @@ namespace BiotimePortal\Component\Biotime\Administrator\Database;
  *  - require: encrypted, the certificate is not checked (protects against listening, not against
  *             a server pretending to be yours);
  *  - off:     not encrypted. Only for a database on the same network as Joomla.
+ *
+ * Connect via (PostgreSQL only): the IP address (and port) the connection is really opened to,
+ * e.g. the firewall's public address, while the certificate is still checked against the host
+ * name, e.g. the server's local name. As "connect via" for the API. libpq takes an IP address
+ * only here (hostaddr), never a name.
  */
 final class DbConfig
 {
@@ -48,7 +53,9 @@ final class DbConfig
         public readonly string $ssl = self::SSL_VERIFY,
         public readonly string $caFile = '',
         public readonly int $connectTimeout = 5,
-        public readonly int $queryTimeout = 30
+        public readonly int $queryTimeout = 30,
+        public readonly string $viaIp = '',
+        public readonly int $viaPort = 0
     ) {
         if (!\in_array($engine, self::ENGINES, true)) {
             throw new \InvalidArgumentException('engine');
@@ -81,6 +88,45 @@ final class DbConfig
         if ($engine === self::ENGINE_PGSQL && $ssl === self::SSL_VERIFY && $caFile === '') {
             throw new \InvalidArgumentException('ca');
         }
+
+        if ($viaIp !== '' && ($engine !== self::ENGINE_PGSQL || filter_var($viaIp, FILTER_VALIDATE_IP) === false)
+            || $viaPort < 0 || $viaPort > 65535 || $viaIp === '' && $viaPort !== 0) {
+            throw new \InvalidArgumentException('via');
+        }
+    }
+
+    /**
+     * "host:port", "host", "[IPv6]:port" or an IPv6 address alone; the default port when none.
+     *
+     * @return array{0: string, 1: int}
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function parseAddress(string $address, int $defaultPort): array
+    {
+        $address = strtolower(trim($address));
+
+        if (preg_match('/^\[([0-9a-f:.]+)\](?::(\d{1,5}))?$/', $address, $m)) {
+            [$host, $port] = [$m[1], isset($m[2]) ? (int) $m[2] : $defaultPort];
+        } elseif (substr_count($address, ':') > 1) {
+            [$host, $port] = [$address, $defaultPort];
+        } elseif (preg_match('/^([^:]+)(?::(\d{1,5}))?$/', $address, $m)) {
+            [$host, $port] = [$m[1], isset($m[2]) ? (int) $m[2] : $defaultPort];
+        } else {
+            throw new \InvalidArgumentException('address');
+        }
+
+        if (!self::validHost($host) || $port < 1 || $port > 65535) {
+            throw new \InvalidArgumentException('address');
+        }
+
+        return [$host, $port];
+    }
+
+    /** "host:port" for the form ("[IPv6]:port"). */
+    public static function formatAddress(string $host, int $port): string
+    {
+        return (str_contains($host, ':') ? '[' . $host . ']' : $host) . ':' . $port;
     }
 
     public static function validHost(string $host): bool
@@ -134,7 +180,7 @@ final class DbConfig
 
         $parts = [
             'host=' . self::quote($this->host),
-            'port=' . $this->port,
+            'port=' . ($this->viaIp !== '' && $this->viaPort > 0 ? $this->viaPort : $this->port),
             'dbname=' . self::quote($this->database),
             'connect_timeout=' . $this->connectTimeout,
             'sslmode=' . match ($this->ssl) {
@@ -147,6 +193,11 @@ final class DbConfig
             // query runs longer than the query timeout.
             'options=' . self::quote('-c default_transaction_read_only=on -c statement_timeout=' . ($this->queryTimeout * 1000)),
         ];
+
+        if ($this->viaIp !== '') {
+            // Connect to this IP address; the certificate is still checked against host.
+            $parts[] = 'hostaddr=' . self::quote($this->viaIp);
+        }
 
         if ($this->caFile !== '' && $this->ssl !== self::SSL_OFF) {
             $parts[] = 'sslrootcert=' . self::quote($this->caFile);

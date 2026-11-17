@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.5.1 – Database Server and Connect via
+- [ ] Integration Settings → Database: Server `local-name:7496` and Connect via `<public IP>:<port>` with Verify → Test Database connects, encrypted; the report shows `local-name:7496 → <public IP>:<port>`.
+- [ ] Connect via with a name instead of an IP is refused; with SQL Server it is refused.
+
 ### 0.5.0 – Database (direct read)
 - [ ] Integration Settings → Database: `postgres` as user is refused; Verify without a CA file is refused; changing the host without typing the password again is refused.
 - [ ] Test Database with the read-only user (docs/DATABASE.md): connected, encrypted (with SSL on), not an administrator, read only by default, no table it may change; the punch, employee and device tables readable; the summary lists att_ tables with columns, no data.
