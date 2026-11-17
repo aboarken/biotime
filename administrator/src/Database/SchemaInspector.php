@@ -132,6 +132,19 @@ final class SchemaInspector
 
         $role = $q->rows("SELECT rolsuper, rolcreaterole, rolcreatedb, COALESCE(array_to_string(rolconfig, ','), '') AS config FROM pg_roles WHERE rolname = current_user")[0] ?? [];
 
+        // The read-only default can also be set for this database only (ALTER ROLE … IN DATABASE,
+        // or pgAdmin's Parameters tab with a database chosen): that setting is in pg_db_role_setting.
+        try {
+            $perDb = (string) $q->value(
+                "SELECT COALESCE(string_agg(array_to_string(s.setconfig, ','), ','), '')
+                   FROM pg_db_role_setting s
+                  WHERE s.setrole = (SELECT oid FROM pg_roles WHERE rolname = current_user)
+                    AND s.setdatabase = (SELECT oid FROM pg_database WHERE datname = current_database())"
+            );
+        } catch (DbException) {
+            $perDb = '';
+        }
+
         $create = $q->value("SELECT has_database_privilege(current_database(), 'CREATE') OR has_schema_privilege(current_schema(), 'CREATE')");
 
         // Names only, from the catalogue: visible even for tables the user may not read.
@@ -168,7 +181,7 @@ final class SchemaInspector
             'ssl'            => $ssl === null ? null : self::bool($ssl['ssl']),
             'ssl_detail'     => $ssl !== null && self::bool($ssl['ssl']) ? (string) $ssl['version'] : '',
             'superuser'      => $role === [] ? null : (self::bool($role['rolsuper']) || self::bool($role['rolcreaterole'])),
-            'role_read_only' => $role === [] ? null : str_contains((string) $role['config'], 'default_transaction_read_only=on'),
+            'role_read_only' => $role === [] ? null : str_contains((string) $role['config'] . ',' . $perDb, 'default_transaction_read_only=on'),
             'can_create'     => self::bool($create) || ($role !== [] && self::bool($role['rolcreatedb'])),
             'all'            => $all,
             'columns'        => $columns,

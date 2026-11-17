@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS personnel_employee, personnel_department, personnel_positio
 
 CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200));
 CREATE TABLE personnel_position (id integer PRIMARY KEY, position_code varchar(50), position_name varchar(100));
-CREATE TABLE personnel_employee (id integer PRIMARY KEY, emp_code varchar(20), first_name varchar(100), email varchar(50),
+CREATE TABLE personnel_employee (id integer PRIMARY KEY, emp_code varchar(20), first_name varchar(100), last_name varchar(100), email varchar(50),
   hire_date date, department_id integer, position_id integer);
 CREATE TABLE att_attemployee (id integer PRIMARY KEY, emp_id integer, group_id integer);
 CREATE TABLE iclock_transaction (id serial PRIMARY KEY, emp_code varchar(20), punch_time timestamptz, punch_state varchar(5),
@@ -23,7 +23,7 @@ CREATE TABLE att_holiday (id integer PRIMARY KEY, alias varchar(50), start_date 
 
 INSERT INTO personnel_department VALUES (10, 'IT', 'Information Technology'), (11, 'HR', 'Human Resources');
 INSERT INTO personnel_position VALUES (20, 'DEV', 'Developer');
-INSERT INTO personnel_employee VALUES (1, 'E1', 'Alice', 'a@example.com', '2024-09-01', 10, 20), (2, 'E2', 'Bob', 'b@example.com', NULL, 11, NULL);
+INSERT INTO personnel_employee VALUES (1, 'E1', 'Alice', 'A', 'a@example.com', '2024-09-01', 10, 20), (2, 'E2', 'Bob', 'B', 'b@example.com', NULL, 11, NULL);
 INSERT INTO att_attemployee VALUES (1, 1, 5);
 INSERT INTO att_timeinterval VALUES (100, 'Day 07:30-15:30', '07:30', 480);
 -- Server time zone Asia/Riyadh (UTC+3): stored in UTC, shown in local time.

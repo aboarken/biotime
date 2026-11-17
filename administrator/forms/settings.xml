@@ -7,7 +7,7 @@
     <fieldset name="connection" label="COM_BIOTIME_SETTINGS_FIELDSET_CONNECTION">
         <field name="server_url" type="url" label="COM_BIOTIME_SETTINGS_SERVER_URL"
                description="COM_BIOTIME_SETTINGS_SERVER_URL_DESC" hint="https://zkb.example.com:5555"
-               required="true" validate="url" scheme="https,http" filter="url" size="60" />
+               validate="url" scheme="https,http" filter="url" size="60" />
         <field name="connect_via" type="text" label="COM_BIOTIME_SETTINGS_CONNECT_VIA"
                description="COM_BIOTIME_SETTINGS_CONNECT_VIA_DESC" hint="api.zkb.example.com:443" filter="string" size="60" />
         <field name="connect_timeout" type="number" label="COM_BIOTIME_SETTINGS_CONNECT_TIMEOUT"

@@ -11,6 +11,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Identity;
 // phpcs:enable PSR1.Files.SideEffects
 
 
+use BiotimePortal\Component\Biotime\Administrator\Api\EmployeeDirectoryInterface;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
@@ -50,7 +51,7 @@ final class IdentityResolver
     private \Closure $clock;
 
     /**
-     * @param \Closure(): ZkbClient                 $clientFactory  Lazy: active mappings need no API call
+     * @param \Closure(): EmployeeDirectoryInterface $clientFactory  Lazy: active mappings need no API call
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      */
     public function __construct(
@@ -294,7 +295,7 @@ final class IdentityResolver
         return $now->getTimestamp() - $mapping->checkedAt->getTimestamp();
     }
 
-    private function client(): ZkbClient
+    private function client(): EmployeeDirectoryInterface
     {
         return ($this->clientFactory)();
     }

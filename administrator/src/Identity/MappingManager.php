@@ -11,6 +11,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Identity;
 // phpcs:enable PSR1.Files.SideEffects
 
 
+use BiotimePortal\Component\Biotime\Administrator\Api\EmployeeDirectoryInterface;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
@@ -25,7 +26,7 @@ final class MappingManager
     private \Closure $clock;
 
     /**
-     * @param \Closure(): ZkbClient                 $clientFactory
+     * @param \Closure(): EmployeeDirectoryInterface $clientFactory
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      */
     public function __construct(

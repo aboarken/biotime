@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.6.1 – Database only
+- [ ] With Read attendance from: Database, empty the API Server URL and save: accepted. A user with no mapping is matched by e-mail or the employee code field; User Mappings → map by code finds the employee by name.
+- [ ] Existing mappings still show the same employee.
+
 ### 0.6.0 – Pages from the database
 - [ ] Integration Settings → Database → Read attendance from: Database, save. My Dashboard shows the department and position, today's schedule, Late In and Early Out; the second row of cards shows Total Late In, Total Early Out, Late In + Early Out, Worked Time.
 - [ ] Compare one month with ZKBioTime's Time Card / Transaction report for the same employee: schedule, late in, early out and worked time per day match. If late in is 60 times too large or small, set Duration unit.

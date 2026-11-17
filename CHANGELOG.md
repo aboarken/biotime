@@ -3,6 +3,14 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-11-18
+
+### Changed
+- **The database is the only source when attendance is read from it.** Joomla users are now also matched from ZKBioTime's database (`personnel_employee`): by the employee code field or by e-mail, the once-a-day re-check, and mapping by code in User Mappings. The employee ids are the same as the API's, so existing mappings stay valid. The API settings may be left empty; the API integration stays in the component (choose *Read attendance from: API* to use it). Attendance and employee lookups share one read-only connection per page load.
+
+### Fixed
+- **Test Database said "Read only by default: No" although it was set**, when the setting was made for the biotime database only (pgAdmin's Parameters tab with a database chosen, or `ALTER ROLE … IN DATABASE`). Such settings are now found as well.
+
 ## [0.6.0] - 2026-11-18
 
 ### Added

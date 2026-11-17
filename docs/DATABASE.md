@@ -5,8 +5,10 @@ ZKBioTime 9.5's API gives punches, employees and devices only. Schedules, calcul
 Since 0.5.0 the component can connect to that database **read only**.
 
 0.5.0 added the connection and **Test Database**. Since **0.6.0** the pages can read from it:
-*Integration Settings → Database → Read attendance from: Database*. Employees are still matched
-through the API, which stays configured.
+*Integration Settings → Database → Read attendance from: Database*. Since **0.6.1** employees are
+matched from the database too (`personnel_employee`: by the employee code field or by e-mail, the
+daily re-check, and User Mappings), so the database is the only source and the API settings may
+be left empty. The API integration stays in the component: choose *API* to use it again.
 
 What the pages then show, per day and per month:
 
