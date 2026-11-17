@@ -10,7 +10,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
   - **Schedule applied each day** (timetable name, start and end), **Late In** and **Early Out** per day, **Worked** time and overtime.
   - Monthly **Total Late In**, **Total Early Out**, **Late In + Early Out**, days late and early, worked time and overtime.
   - **Holidays** (for everyone, the employee's department or attendance group) and **days off** in the schedule are no longer shown as Absent.
-  - Check-in and check-out are ZKBioTime's paired clock-in and clock-out; days ZKBioTime has not calculated yet (usually today) still use the punches (before / from 12:00).
+  - Check-in and check-out are ZKBioTime's paired clock-in and clock-out. The 12:00 rule is no longer used with the database: a day ZKBioTime has not calculated yet (usually today) takes its first punch as the check-in and its last as the check-out. With the API the 12:00 rule stays (the API gives nothing else).
   - My Dashboard: today's schedule, late in and early out; 6 + 6 cards; Holiday in the Monthly Overview; Schedule, Late In and Early Out in Recent Activity; the employee's department and position.
   - My Attendance: Schedule, Late In, Early Out and Worked columns; 5 + 5 + 3 cards; filters Late In, Early Out and Holiday.
   - Attendance Calendar: late and early per day, Holiday and Rest Day in the legend. Day details: schedule, late in, early out, both together, worked, overtime.

@@ -245,8 +245,10 @@ final class AttendanceService
             $db          = isset($row['db']);
 
             if ($checkIn === null && $checkOut === null && $p !== []) {
-                // ZKBioTime gave no calculated times: use the punches, by the time of day.
-                [$checkIn, $checkOut] = self::checkTimes($p);
+                // ZKBioTime gave no calculated times. From the database (a day ZKBioTime has not
+                // calculated yet, usually today): first and last punch, no time-of-day rule. From
+                // the API, which has nothing else: by the time of day (12:00).
+                [$checkIn, $checkOut] = $this->database !== null ? self::firstAndLast($p) : self::checkTimes($p);
                 $fromPunches          = true;
             }
 
@@ -539,6 +541,24 @@ final class AttendanceService
         }
 
         return [$in, $out];
+    }
+
+    /**
+     * Check-in = the first punch, check-out = the last punch when there are two or more, whatever
+     * the time of day (database mode, a day ZKBioTime has not calculated yet). One punch so far is
+     * the check-in.
+     *
+     * @param list<Punch> $punches in time order
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    public static function firstAndLast(array $punches): array
+    {
+        if ($punches === []) {
+            return [null, null];
+        }
+
+        return [$punches[0]->time, \count($punches) > 1 ? $punches[\count($punches) - 1]->time : null];
     }
 
     /** "YYYY-MM-DD HH:MM[:SS]" (or with T), kept as the server recorded it: never shifted. */

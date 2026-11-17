@@ -46,6 +46,7 @@ final class AttendanceReaderTest extends TestCase
                 ['punch_time' => '2026-11-02 15:05:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-09 08:00:00', 'emp_code' => 'E1', 'punch_state' => '0', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-09 16:00:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
+                ['punch_time' => '2026-11-20 13:10:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 15, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-03 07:00:00', 'emp_code' => 'E2', 'punch_state' => '0', 'verify_type' => 1, 'terminal_alias' => 'X', 'area_alias' => 'X'],
             ],
             'FROM att_payloadbase'    => [
@@ -155,6 +156,10 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame('absent', $period->day('2026-11-17')->status, 'another department\'s holiday');
         self::assertSame('present', $period->day('2026-11-09')->status, 'not calculated yet: from the punches');
         self::assertNull($period->day('2026-11-09')->late);
+
+        // No 12:00 rule with the database: today's one punch at 13:10 is the check-in.
+        $today = $period->day('2026-11-20');
+        self::assertSame(['13:10:00', null, 'checked_in'], [$today->checkIn, $today->checkOut, $today->status]);
         self::assertSame([], $period->day('2026-11-03')->punches, 'Bob\'s punch is never shown');
 
         $s = $period->summary();

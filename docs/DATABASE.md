@@ -14,7 +14,7 @@ What the pages then show, per day and per month:
 |---|---|
 | Punches (time, state, device, area, fingerprint or face) | `iclock_transaction` |
 | Schedule (timetable name, start and end) | `att_payloadbase` + `att_timeinterval` |
-| Check-in and check-out | ZKBioTime's paired clock-in and clock-out (`att_payloadbase`); days not calculated yet (usually today): the punches, before / from 12:00 |
+| Check-in and check-out | ZKBioTime's paired clock-in and clock-out (`att_payloadbase`); days not calculated yet (usually today): the first and the last punch. The 12:00 rule is used only with the API |
 | Late in, early out, worked time | `att_payloadbase` (`late`, `early_leave`, `total_worked`) |
 | Overtime | `att_payloadovertime.total_ot` |
 | Absent, day off | `att_payloadbase` (`absent`, `day_off`) |
