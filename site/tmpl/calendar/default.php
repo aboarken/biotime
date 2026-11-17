@@ -22,6 +22,7 @@ $legend = [
     ['checked_out', Text::_('COM_BIOTIME_STATUS_CHECKED_OUT')],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT')],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND')],
+    ...($this->period->calculated ? [['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY')], ['rest', Text::_('COM_BIOTIME_STATUS_REST')]] : []),
 ];
 ?>
 <div class="com-biotime biotime-calendar" data-bt-root="calendar">
@@ -61,7 +62,11 @@ $legend = [
                                 $label  = $f->weekday($day->weekday()) . ' ' . $f->date($day->date) . ': ' . ($day->status !== null ? $f->status($day) : '—')
                                     . ($day->missingPunch() ? ', ' . Text::_('COM_BIOTIME_MISSING_PUNCH') : '')
                                     . ($day->checkIn !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_IN') . ' ' . $f->time($day->checkIn) : '')
-                                    . ($day->checkOut !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_OUT') . ' ' . $f->time($day->checkOut) : '');
+                                    . ($day->checkOut !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_OUT') . ' ' . $f->time($day->checkOut) : '')
+                                    . ($day->schedule !== null ? ', ' . Text::_('COM_BIOTIME_COL_SCHEDULE') . ' ' . $day->schedule : '')
+                                    . (($day->late ?? 0) > 0 ? ', ' . Text::_('COM_BIOTIME_COL_LATE') . ' ' . $f->duration($day->late) : '')
+                                    . (($day->early ?? 0) > 0 ? ', ' . Text::_('COM_BIOTIME_COL_EARLY') . ' ' . $f->duration($day->early) : '')
+                                    . ($day->status === 'holiday' && $day->statusRaw !== null ? ', ' . $day->statusRaw : '');
                                 $today  = $day->date === $this->today;
                                 ?>
                                 <td class="bt-cal-day bt-tone-<?php echo Ui::tone($status); ?><?php echo $today ? ' bt-cal-today' : ''; ?>">
@@ -75,6 +80,12 @@ $legend = [
                                                 <?php echo LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => 'in', 'compact' => true]); ?>
                                                 <?php echo LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => 'out', 'compact' => true]); ?>
                                             </span>
+                                        <?php endif; ?>
+                                        <?php if (($day->late ?? 0) > 0 || ($day->early ?? 0) > 0) : ?>
+                                            <span class="bt-cal-late" aria-hidden="true"><?php echo $e(implode(' ', array_filter([
+                                                ($day->late ?? 0) > 0 ? Text::_('COM_BIOTIME_CAL_LATE') . ' ' . $f->duration($day->late) : '',
+                                                ($day->early ?? 0) > 0 ? Text::_('COM_BIOTIME_CAL_EARLY') . ' ' . $f->duration($day->early) : '',
+                                            ]))); ?></span>
                                         <?php endif; ?>
                                         <?php if ($day->missingPunch()) : ?>
                                             <span class="bt-cal-tag"><?php echo Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span>

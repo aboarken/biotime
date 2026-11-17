@@ -4,9 +4,29 @@ ZKBioTime 9.5's API gives punches, employees and devices only. Schedules, calcul
 (late-in, early-out, worked hours, overtime), leave and holidays are only in its own database.
 Since 0.5.0 the component can connect to that database **read only**.
 
-0.5.0 contains the connection and **Test Database** only: the portal pages still read the API.
-The test lists what your server has (table and column names, never data), so the next versions
-read the right tables.
+0.5.0 added the connection and **Test Database**. Since **0.6.0** the pages can read from it:
+*Integration Settings → Database → Read attendance from: Database*. Employees are still matched
+through the API, which stays configured.
+
+What the pages then show, per day and per month:
+
+| Value | Read from |
+|---|---|
+| Punches (time, state, device, area, fingerprint or face) | `iclock_transaction` |
+| Schedule (timetable name, start and end) | `att_payloadbase` + `att_timeinterval` |
+| Check-in and check-out | ZKBioTime's paired clock-in and clock-out (`att_payloadbase`); days not calculated yet (usually today): the punches, before / from 12:00 |
+| Late in, early out, worked time | `att_payloadbase` (`late`, `early_leave`, `total_worked`) |
+| Overtime | `att_payloadovertime.total_ot` |
+| Absent, day off | `att_payloadbase` (`absent`, `day_off`) |
+| Holidays (for everyone, the department or the attendance group) | `att_holiday`, `att_attemployee.group_id` |
+| Department and position (My Dashboard) | `personnel_employee`, `personnel_department`, `personnel_position` |
+
+Monthly totals: total late in, total early out, both together, days late and early, worked time,
+overtime, holidays. ZKBioTime does not document the unit of its duration columns: *Duration
+unit = Automatic* compares each day's scheduled duration with its start and end time; set it to
+Minutes or Seconds only if late-in values look 60 times too large or too small.
+
+Reading from the database needs PostgreSQL (the database installed with ZKBioTime).
 
 ## 1. On the ZKBioTime server: a read-only user
 
@@ -26,6 +46,10 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO joomla_portal;
 -- Tables ZKBioTime creates later (e.g. after an upgrade) are readable as well:
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO joomla_portal;
 ```
+
+If Test Database says *read only by default: false*, the `default_transaction_read_only`
+setting did not take: run `ALTER ROLE joomla_portal SET default_transaction_read_only = on;`
+as `postgres` (it applies to new connections).
 
 The user can read every table and change nothing: `default_transaction_read_only` refuses every
 change, and the component's own connection is read only as well. Which tables the portal reads

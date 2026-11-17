@@ -13,6 +13,8 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
+use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
 use Psr\Log\LoggerInterface;
 
@@ -68,6 +70,7 @@ final class AttendanceService
      * @param \DateTimeZone                         $serverZone  ZKBioTime server time zone; times are shown as recorded
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      * @param list<int>                             $weekendDays ISO weekdays without work (default Friday, Saturday)
+     * @param (\Closure(): AttendanceReader)|null    $database    read ZKBioTime's database instead of the API (0.6.0)
      */
     public function __construct(
         private readonly \Closure $clientFactory,
@@ -76,7 +79,8 @@ final class AttendanceService
         private readonly LoggerInterface $logger,
         private readonly \DateTimeZone $serverZone,
         ?\Closure $clock = null,
-        private readonly array $weekendDays = self::DEFAULT_WEEKEND
+        private readonly array $weekendDays = self::DEFAULT_WEEKEND,
+        private readonly ?\Closure $database = null
     ) {
         $this->clock = $clock ?? static fn (): \DateTimeImmutable => new \DateTimeImmutable('now');
     }
@@ -90,6 +94,47 @@ final class AttendanceService
     public function serverZone(): \DateTimeZone
     {
         return $this->serverZone;
+    }
+
+    /**
+     * Whether attendance is read from ZKBioTime's database: then each day carries ZKBioTime's own
+     * calculation (schedule, late, early leave, worked time, holidays).
+     */
+    public function fromDatabase(): bool
+    {
+        return $this->database !== null;
+    }
+
+    /**
+     * The employee's department, position and hire date, from the database; null with the API or
+     * when it cannot be read. Kept a day in the cache.
+     *
+     * @return array{department: ?string, position: ?string, hire_date: ?string}|null
+     */
+    public function profile(Identity $identity): ?array
+    {
+        if ($this->database === null || !$identity->isMatched()) {
+            return null;
+        }
+
+        $cached = $this->cache->get($identity, 'db:profile');
+
+        if ($cached !== null) {
+            return $cached['p'] ?? null;
+        }
+
+        try {
+            $emp = ($this->database)()->employee($identity->empCode());
+        } catch (DbException $e) {
+            $this->logger->warning('ZKBioTime database: the employee profile could not be read (' . $e->getKind() . ')');
+
+            return null;
+        }
+
+        $profile = $emp === null ? null : ['department' => $emp['department'], 'position' => $emp['position'], 'hire_date' => $emp['hire_date']];
+        $this->cache->set($identity, 'db:profile', ['p' => $profile], self::PAST_MONTH_TTL);
+
+        return $profile;
     }
 
     /** @return list<int> ISO weekdays that are weekend days */
@@ -197,6 +242,7 @@ final class AttendanceService
             $checkIn  = $row['check_in'] ?? null;
             $checkOut = $row['check_out'] ?? null;
             $fromPunches = false;
+            $db          = isset($row['db']);
 
             if ($checkIn === null && $checkOut === null && $p !== []) {
                 // ZKBioTime gave no calculated times: use the punches, by the time of day.
@@ -205,10 +251,18 @@ final class AttendanceService
             }
 
             $weekend = \in_array((int) $d->format('N'), $this->weekendDays, true);
-            $status  = isset($row['status']) ? $this->daily->status($row['status']) : null;
+            $status  = !$db && isset($row['status']) ? $this->daily->status($row['status']) : null;
             $derived = $status === null;
+            $punched = $p !== [] || $checkIn !== null || $checkOut !== null;
+            $raw     = $db ? ($row['holiday'] ?? null) : ($row['status'] ?? null);
 
-            if ($derived) {
+            if ($db && !$punched && isset($row['holiday'])) {
+                // A holiday of ZKBioTime (for everyone, the department or the group): not absent.
+                [$status, $derived] = ['holiday', false];
+            } elseif ($db && !$punched && !$weekend && !empty($row['off'])) {
+                // A day off in the employee's schedule.
+                [$status, $derived] = ['rest', false];
+            } elseif ($derived) {
                 $status = self::dayStatus($date, $today, $weekend, $checkIn, $checkOut, $p !== []);
             }
 
@@ -229,16 +283,17 @@ final class AttendanceService
                 isset($row['worked']) ? (int) $row['worked'] : null,
                 isset($row['overtime']) ? (int) $row['overtime'] : null,
                 $status,
-                $row['status'] ?? null,
+                $raw,
                 $weekend,
                 $derived
             );
 
-            $day->detectExceptions($this->daily->isConfigured(), $date < $today);
+            // From the database, "no schedule" only for a day ZKBioTime has calculated.
+            $day->detectExceptions($this->database !== null ? $row !== null && !isset($row['holiday']) : $this->daily->isConfigured(), $date < $today);
             $days[] = $day;
         }
 
-        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $this->daily, $errors, $truncated, $fetched, $today);
+        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $this->daily, $errors, $truncated, $fetched, $today, $this->database !== null);
     }
 
     /**
@@ -288,13 +343,14 @@ final class AttendanceService
         $stat = &$this->stats[$type];
         $stat ??= ['read' => 0, 'hidden' => 0, 'skipped' => 0, 'cached' => 0, 'error' => null, 'state' => 'ok'];
 
-        if ($type === self::TYPE_DAILY && !$this->daily->isConfigured()) {
+        if ($type === self::TYPE_DAILY && $this->database === null && !$this->daily->isConfigured()) {
             $stat['state'] = 'not configured';
 
             return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => null];
         }
 
-        $key    = $type . ':' . \sprintf('%04d-%02d', $year, $month);
+        // Database and API rows are never mixed in the cache.
+        $key    = ($this->database !== null ? 'db:' : '') . $type . ':' . \sprintf('%04d-%02d', $year, $month);
         $cached = $this->cache->get($identity, $key);
 
         if ($cached !== null && isset($cached['rows'], $cached['at'])) {
@@ -307,22 +363,64 @@ final class AttendanceService
         $first = self::firstOfMonth($year, $month);
         $last  = $first->modify('last day of this month');
 
-        try {
-            $client = ($this->clientFactory)();
-            $result = match ($type) {
-                self::TYPE_PUNCHES => $client->transactions($identity->empCode(), $first->setTime(0, 0, 0), $last->setTime(23, 59, 59)),
-                default            => $client->sourceRows($this->daily, $identity->empCode(), $first, $last),
-            };
-        } catch (ZkbException $e) {
-            $stat['error'] = $e->getKind();
+        if ($this->database !== null) {
+            try {
+                $reader   = ($this->database)();
+                $employee = $reader->employee($identity->empCode());
 
-            return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => $e->getKind()];
+                if ($employee === null) {
+                    // Not exactly one employee with this code in the database: nothing is shown.
+                    $this->logger->warning(\sprintf('ZKBioTime database: no single employee with the mapped code of Joomla user %d', $identity->joomlaUserId));
+                    $stat['error'] = ZkbException::NOT_FOUND;
+
+                    return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => ZkbException::NOT_FOUND];
+                }
+
+                if ($type === self::TYPE_DAILY) {
+                    // Already one employee's (filtered by its id) and in the portal's form.
+                    $rows = array_map(static fn (array $r): array => $r + ['db' => true], $reader->days($employee, $first, $last));
+                    $at   = ($this->clock)()->getTimestamp();
+                    $stat['read'] += \count($rows);
+                    $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => false, 'at' => $at], $last->format('Y-m-d') < $this->today() ? self::PAST_MONTH_TTL : null);
+
+                    return ['rows' => $rows, 'truncated' => false, 'at' => $at, 'error' => null];
+                }
+
+                $items     = $reader->punches($identity->empCode(), $first, $last);
+                $truncated = false;
+            } catch (DbException $e) {
+                $kind = match ($e->getKind()) {
+                    DbException::NOT_CONFIGURED => ZkbException::NOT_CONFIGURED,
+                    DbException::AUTH           => ZkbException::AUTH,
+                    DbException::DATABASE, DbException::QUERY => ZkbException::SERVER,
+                    default                     => ZkbException::NETWORK,
+                };
+                $this->logger->warning('ZKBioTime database: ' . $type . ' could not be read (' . $e->getKind() . ($e->getDetail() !== '' ? ': ' . $e->getDetail() : '') . ')');
+                $stat['error'] = $kind;
+
+                return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => $kind];
+            }
+        } else {
+            try {
+                $client = ($this->clientFactory)();
+                $result = match ($type) {
+                    self::TYPE_PUNCHES => $client->transactions($identity->empCode(), $first->setTime(0, 0, 0), $last->setTime(23, 59, 59)),
+                    default            => $client->sourceRows($this->daily, $identity->empCode(), $first, $last),
+                };
+            } catch (ZkbException $e) {
+                $stat['error'] = $e->getKind();
+
+                return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => $e->getKind()];
+            }
+
+            $items     = $result->items;
+            $truncated = $result->truncated;
         }
 
         $rows   = [];
         $hidden = 0;
 
-        foreach ($result->items as $item) {
+        foreach ($items as $item) {
             $code = $type === self::TYPE_PUNCHES
                 ? (isset($item[self::TX_EMP_CODE]) && is_scalar($item[self::TX_EMP_CODE]) ? (string) $item[self::TX_EMP_CODE] : null)
                 : $this->daily->value($item, 'emp_code');
@@ -358,9 +456,9 @@ final class AttendanceService
 
         $at   = ($this->clock)()->getTimestamp();
         $past = $last->format('Y-m-d') < $this->today();
-        $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => $result->truncated, 'at' => $at], $past ? self::PAST_MONTH_TTL : null);
+        $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => $truncated, 'at' => $at], $past ? self::PAST_MONTH_TTL : null);
 
-        return ['rows' => $rows, 'truncated' => $result->truncated, 'at' => $at, 'error' => null];
+        return ['rows' => $rows, 'truncated' => $truncated, 'at' => $at, 'error' => null];
     }
 
     /**

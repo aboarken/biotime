@@ -27,7 +27,7 @@ $weekend = (string) ($displayData['weekend'] ?? '');
 <?php endif; ?>
 <p class="bt-note">
     <?php if (($displayData['rules'] ?? true) === true) : ?>
-        <?php echo $e(Text::_('COM_BIOTIME_NOTE_CHECK_RULE')); ?>
+        <?php echo $e(Text::_($period->calculated ? 'COM_BIOTIME_NOTE_CALCULATED' : 'COM_BIOTIME_NOTE_CHECK_RULE')); ?>
         <?php echo $e($weekend !== '' ? Text::sprintf('COM_BIOTIME_NOTE_WEEKEND_RULE', $weekend) : Text::_('COM_BIOTIME_NOTE_NO_WEEKEND')); ?>
     <?php endif; ?>
     <?php if (!empty($displayData['zone'])) : ?>

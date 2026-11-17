@@ -636,6 +636,31 @@
   color: #9ca3af;
 }
 
+/* ZKBioTime's calculation (from the database, 0.6.0): late-in / early-out and the schedule */
+.com-biotime .bt-late {
+  font-weight: 600;
+  color: #b45309;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-sched {
+  display: block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.com-biotime .bt-today .bt-sub,
+.com-biotime .bt-sched + .bt-sub {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-profile {
+  margin: -0.5rem 0 1rem;
+  color: var(--bt-text-muted);
+}
+
 .com-biotime .bt-check-device {
   display: block;
   font-size: 0.8125rem;
@@ -750,6 +775,14 @@
   display: flex;
 }
 
+.com-biotime .bt-cal-late {
+  display: block;
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
 .com-biotime .bt-cal-tag {
   display: block;
   margin: 0 0 0.25rem;
@@ -788,7 +821,8 @@
 
   /* Phones: the status symbol (explained by the legend) instead of the word. */
   .com-biotime .bt-cal-status .bt-cal-label,
-  .com-biotime .bt-cal-tag {
+  .com-biotime .bt-cal-tag,
+  .com-biotime .bt-cal-late {
     display: none;
   }
 

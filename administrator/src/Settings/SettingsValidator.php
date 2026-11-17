@@ -430,6 +430,23 @@ final class SettingsValidator
         if ($on && !$has) {
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PASSWORD_REQUIRED';
         }
+
+        // Where the pages read attendance. The database needs PostgreSQL (the queries are written
+        // for it; SQL Server is only checked by Test Database).
+        $source = self::str($input['data_source'] ?? 'api');
+
+        if (!\in_array($source, ['api', 'database'], true)) {
+            $source = 'api';
+        }
+
+        if ($source === 'database' && $engine !== DbConfig::ENGINE_PGSQL) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DATA_SOURCE';
+        }
+
+        $unit = self::str($input['db_duration_unit'] ?? 'auto');
+
+        $values['data_source']      = $source;
+        $values['db_duration_unit'] = \in_array($unit, \BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader::UNITS, true) ? $unit : 'auto';
     }
 
     /**

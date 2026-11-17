@@ -22,6 +22,8 @@ use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
 use BiotimePortal\Component\Biotime\Administrator\Cache\DbUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
+use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserFieldReader;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserMapRepository;
@@ -132,6 +134,21 @@ return new class () implements ServiceProviderInterface {
             AttendanceService::class,
             static function (Container $c) use ($client, $zone): AttendanceService {
                 $settings = $c->get(SettingsRepository::class)->load();
+                $zoneName = $zone($c)->getName();
+                $database = null;
+
+                // Attendance from ZKBioTime's database (0.6.0): one reader, and at most one
+                // connection, per page load. Identities are still checked through the API.
+                if ($settings->readsDatabase()) {
+                    $reader   = null;
+                    $database = static function () use (&$reader, $c, $settings, $zoneName): AttendanceReader {
+                        return $reader ??= new AttendanceReader(
+                            static fn () => (new DbConnector())->connect($settings->dbConfig($c->get(ZkbClientFactory::class)->vault())),
+                            \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
+                            $settings->dbDurationUnit()
+                        );
+                    };
+                }
 
                 return new AttendanceService(
                     $client($c),
@@ -140,7 +157,8 @@ return new class () implements ServiceProviderInterface {
                     $c->get(JoomlaLogger::class),
                     $zone($c),
                     null,
-                    $settings->weekendDays()
+                    $settings->weekendDays(),
+                    $database
                 );
             }
         );
