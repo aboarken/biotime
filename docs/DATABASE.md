@@ -15,13 +15,17 @@ What the pages then show, per day and per month:
 | Value | Read from |
 |---|---|
 | Punches (time, state, device, area, fingerprint or face) | `iclock_transaction` |
-| Schedule (timetable name, start and end) | `att_payloadbase` + `att_timeinterval` |
-| Check-in and check-out | ZKBioTime's paired clock-in and clock-out (`att_payloadbase`); days not calculated yet (usually today): the first and the last punch. The 12:00 rule is used only with the API |
-| Late in, early out, worked time | `att_payloadbase` (`late`, `early_leave`, `total_worked`) |
+| Schedule (timetable name, start and end) | ZKBioTime's calculation (`att_payloadbase` + `att_timeinterval`) where it exists; else the schedules: temporary schedule (`att_tempschedule`, `att_temporaryschedule`), then the employee's shift (`att_attschedule`), the attendance group's (`att_groupschedule`) or the department's (`att_departmentschedule`), with `att_attshift` + `att_shiftdetail` + `att_timeinterval`. So today and later days show their schedule too |
+| Check-in and check-out | From the punches: check-in is the first punch before the cut-off, check-out the last punch from it. The cut-off is the end of the day's timetable check-in window (start + `att_timeinterval.in_above_margin`), or 12:00 on days without a timetable (and with the API) |
+| Late in, early out, worked time | `att_payloadbase` (`late`, `early_leave`, `total_worked`), as ZKBioTime calculated them; nothing is calculated by the portal, so a day shows them once ZKBioTime has calculated it |
 | Overtime | `att_payloadovertime.total_ot` |
 | Absent, day off | `att_payloadbase` (`absent`, `day_off`) |
 | Holidays (for everyone, the department or the attendance group) | `att_holiday`, `att_attemployee.group_id` |
 | Department and position (My Dashboard) | `personnel_employee`, `personnel_department`, `personnel_position` |
+
+Shift cycles (UNVERIFIED, check with Test Database → Shifts): `cycle_unit` 0 = days (day 0 = the
+schedule's start date), 1 = weeks (day 0 = Sunday), 2 = months (day 0 = the 1st). If the schedule
+shown for today does not match ZKBioTime's, send the Shifts lines of the Test Database summary.
 
 Monthly totals: total late in, total early out, both together, days late and early, worked time,
 overtime, holidays. ZKBioTime does not document the unit of its duration columns: *Duration

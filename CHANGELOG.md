@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.6.2] - 2026-11-18
+
+### Changed
+- **Schedules from the employee's shifts**: days ZKBioTime has not calculated yet (today and later) show their schedule too: a temporary schedule for the date, else the employee's shift, else the attendance group's or the department's (`att_tempschedule`, `att_temporaryschedule`, `att_attschedule`, `att_groupschedule`, `att_departmentschedule`, `att_attshift`, `att_shiftdetail`, `att_timeinterval`). A date in a shift without a timetable is a Rest Day.
+- **Check-in and check-out by the time of day again (no first/last punch rule)**, with the cut-off from the day's timetable: the end of its check-in window (start + `in_above_margin`), else 12:00.
+- **Late In and Early Out only from ZKBioTime's calculation** (`att_payloadbase`); nothing is calculated by the portal.
+- **Colours:** weekends blue (rows, calendar, tile, badge); holidays sky blue, and a holiday's whole row in that colour like weekend rows.
+- **Test Database → Shifts**: each shift's cycle and timetable per day number, and how many days ZKBioTime calculated in the last 31 days (settings and a count, no personal data), to check the schedules.
+
 ## [0.6.1] - 2026-11-18
 
 ### Changed

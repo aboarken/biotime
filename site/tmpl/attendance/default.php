@@ -72,7 +72,7 @@ $cards = $calc ? [
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
     [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
     [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
-    [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'teal'), 'holiday'],
+    [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'sky'), 'holiday'],
     [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'purple'), 'weekendworked'],
     [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $e($f->duration($s->lateMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::countTone($s->lateMinutes, 'amber'), 'late'],
     [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $e($f->duration($s->earlyMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->earlyDays)) . '</small>', Ui::countTone($s->earlyMinutes, 'amber'), 'early'],
@@ -159,7 +159,7 @@ $cards = $calc ? [
                     </thead>
                     <tbody>
                     <?php foreach ($this->rows as $day) : ?>
-                        <tr class="<?php echo $day->weekend ? 'bt-row-weekend' : ''; ?><?php echo $day->date === $this->period->today ? ' bt-row-today' : ''; ?>">
+                        <tr class="<?php echo $day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ''); ?><?php echo $day->date === $this->period->today ? ' bt-row-today' : ''; ?>">
                             <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a>
                                 <span class="bt-sub"><?php echo $e($f->weekday($day->weekday())); ?></span></th>
                             <?php if ($calc) : ?><td><?php echo LayoutHelper::render('biotime.schedule', ['day' => $day, 'f' => $f]); ?></td><?php endif; ?>
