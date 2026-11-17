@@ -6,8 +6,10 @@
  * Cards, panels, tables, badges, filters and buttons with their own look (the same design as the
  * ServiceDesk Plus portal), so every portal page is the same on any site template. Fonts and link
  * colours still come from the template. Statuses always combine colour with a text label.
+ * Rules that style more than the portal's own bt-* classes are scoped to [data-bt-root], the
+ * page's own content: some templates (e.g. Helix Ultimate) also put "com-biotime" on <body>.
  */
-.com-biotime {
+[data-bt-root] {
   --bt-primary: #17426f;
   --bt-primary-hover: #0f2f51;
   --bt-card-bg: var(--bs-body-bg, #fff);
@@ -832,7 +834,7 @@
 }
 
 /* Pagination */
-.com-biotime .pagination {
+[data-bt-root] .pagination {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
@@ -842,11 +844,11 @@
   list-style: none;
 }
 
-.com-biotime .pagination .page-item {
+[data-bt-root] .pagination .page-item {
   margin: 0;
 }
 
-.com-biotime .pagination .page-link {
+[data-bt-root] .pagination .page-link {
   display: block;
   margin: 0;
   padding: 0.4rem 0.875rem;
@@ -860,17 +862,17 @@
   box-shadow: var(--bt-card-shadow);
 }
 
-.com-biotime .pagination .page-link:hover {
+[data-bt-root] .pagination .page-link:hover {
   background: var(--bt-card-hover);
 }
 
-.com-biotime .pagination .page-item.disabled .page-link {
+[data-bt-root] .pagination .page-item.disabled .page-link {
   color: var(--bt-text-muted);
   pointer-events: none;
   box-shadow: none;
 }
 
-.com-biotime .pagination .page-item.disabled:not(:first-child):not(:last-child) .page-link {
+[data-bt-root] .pagination .page-item.disabled:not(:first-child):not(:last-child) .page-link {
   background: transparent;
   border-color: transparent;
 }
@@ -879,20 +881,21 @@
  * Template independence
  * ---------------------
  * A few Bootstrap 5 class names remain (visually-hidden, headings). The rules below give them a
- * plain look when the site template does not provide them. Every selector is wrapped in :where(),
- * which has zero specificity, so any style of the installed template wins over these.
+ * plain look when the site template does not provide them. They are scoped to [data-bt-root], the
+ * page's own content (some templates also put "com-biotime" on <body>). Every selector is wrapped
+ * in :where(), which has zero specificity, so any style of the installed template wins over these.
  */
-:where(.com-biotime) :where(*, *::before, *::after) {
+:where([data-bt-root]) :where(*, *::before, *::after) {
   box-sizing: border-box;
 }
 
-:where(.com-biotime .h2) { font-size: calc(1.325rem + 0.9vw); font-weight: 500; line-height: 1.2; }
+:where([data-bt-root] .h2) { font-size: calc(1.325rem + 0.9vw); font-weight: 500; line-height: 1.2; }
 
 @media (min-width: 1200px) {
-  :where(.com-biotime .h2) { font-size: 2rem; }
+  :where([data-bt-root] .h2) { font-size: 2rem; }
 }
 
-:where(.com-biotime .visually-hidden) {
+:where([data-bt-root] .visually-hidden) {
   position: absolute;
   width: 1px;
   height: 1px;

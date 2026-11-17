@@ -62,7 +62,7 @@ $bar  = [
 ];
 $days = array_sum(array_column($bar, 1));
 ?>
-<div class="com-biotime biotime-dashboard">
+<div class="com-biotime biotime-dashboard" data-bt-root="dashboard">
     <div class="bt-head">
         <?php if ($this->showPageHeading) : ?>
             <h1 class="h2"><?php echo $e($this->pageHeading); ?></h1>

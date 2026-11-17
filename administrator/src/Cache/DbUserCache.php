@@ -117,7 +117,6 @@ final class DbUserCache implements UserCacheInterface
         }
     }
 
-    /** Deletes all of the user's entries (the prefix is not needed for that). */
     /** Delete every expired entry. */
     public function purge(?int $now = null): void
     {

@@ -28,7 +28,7 @@ $cards = [
     [Text::_('COM_BIOTIME_FILTER_PUNCHES'), (string) $t['days'], Ui::countTone($t['days'], 'green')],
 ];
 ?>
-<div class="com-biotime biotime-punches">
+<div class="com-biotime biotime-punches" data-bt-root="punches">
     <div class="bt-head">
         <?php if ($this->showPageHeading) : ?>
             <h1 class="h2"><?php echo $e($this->pageHeading); ?></h1>

@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.4.9 – Styles scoped to the portal content
+- [ ] With a template that adds `com-biotime` to `<body>` (e.g. Helix Ultimate): the site header, menus, modules and their pagination look the same on portal pages as on other pages; the portal pages look as before.
+- [ ] Every portal page (and the "could not be matched" page) has `data-bt-root` on its content (browser inspector).
+
 ### 0.4.7 – Security and clean-up
 - [ ] Log in to the administrator as a user with *Access Administration Interface* on the component but not Super User: `index.php?option=com_biotime&task=usermappings.display` answers 403.
 - [ ] Users → Fields → employeeid: set *Editable In* to *Site and administrator* and allow Registered users to edit its value: an unmapped user's next visit is *not found* and the log says the field is editable. Restore the setting.
