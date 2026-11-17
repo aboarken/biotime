@@ -88,6 +88,88 @@ final class SettingsValidatorTest extends TestCase
         self::assertSame([], $this->errors(['server_url' => 'https://zkb2.example.com'] + $this->input(), $current), 'typed again: fine');
     }
 
+    /** @return array<string, string> */
+    private function database(array $override = []): array
+    {
+        return $override + [
+            'db_engine'   => 'pgsql',
+            'db_host'     => 'DB.Example.com',
+            'db_port'     => '7496',
+            'db_name'     => 'biotime',
+            'db_user'     => 'joomla_portal',
+            'db_password' => 'db secret 1',
+            'db_ssl'      => 'verify',
+            'db_ca'       => '/etc/ssl/zkb-db.pem',
+        ] + $this->input();
+    }
+
+    public function testDatabaseSettingsAreCheckedAndThePasswordEncrypted(): void
+    {
+        $values = $this->validator()->validate($this->database(), new Settings());
+
+        self::assertSame(['pgsql', 'db.example.com', '7496', 'biotime', 'joomla_portal', 'verify'], [$values['db_engine'], $values['db_host'], $values['db_port'], $values['db_name'], $values['db_user'], $values['db_ssl']]);
+        self::assertSame('db secret 1', $this->vault->decrypt($values['db_password_enc'], KeyVault::CONTEXT_DB_PASSWORD));
+        self::assertArrayNotHasKey('db_password', $values);
+
+        $config = (new Settings($values))->dbConfig($this->vault);
+        self::assertSame('db secret 1', $config->password());
+        self::assertStringNotContainsString('db secret 1', $config->dsn(), 'the password is never in the connection string');
+        self::assertArrayNotHasKey('db_password_enc', (new Settings($values))->toFormData());
+
+        self::assertSame([], $this->errors(['db_engine' => '', 'db_host' => '', 'db_user' => '', 'db_password' => ''] + $this->database()), 'off: nothing required');
+        self::assertSame([], $this->errors($this->input()), 'forms without the database fields');
+    }
+
+    public function testDatabaseSettingsRefuseUnsafeValues(): void
+    {
+        $cases = [
+            [['db_engine' => 'mysql'], 'COM_BIOTIME_SETTINGS_ERR_DB_ENGINE'],
+            [['db_host' => 'db sslmode=disable'], 'COM_BIOTIME_SETTINGS_ERR_DB_HOST'],
+            [['db_host' => ''], 'COM_BIOTIME_SETTINGS_ERR_DB_HOST'],
+            [['db_port' => '70000'], 'COM_BIOTIME_SETTINGS_ERR_DB_PORT'],
+            [['db_name' => "biotime';x"], 'COM_BIOTIME_SETTINGS_ERR_DB_NAME'],
+            [['db_user' => 'a b'], 'COM_BIOTIME_SETTINGS_ERR_DB_USER'],
+            [['db_user' => 'Postgres'], 'COM_BIOTIME_SETTINGS_ERR_DB_ADMIN_USER'],
+            [['db_user' => 'sa'], 'COM_BIOTIME_SETTINGS_ERR_DB_ADMIN_USER'],
+            [['db_ssl' => 'maybe'], 'COM_BIOTIME_SETTINGS_ERR_DB_SSL'],
+            [['db_ca' => ''], 'COM_BIOTIME_SETTINGS_ERR_DB_CA_REQUIRED'],
+            [['db_ca' => "/etc/a.pem'; sslmode='disable"], 'COM_BIOTIME_SETTINGS_ERR_DB_CA'],
+            [['db_password' => ''], 'COM_BIOTIME_SETTINGS_ERR_DB_PASSWORD_REQUIRED'],
+        ];
+
+        foreach ($cases as [$override, $key]) {
+            self::assertContains($key, $this->errors($override + $this->database()), json_encode($override));
+        }
+
+        self::assertSame([], $this->errors(['db_ssl' => 'require', 'db_ca' => ''] + $this->database()), 'Require needs no CA file');
+        self::assertSame([], $this->errors(['db_engine' => 'sqlsrv', 'db_port' => '1433', 'db_ca' => ''] + $this->database()), 'SQL Server checks against the system certificates');
+        self::assertContains('COM_BIOTIME_SETTINGS_ERR_DB_CA', (function (): array {
+            try {
+                $this->validator(static fn (): bool => false)->validate($this->database(), new Settings());
+            } catch (ValidationFailed $e) {
+                return $e->getKeys();
+            }
+
+            return [];
+        })(), 'a CA file that does not exist');
+    }
+
+    public function testStoredDatabasePasswordIsNotKeptForAnotherServer(): void
+    {
+        $current = new Settings($this->validator()->validate($this->database(), new Settings()));
+        $same    = $this->database(['db_password' => '']);
+
+        self::assertSame([], $this->errors($same, $current), 'same server: kept');
+        self::assertArrayNotHasKey('db_password_enc', $this->validator()->validate($same, $current), 'not overwritten: the stored one stays');
+
+        foreach ([['db_host' => 'attacker.example.com'], ['db_port' => '5432'], ['db_name' => 'other'], ['db_user' => 'someone'], ['db_engine' => 'sqlsrv', 'db_ca' => '']] as $override) {
+            self::assertContains('COM_BIOTIME_SETTINGS_ERR_REENTER_DB_PASSWORD', $this->errors($override + $same, $current), json_encode($override));
+        }
+
+        self::assertSame([], $this->errors(['db_host' => 'db2.example.com'] + $this->database(), $current), 'typed again: fine');
+        self::assertSame('', $this->validator()->validate(['clear_db_password' => '1', 'db_engine' => ''] + $same, $current)['db_password_enc'], 'removed');
+    }
+
     public function testValidSettingsAreStoredWithEncryptedPassword(): void
     {
         $values = $this->validator()->validate($this->input(), new Settings());

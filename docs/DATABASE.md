@@ -1,0 +1,70 @@
+# Reading ZKBioTime's database directly
+
+ZKBioTime 9.5's API gives punches, employees and devices only. Schedules, calculated attendance
+(late-in, early-out, worked hours, overtime), leave and holidays are only in its own database.
+Since 0.5.0 the component can connect to that database **read only**.
+
+0.5.0 contains the connection and **Test Database** only: the portal pages still read the API.
+The test lists what your server has (table and column names, never data), so the next versions
+read the right tables.
+
+## 1. On the ZKBioTime server: a read-only user
+
+ZKBioTime's settings file `attsite.ini` (in the ZKBioTime folder, section `[DATABASE]`) names the
+engine, database name and port. With the PostgreSQL installed with ZKBioTime: port `7496`,
+database `biotime`.
+
+Back up the database first. Then, in **pgAdmin**: right-click the `biotime` database →
+**Query Tool**, paste, choose your own long password, press **F5**:
+
+```sql
+CREATE ROLE joomla_portal LOGIN PASSWORD 'choose-a-long-password';
+ALTER ROLE joomla_portal SET default_transaction_read_only = on;
+GRANT CONNECT ON DATABASE biotime TO joomla_portal;
+GRANT USAGE ON SCHEMA public TO joomla_portal;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO joomla_portal;
+-- Tables ZKBioTime creates later (e.g. after an upgrade) are readable as well:
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO joomla_portal;
+```
+
+The user can read every table and change nothing: `default_transaction_read_only` refuses every
+change, and the component's own connection is read only as well. Which tables the portal reads
+is decided in Joomla, not here.
+
+Check it: register the server again in pgAdmin as `joomla_portal`, open the Query Tool on
+`biotime` and run `SELECT count(*) FROM iclock_transaction;` (a number) and
+`CREATE TABLE test_x (i int);` (must fail: *cannot execute CREATE TABLE in a read-only transaction*).
+
+> All tables include ZKBioTime's own accounts (`auth_user`, with password hashes). Keep the
+> portal user's password as safe as the administrator's. To keep that one table out:
+> `REVOKE SELECT ON auth_user FROM joomla_portal;`
+
+## 2. Network: only the Joomla server, encrypted
+
+- `postgresql.conf` (ZKBioTime's `pgsql\data` folder): `listen_addresses` must include the
+  network address (or `'*'`), then restart ZKBioTime's database service.
+- `pg_hba.conf`, one line for the Joomla server's outgoing IP address only:
+  `hostssl  biotime  joomla_portal  <JOOMLA-IP>/32  scram-sha-256` (older servers: `md5`).
+- Firewall: forward the database port **only from the Joomla server's IP**. Never open it to
+  the internet.
+- Your hosting must allow outgoing connections to that port; ask them for the server's outgoing IP.
+- **SSL**: across the internet the connection must be encrypted. PostgreSQL needs `ssl = on` and a
+  certificate (`ssl_cert_file`, `ssl_key_file`). Copy the certificate (or its CA) to the Joomla
+  server for *Verify*; without it choose *Require* (encrypted, certificate not checked).
+
+## 3. In Joomla
+
+*Integration Settings → Database (direct read)*: database PostgreSQL, host (e.g. your firewall's
+public name), port, database name, user `joomla_portal`, password, encryption. Save, then
+**Test Database**. The report shows:
+
+- server version, whether the connection is encrypted;
+- whether the user is an administrator, read only by default, or may change any table;
+- the punch, employee, device, department, position and area tables, readable or not;
+- every attendance (`att_…`), personnel and device table with its column names;
+- a summary to copy (names only) for the next step.
+
+The PHP extension `pdo_pgsql` (PostgreSQL) or `pdo_sqlsrv` (SQL Server) must be enabled on the
+Joomla server (*System → System Information → PHP Information*).
+
+SQL Server is supported by the test but UNVERIFIED on a real ZKBioTime server.

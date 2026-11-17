@@ -111,6 +111,12 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.5.0 – Database (direct read)
+- [ ] Integration Settings → Database: `postgres` as user is refused; Verify without a CA file is refused; changing the host without typing the password again is refused.
+- [ ] Test Database with the read-only user (docs/DATABASE.md): connected, encrypted (with SSL on), not an administrator, read only by default, no table it may change; the punch, employee and device tables readable; the summary lists att_ tables with columns, no data.
+- [ ] Test Database with a wrong password, a closed port and SSL off on the server: each shows its own message and hint.
+- [ ] Developers: `BIOTIME_TEST_PG=host:port:database:user:password vendor/bin/phpunit --filter testRealPostgres` against a PostgreSQL with that read-only user.
+
 ### 0.4.9 – Styles scoped to the portal content
 - [ ] With a template that adds `com-biotime` to `<body>` (e.g. Helix Ultimate): the site header, menus, modules and their pagination look the same on portal pages as on other pages; the portal pages look as before.
 - [ ] Every portal page (and the "could not be matched" page) has `data-bt-root` on its content (browser inspector).

@@ -3,6 +3,17 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-11-17
+
+### Added
+- **Direct read from ZKBioTime's database** (*Integration Settings → Database (direct read)*), for what the ZKBioTime 9.5 API does not give: schedules, calculated attendance, leave and holidays. This version adds the connection and **Test Database** only; the portal pages still read the API.
+  - PostgreSQL (the database installed with ZKBioTime) and Microsoft SQL Server (UNVERIFIED).
+  - Read only twice over: the database user should be read only (docs/DATABASE.md), and the component's connection is read only itself (PostgreSQL: `default_transaction_read_only`, query time limit; SQL Server: `ApplicationIntent=ReadOnly`). Only single SELECT statements can be sent.
+  - Encryption: *Verify* (certificate checked, recommended), *Require* or *Off* (same network only).
+  - The password is encrypted like the API password, never shown again, and must be typed again when the server, database or user changes. The `postgres` and `sa` administrator accounts are refused.
+  - **Test Database** reads the database's catalogue only, never a row of data: server version, encryption, whether the user is an administrator or may change tables, the punch, employee and device tables, every attendance, personnel and device table with its column names, and a summary to copy. Limited to 20 tests per administrator and hour, and recorded in the audit log.
+- docs/DATABASE.md: creating the read-only user in pgAdmin, network and SSL, the Joomla settings.
+
 ## [0.4.9] - 2026-11-17
 
 ### Fixed

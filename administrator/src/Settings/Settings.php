@@ -12,6 +12,10 @@ namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
 
 /**
  * Immutable view of the settings stored in #__biotime_settings (name/value rows).
@@ -61,6 +65,15 @@ final class Settings
         'daily_fields'        => '',
         'daily_duration_unit' => 'minutes',
         'daily_status_map'    => '',
+        // Direct read from ZKBioTime's own database (0.5.0); '' = not used
+        'db_engine'        => '',
+        'db_host'          => '',
+        'db_port'          => '7496',
+        'db_name'          => 'biotime',
+        'db_user'          => '',
+        'db_password_enc'  => '',
+        'db_ssl'           => 'verify',
+        'db_ca'            => '',
         // System
         'detailed_log'     => '1',
         'cache_minutes'    => '5',
@@ -75,7 +88,7 @@ final class Settings
     ];
 
     /** Names never sent to the browser. */
-    public const SECRET_NAMES = ['api_password_enc', 'api_token_enc', 'token_cache_enc', 'token_cache_renew_at'];
+    public const SECRET_NAMES = ['api_password_enc', 'api_token_enc', 'token_cache_enc', 'token_cache_renew_at', 'db_password_enc'];
 
     /** @param array<string, string> $values */
     public function __construct(private readonly array $values = [])
@@ -215,6 +228,50 @@ final class Settings
         return SourceConfig::fromSettings($this, $kind);
     }
 
+    /** Database engine of the direct read: DbConfig::ENGINE_*, or '' when not used. */
+    public function dbEngine(): string
+    {
+        $engine = $this->get('db_engine');
+
+        return \in_array($engine, DbConfig::ENGINES, true) ? $engine : '';
+    }
+
+    public function hasDbPassword(): bool
+    {
+        return $this->get('db_password_enc') !== '';
+    }
+
+    /**
+     * The direct-read connection, with the password decrypted.
+     *
+     * @throws DbException NOT_CONFIGURED when it is off, incomplete or cannot be decrypted
+     */
+    public function dbConfig(KeyVault $vault): DbConfig
+    {
+        if ($this->dbEngine() === '' || $this->get('db_host') === '' || $this->get('db_user') === '' || !$this->hasDbPassword()) {
+            throw new DbException(DbException::NOT_CONFIGURED, 'Database connection is not configured');
+        }
+
+        try {
+            $password = $vault->decrypt($this->get('db_password_enc'), KeyVault::CONTEXT_DB_PASSWORD);
+
+            return new DbConfig(
+                $this->dbEngine(),
+                $this->get('db_host'),
+                (int) $this->get('db_port'),
+                $this->get('db_name'),
+                $this->get('db_user'),
+                $password,
+                $this->get('db_ssl'),
+                $this->get('db_ca'),
+                $this->connectTimeout(),
+                $this->timeout()
+            );
+        } catch (KeyVaultException | \InvalidArgumentException $e) {
+            throw new DbException(DbException::NOT_CONFIGURED, 'Database settings are incomplete or cannot be decrypted', '', $e);
+        }
+    }
+
     public function pageSize(): int
     {
         return max(1, min(1000, (int) $this->get('page_size') ?: self::DEFAULT_PAGE_SIZE));
@@ -329,6 +386,7 @@ final class Settings
         return $this->toFormData() + [
             'api_password_enc' => $this->hasPassword() ? '[set]' : '',
             'api_token_enc'    => $this->hasStaticToken() ? '[set]' : '',
+            'db_password_enc'  => $this->hasDbPassword() ? '[set]' : '',
         ];
     }
 }

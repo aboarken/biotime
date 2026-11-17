@@ -14,6 +14,7 @@ use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
 use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
 use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
 
@@ -286,6 +287,8 @@ final class SettingsValidator
             $values[$kind . '_status_map']    = trim(str_replace("\r", '', $raw['status_map']));
         }
 
+        $this->database($input, $current, $values, $errors);
+
         // New settings may mean new credentials or another server: log in afresh.
         $values['token_cache_enc']      = '';
         $values['token_cache_renew_at'] = '';
@@ -295,6 +298,113 @@ final class SettingsValidator
         }
 
         return $values;
+    }
+
+    /**
+     * Direct read from ZKBioTime's database. Off ('' engine): the values are kept as typed, nothing
+     * is required. On: every value is checked as DbConfig checks it, the password is required, and
+     * a stored password is only kept for the server and database it was entered for.
+     *
+     * @param  array<string, mixed>   $input
+     * @param  array<string, string>  $values
+     * @param  list<string>           $errors
+     */
+    private function database(array $input, Settings $current, array &$values, array &$errors): void
+    {
+        $text   = static fn (string $name, int $max): string => mb_substr(trim(self::str($input[$name] ?? '')), 0, $max);
+        $engine = self::str($input['db_engine'] ?? '');
+        $on     = $engine !== '';
+
+        if ($on && !\in_array($engine, DbConfig::ENGINES, true)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_ENGINE';
+            $engine   = '';
+        }
+
+        $host = strtolower($text('db_host', 253));
+        $port = self::int($input['db_port'] ?? null);
+        $name = $text('db_name', 63);
+        $user = $text('db_user', 63);
+        $ssl  = self::str($input['db_ssl'] ?? DbConfig::SSL_VERIFY);
+        $ca   = $text('db_ca', 500);
+
+        if ($host !== '' && !DbConfig::validHost($host)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_HOST';
+        } elseif ($on && $host === '') {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_HOST';
+        }
+
+        if ($port !== null && ($port < 1 || $port > 65535) || $on && $port === null) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PORT';
+            $port     = null;
+        }
+
+        if ($name !== '' && !DbConfig::validName($name) || $on && $name === '') {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_NAME';
+        }
+
+        if ($user !== '' && !DbConfig::validUser($user) || $on && $user === '') {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_USER';
+        } elseif (\in_array(strtolower($user), DbConfig::ADMIN_USERS, true)) {
+            // The administrator accounts can change everything: never stored for the portal.
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_ADMIN_USER';
+        }
+
+        if (!\in_array($ssl, DbConfig::SSL_MODES, true)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_SSL';
+            $ssl      = DbConfig::SSL_VERIFY;
+        }
+
+        if ($ca !== '' && (!DbConfig::validPath($ca) || !($this->fileExists)($ca))) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_CA';
+        } elseif ($on && $engine === DbConfig::ENGINE_PGSQL && $ssl === DbConfig::SSL_VERIFY && $ca === '') {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_CA_REQUIRED';
+        }
+
+        $values['db_engine'] = $engine;
+        $values['db_host']   = $host;
+        $values['db_port']   = (string) ($port ?? DbConfig::DEFAULT_PORTS[DbConfig::ENGINE_PGSQL]);
+        $values['db_name']   = $name;
+        $values['db_user']   = $user;
+        $values['db_ssl']    = $ssl;
+        $values['db_ca']     = $ca;
+
+        // Password: as for the API password.
+        $password = self::str($input['db_password'] ?? '');
+        $has      = $current->hasDbPassword() && !self::flag($input['clear_db_password'] ?? '0');
+
+        if (!$has) {
+            $values['db_password_enc'] = '';
+        }
+
+        if ($password !== '') {
+            if (\strlen($password) > 256 || preg_match('/[\x00-\x1F\x7F]/', $password)) {
+                $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PASSWORD';
+                $has      = true;
+            } else {
+                $encrypted = $this->encryptOrFail($password, \BiotimePortal\Component\Biotime\Administrator\Security\KeyVault::CONTEXT_DB_PASSWORD, $errors);
+
+                if ($encrypted !== null) {
+                    $values['db_password_enc'] = $encrypted;
+                    $has                       = true;
+                }
+            }
+        }
+
+        $moved = $current->get('db_host') !== '' && (
+            $engine !== $current->get('db_engine') || $host !== $current->get('db_host')
+            || $values['db_port'] !== $current->get('db_port') || $name !== $current->get('db_name')
+            || strtolower($user) !== strtolower($current->get('db_user'))
+        );
+
+        if ($moved && $password === '' && $has && $current->hasDbPassword()) {
+            $errors[]                  = 'COM_BIOTIME_SETTINGS_ERR_REENTER_DB_PASSWORD';
+            $values['db_password_enc'] = '';
+            $has                       = false;
+        }
+
+        if ($on && !$has) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PASSWORD_REQUIRED';
+        }
     }
 
     /**
