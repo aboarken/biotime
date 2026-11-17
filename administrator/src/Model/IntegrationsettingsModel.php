@@ -17,6 +17,7 @@ use BiotimePortal\Component\Biotime\Administrator\Api\ConnectionReport;
 use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
 use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
 use BiotimePortal\Component\Biotime\Administrator\Controller\SettingsController;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Database\SchemaInspector;
@@ -112,6 +113,7 @@ final class IntegrationsettingsModel extends FormModel
             'engine'     => $config->engine,
             'host'       => $config->host,
             'port'       => $config->port,
+            'via'        => $config->viaIp !== '' ? DbConfig::formatAddress($config->viaIp, $config->viaPort ?: $config->port) : '',
             'database'   => $config->database,
             'user'       => $config->user,
             'ssl_mode'   => $config->ssl,

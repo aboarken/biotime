@@ -54,9 +54,22 @@ Check it: register the server again in pgAdmin as `joomla_portal`, open the Quer
 
 ## 3. In Joomla
 
-*Integration Settings → Database (direct read)*: database PostgreSQL, host (e.g. your firewall's
-public name), port, database name, user `joomla_portal`, password, encryption. Save, then
-**Test Database**. The report shows:
+*Integration Settings → Database (direct read)*:
+
+| Field | Example | Notes |
+|---|---|---|
+| Database | PostgreSQL | |
+| Server | `zkb-server.example.local:7496` | Host and port in one field, as the API's Server URL. With *Verify*: the name on the database certificate. |
+| Connect via | `203.0.113.10:7496` | Optional, as for the API: the firewall's **public IP** and port that Joomla really connects to; the certificate is still checked against *Server*. An IP address only (PostgreSQL cannot take a name here). Empty: Joomla connects to *Server* directly, so then enter the public address there. |
+| Database name | `biotime` | |
+| User / Password | `joomla_portal` | |
+| Encryption | Verify / Require | *Verify* needs the certificate (or CA) file on the Joomla server. |
+
+So, as with the API: the local name goes in *Server* and the public address in *Connect via*,
+or simply the public address in *Server* when the certificate has that name or with *Require*.
+Changing *Server* or *Connect via* asks for the password again.
+
+Save, then **Test Database**. The report shows:
 
 - server version, whether the connection is encrypted;
 - whether the user is an administrator, read only by default, or may change any table;

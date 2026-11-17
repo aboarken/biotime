@@ -320,23 +320,46 @@ final class SettingsValidator
             $engine   = '';
         }
 
-        $host = strtolower($text('db_host', 253));
-        $port = self::int($input['db_port'] ?? null);
+        $default = DbConfig::DEFAULT_PORTS[$engine] ?? DbConfig::DEFAULT_PORTS[DbConfig::ENGINE_PGSQL];
+        $server  = $text('db_server', 300);
+        $host    = '';
+        $port    = $default;
+
+        // Host and port in one field ("db.example.com:7496"), as the server URL of the API.
+        if ($server !== '') {
+            try {
+                [$host, $port] = DbConfig::parseAddress($server, $default);
+            } catch (\InvalidArgumentException) {
+                $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_SERVER';
+            }
+        } elseif ($on) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_SERVER';
+        }
+
+        // Connect via: the IP address (and port) Joomla really connects to, e.g. the firewall's
+        // public address, while the certificate is checked against the server's name.
+        $via    = $text('db_connect_via', 60);
+        $viaOut = '';
+
+        if ($via !== '') {
+            try {
+                [$viaIp, $viaPort] = DbConfig::parseAddress($via, $port);
+
+                if (filter_var($viaIp, FILTER_VALIDATE_IP) === false) {
+                    $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_VIA';
+                } elseif ($engine === DbConfig::ENGINE_SQLSRV) {
+                    $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_VIA_SQLSRV';
+                } else {
+                    $viaOut = DbConfig::formatAddress($viaIp, $viaPort);
+                }
+            } catch (\InvalidArgumentException) {
+                $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_VIA';
+            }
+        }
         $name = $text('db_name', 63);
         $user = $text('db_user', 63);
         $ssl  = self::str($input['db_ssl'] ?? DbConfig::SSL_VERIFY);
         $ca   = $text('db_ca', 500);
-
-        if ($host !== '' && !DbConfig::validHost($host)) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_HOST';
-        } elseif ($on && $host === '') {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_HOST';
-        }
-
-        if ($port !== null && ($port < 1 || $port > 65535) || $on && $port === null) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PORT';
-            $port     = null;
-        }
 
         if ($name !== '' && !DbConfig::validName($name) || $on && $name === '') {
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_NAME';
@@ -362,7 +385,8 @@ final class SettingsValidator
 
         $values['db_engine'] = $engine;
         $values['db_host']   = $host;
-        $values['db_port']   = (string) ($port ?? DbConfig::DEFAULT_PORTS[DbConfig::ENGINE_PGSQL]);
+        $values['db_port']   = (string) $port;
+        $values['db_connect_via'] = $viaOut;
         $values['db_name']   = $name;
         $values['db_user']   = $user;
         $values['db_ssl']    = $ssl;
@@ -392,7 +416,8 @@ final class SettingsValidator
 
         $moved = $current->get('db_host') !== '' && (
             $engine !== $current->get('db_engine') || $host !== $current->get('db_host')
-            || $values['db_port'] !== $current->get('db_port') || $name !== $current->get('db_name')
+            || $values['db_port'] !== $current->get('db_port') || $viaOut !== $current->get('db_connect_via')
+            || $name !== $current->get('db_name')
             || strtolower($user) !== strtolower($current->get('db_user'))
         );
 

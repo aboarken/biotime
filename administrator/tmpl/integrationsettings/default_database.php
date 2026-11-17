@@ -51,7 +51,7 @@ $when  = HTMLHelper::_('date', gmdate('Y-m-d H:i:s', (int) ($r['at'] ?? time()))
             ?>
             <table class="table table-sm w-auto">
                 <tbody>
-                    <tr><th scope="row"><?php echo Text::_('COM_BIOTIME_DB_SERVER'); ?></th><td><?php echo $e($r['engine'] . ' ' . $r['version'] . ' · ' . $r['host'] . ':' . $r['port'] . ' / ' . $r['database'] . ' · ' . $r['user']); ?></td></tr>
+                    <tr><th scope="row"><?php echo Text::_('COM_BIOTIME_DB_SERVER'); ?></th><td><?php echo $e($r['engine'] . ' ' . $r['version'] . ' · ' . $r['host'] . ':' . $r['port'] . (($r['via'] ?? '') !== '' ? ' → ' . $r['via'] : '') . ' / ' . $r['database'] . ' · ' . $r['user']); ?></td></tr>
                     <tr><th scope="row"><?php echo Text::_('COM_BIOTIME_DB_ENCRYPTED'); ?></th>
                         <td class="<?php echo $r['ssl'] === false ? 'text-danger' : ''; ?>"><?php echo $e($yesNo($r['ssl']) . ($r['ssl_detail'] !== '' ? ' (' . $r['ssl_detail'] . ')' : '')); ?></td></tr>
                     <tr><th scope="row"><?php echo Text::_('COM_BIOTIME_DB_ADMIN'); ?></th>

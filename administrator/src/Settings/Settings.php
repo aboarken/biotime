@@ -69,6 +69,8 @@ final class Settings
         'db_engine'        => '',
         'db_host'          => '',
         'db_port'          => '7496',
+        // "IP" or "IP:port" the connection is opened to instead of the host (PostgreSQL), '' = direct
+        'db_connect_via'   => '',
         'db_name'          => 'biotime',
         'db_user'          => '',
         'db_password_enc'  => '',
@@ -236,6 +238,23 @@ final class Settings
         return \in_array($engine, DbConfig::ENGINES, true) ? $engine : '';
     }
 
+    /** @return array{0: string, 1: int} connect via: IP address and port (0 = the server's port) */
+    public function dbVia(): array
+    {
+        $via = $this->get('db_connect_via');
+
+        if ($via === '') {
+            return ['', 0];
+        }
+
+        // Stored normalised by SettingsValidator: "IP", "IP:port" or "[IPv6]:port".
+        if (preg_match('/^\[(.+)\]:(\d+)$/', $via, $m) || preg_match('/^([^:]+):(\d+)$/', $via, $m)) {
+            return [$m[1], (int) $m[2]];
+        }
+
+        return [$via, 0];
+    }
+
     public function hasDbPassword(): bool
     {
         return $this->get('db_password_enc') !== '';
@@ -265,7 +284,8 @@ final class Settings
                 $this->get('db_ssl'),
                 $this->get('db_ca'),
                 $this->connectTimeout(),
-                $this->timeout()
+                $this->timeout(),
+                ...$this->dbVia()
             );
         } catch (KeyVaultException | \InvalidArgumentException $e) {
             throw new DbException(DbException::NOT_CONFIGURED, 'Database settings are incomplete or cannot be decrypted', '', $e);
@@ -377,6 +397,10 @@ final class Settings
 
         $data['server_url'] = $this->serverUrl();
         unset($data['server_port']);
+
+        // Host and port are one field in the form, as the server URL.
+        $data['db_server'] = $this->get('db_host') !== '' ? DbConfig::formatAddress($this->get('db_host'), (int) $this->get('db_port')) : '';
+        unset($data['db_host'], $data['db_port']);
 
         return $data;
     }

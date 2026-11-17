@@ -98,10 +98,10 @@
             <option value="pgsql">PostgreSQL</option>
             <option value="sqlsrv">Microsoft SQL Server</option>
         </field>
-        <field name="db_host" type="text" label="COM_BIOTIME_SETTINGS_DB_HOST" description="COM_BIOTIME_SETTINGS_DB_HOST_DESC"
-               hint="db.example.com" filter="string" size="40" maxlength="253" showon="db_engine!:" />
-        <field name="db_port" type="number" label="COM_BIOTIME_SETTINGS_DB_PORT" description="COM_BIOTIME_SETTINGS_DB_PORT_DESC"
-               default="7496" min="1" max="65535" filter="integer" showon="db_engine!:" />
+        <field name="db_server" type="text" label="COM_BIOTIME_SETTINGS_DB_SERVER" description="COM_BIOTIME_SETTINGS_DB_SERVER_DESC"
+               hint="zkb-server.example.local:7496" filter="string" size="50" maxlength="300" showon="db_engine!:" />
+        <field name="db_connect_via" type="text" label="COM_BIOTIME_SETTINGS_DB_VIA" description="COM_BIOTIME_SETTINGS_DB_VIA_DESC"
+               hint="203.0.113.10:7496" filter="string" size="30" maxlength="60" showon="db_engine:pgsql" />
         <field name="db_name" type="text" label="COM_BIOTIME_SETTINGS_DB_NAME" description="COM_BIOTIME_SETTINGS_DB_NAME_DESC"
                default="biotime" filter="string" size="30" maxlength="63" showon="db_engine!:" />
         <field name="db_user" type="text" label="COM_BIOTIME_SETTINGS_DB_USER" description="COM_BIOTIME_SETTINGS_DB_USER_DESC"
