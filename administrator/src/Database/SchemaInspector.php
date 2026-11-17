@@ -11,9 +11,11 @@ namespace BiotimePortal\Component\Biotime\Administrator\Database;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Test Database: what the portal's database user can see, from the database's own catalogue only.
- * It never reads a row of any ZKBioTime table: only the server version, whether the connection is
- * encrypted, what the user is allowed to do, and the names of tables and columns.
+ * Test Database: what the portal's database user can see, from the database's own catalogue: the
+ * server version, whether the connection is encrypted, what the user is allowed to do, and the
+ * names of tables and columns. The only rows read are settings without personal data: the shift
+ * definitions (name, cycle, timetable per day number) and how many days ZKBioTime calculated in
+ * the last 31 days (a count), to check the schedules the portal works out (0.6.2).
  *
  * Table names are those of ZKBioTime 9.5 as far as known (UNVERIFIED until checked on a real
  * server): the report lists what the server really has, so the next steps use real names.
@@ -113,7 +115,52 @@ final class SchemaInspector
             'others'         => $others,
             'expected'       => $expected,
             'hidden_names'   => $report['hidden_names'],
+            'shifts'         => $q->engine === DbConfig::ENGINE_PGSQL ? $this->shifts($q) : [],
+            'calculated_days' => $q->engine === DbConfig::ENGINE_PGSQL ? $this->calculatedDays($q) : null,
         ];
+    }
+
+    /**
+     * Shift definitions (no personal data): name, cycle unit and length, and the timetable on each
+     * day number of the cycle. At most 50 shifts.
+     *
+     * @return list<array{name: string, unit: int, cycle: int, days: string}>
+     */
+    private function shifts(Query $q): array
+    {
+        try {
+            $rows = $q->rows(
+                "SELECT sh.alias, sh.cycle_unit, sh.shift_cycle,
+                        COALESCE(string_agg(d.day_index || '=' || COALESCE(t.alias, '?'), ', ' ORDER BY d.day_index), '') AS days
+                   FROM att_attshift sh
+                   LEFT JOIN att_shiftdetail d ON d.shift_id = sh.id
+                   LEFT JOIN att_timeinterval t ON t.id = d.time_interval_id
+                  GROUP BY sh.id, sh.alias, sh.cycle_unit, sh.shift_cycle
+                  ORDER BY sh.id
+                  LIMIT 50"
+            );
+        } catch (DbException) {
+            return [];
+        }
+
+        return array_map(static fn (array $r): array => [
+            'name'  => mb_substr(trim(strip_tags((string) $r['alias'])), 0, 50),
+            'unit'  => (int) $r['cycle_unit'],
+            'cycle' => (int) $r['shift_cycle'],
+            'days'  => mb_substr(trim(strip_tags((string) $r['days'])), 0, 600),
+        ], $rows);
+    }
+
+    /** How many employee-days ZKBioTime calculated in the last 31 days (a count only), or null. */
+    private function calculatedDays(Query $q): ?int
+    {
+        try {
+            $count = $q->value("SELECT COUNT(*) FROM att_payloadbase WHERE att_date >= CURRENT_DATE - 31");
+        } catch (DbException) {
+            return null;
+        }
+
+        return $count === null ? null : (int) $count;
     }
 
     /**

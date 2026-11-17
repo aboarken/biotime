@@ -146,10 +146,16 @@ final class AttendanceReader
     }
 
     /**
-     * One row per date that ZKBioTime calculated, or that is a holiday for this employee:
-     * date, schedule (timetable names), sched_start, sched_end, check_in, check_out (ZKBioTime's
-     * paired clock-in and clock-out), late, early, worked, overtime (minutes), absent, day_off,
-     * leave (bool), holiday (its name).
+     * One row per date of the range that has something to say for this employee:
+     *  - schedule: the timetable names, sched_start and sched_end ("HH:MM:SS") and cutoff, the
+     *    time from which a punch is a check-out (the end of the check-in window). From
+     *    ZKBioTime's calculation (att_payloadbase) when it has calculated the date, else from the
+     *    schedules (see planned());
+     *  - off: the employee has a schedule for the date but no timetable on it (a day off);
+     *  - late, early, worked, overtime (minutes), absent, leave: ZKBioTime's calculation
+     *    (att_payloadbase), only for dates it has calculated;
+     *  - holiday: its name.
+     * Check-in and check-out are told from the punches by AttendanceService (12:00 rule).
      *
      * @param array{id: int, department_id: ?int, group_id: ?int} $employee from employee()
      *
@@ -164,10 +170,8 @@ final class AttendanceReader
                     to_char(b.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS sched_in,
                     to_char(b.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS sched_out,
                     CAST(EXTRACT(EPOCH FROM (b.check_out - b.check_in)) AS integer) AS sched_seconds,
-                    to_char(b.clock_in AT TIME ZONE :tz3, 'HH24:MI:SS') AS clock_in,
-                    to_char(b.clock_out AT TIME ZONE :tz4, 'HH24:MI:SS') AS clock_out,
                     b.duration, b.late, b.early_leave, b.total_worked, b.absent, b.leave, b.day_off,
-                    t.alias AS timetable, o.total_ot
+                    t.alias AS timetable, t.in_above_margin, o.total_ot
                FROM att_payloadbase b
                LEFT JOIN att_timeinterval t ON t.id = b.timetable_id
                LEFT JOIN att_payloadovertime o ON o.uuid = b.overtime_id
@@ -177,8 +181,6 @@ final class AttendanceReader
             [
                 ':tz1'  => $this->timezone,
                 ':tz2'  => $this->timezone,
-                ':tz3'  => $this->timezone,
-                ':tz4'  => $this->timezone,
                 ':emp'  => $employee['id'],
                 ':from' => $from->format('Y-m-d'),
                 ':to'   => $to->format('Y-m-d'),
@@ -192,22 +194,10 @@ final class AttendanceReader
         foreach ($rows as $r) {
             $date = (string) $r['att_date'];
             $d    = &$days[$date];
-            $d  ??= ['date' => $date, 'schedules' => [], 'late' => 0, 'early' => 0, 'worked' => 0, 'overtime' => 0, 'absent' => false, 'leave' => false, 'off' => true];
+            $d  ??= ['date' => $date, 'entries' => [], 'late' => 0, 'early' => 0, 'worked' => 0, 'overtime' => 0, 'absent' => false, 'leave' => false, 'off' => true];
 
-            if (($name = self::text($r['timetable'])) !== null && !\in_array($name, $d['schedules'], true)) {
-                $d['schedules'][] = $name;
-            }
-
-            foreach (['sched_start' => 'sched_in', 'check_in' => 'clock_in'] as $key => $col) {
-                if ($r[$col] !== null && (!isset($d[$key]) || $r[$col] < $d[$key])) {
-                    $d[$key] = (string) $r[$col];
-                }
-            }
-
-            foreach (['sched_end' => 'sched_out', 'check_out' => 'clock_out'] as $key => $col) {
-                if ($r[$col] !== null && (!isset($d[$key]) || $r[$col] > $d[$key])) {
-                    $d[$key] = (string) $r[$col];
-                }
+            if ($r['sched_in'] !== null || self::text($r['timetable']) !== null) {
+                $d['entries'][] = self::entry($r['timetable'], $r['sched_in'], $r['sched_out'], null, $r['in_above_margin']);
             }
 
             $d['late']     += $minutes($r['late']) ?? 0;
@@ -221,19 +211,251 @@ final class AttendanceReader
             unset($d);
         }
 
+        // Dates ZKBioTime has not calculated (usually today and later): the schedules themselves.
+        $planned = $this->planned($employee, $from, $to);
+
+        foreach ($planned['days'] as $date => $entries) {
+            if (!isset($days[$date])) {
+                $days[$date] = ['date' => $date, 'entries' => $entries, 'off' => $entries === []];
+            }
+        }
+
         foreach ($this->holidays($employee, $from, $to) as $date => $name) {
-            $days[$date] ??= ['date' => $date, 'schedules' => [], 'off' => false];
+            $days[$date] ??= ['date' => $date, 'entries' => [], 'off' => false];
             $days[$date]['holiday'] = $name;
         }
 
         ksort($days);
 
         return array_values(array_map(static function (array $d): array {
-            $d['schedule'] = $d['schedules'] !== [] ? implode(' + ', $d['schedules']) : null;
-            unset($d['schedules']);
+            $entries = array_values(array_filter($d['entries'], static fn (array $e): bool => $e['start'] !== null || $e['name'] !== null));
+            $names   = array_values(array_unique(array_filter(array_column($entries, 'name'))));
+            $starts  = array_filter($entries, static fn (array $e): bool => $e['start'] !== null);
+            $ends    = array_filter($entries, static fn (array $e): bool => $e['end'] !== null);
 
-            return $d;
+            usort($starts, static fn (array $a, array $b): int => $a['start'] <=> $b['start']);
+            usort($ends, static fn (array $a, array $b): int => $b['end'] <=> $a['end']);
+
+            $d['schedule']    = $names !== [] ? implode(' + ', $names) : null;
+            $d['sched_start'] = $starts[0]['start'] ?? null;
+            $d['sched_end']   = $ends[0]['end'] ?? null;
+            // The check-in / check-out cut-off of the day's first timetable (see entry()).
+            $d['cutoff']      = $starts[0]['cutoff'] ?? null;
+            unset($d['entries']);
+
+            return array_filter($d, static fn ($v) => $v !== null);
         }, $days));
+    }
+
+    /**
+     * The employee's planned timetables per date, from the schedules ZKBioTime keeps, in this order
+     * (the first that has the date wins):
+     *  1. a temporary schedule with its own times for the date (att_tempschedule);
+     *  2. a temporary timetable for the date (att_temporaryschedule);
+     *  3. the employee's shift (att_attschedule), else the attendance group's (att_groupschedule),
+     *     else the department's (att_departmentschedule): the shift's timetable for the date's
+     *     day in the shift cycle (att_attshift, att_shiftdetail).
+     * A date covered by a shift without a timetable on it is a day off (an empty list).
+     *
+     * Shift cycles (UNVERIFIED, from ZKBioTime's shift settings: cycle = number × unit):
+     * cycle_unit 0 = days (day_index counts from the schedule's start date), 1 = weeks (day_index
+     * 0 = Sunday of the week the schedule starts in), 2 = months (day_index 0 = the 1st).
+     *
+     * @return array{days: array<string, list<array{name: ?string, start: ?string, end: ?string, cutoff: ?string}>>}
+     */
+    public function planned(array $employee, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $range = [':from' => $from->format('Y-m-d'), ':to' => $to->format('Y-m-d')];
+        $days  = [];
+
+        // 1. Temporary schedules with their own start and end.
+        foreach ($this->optional(
+            "SELECT to_char(x.att_date, 'YYYY-MM-DD') AS d,
+                    to_char(x.start_time AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
+                    to_char(x.end_time AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
+                    t.alias, t.in_above_margin
+               FROM att_tempschedule x
+               LEFT JOIN att_timeinterval t ON t.id = x.time_interval_id
+              WHERE x.employee_id = :emp AND x.att_date >= CAST(:from AS date) AND x.att_date <= CAST(:to AS date)
+              ORDER BY x.att_date, x.start_time",
+            [':tz1' => $this->timezone, ':tz2' => $this->timezone, ':emp' => $employee['id']] + $range
+        ) as $r) {
+            $days[(string) $r['d']][] = self::entry($r['alias'], $r['s'], $r['e'], null, $r['in_above_margin']);
+        }
+
+        // 2. Temporary timetables.
+        $temporary = [];
+
+        foreach ($this->optional(
+            "SELECT to_char(x.att_date, 'YYYY-MM-DD') AS d, t.alias, to_char(t.in_time, 'HH24:MI:SS') AS s, t.duration, t.in_above_margin
+               FROM att_temporaryschedule x
+               JOIN att_timeinterval t ON t.id = x.time_interval_id
+              WHERE x.employee_id = :emp AND x.att_date >= CAST(:from AS date) AND x.att_date <= CAST(:to AS date)
+              ORDER BY x.att_date, t.in_time",
+            [':emp' => $employee['id']] + $range
+        ) as $r) {
+            $temporary[(string) $r['d']][] = self::entry($r['alias'], $r['s'], null, $r['duration'], $r['in_above_margin']);
+        }
+
+        // 3. Shifts of the employee, the group and the department.
+        $levels = [
+            ['att_attschedule', 'employee_id', $employee['id']],
+            ['att_groupschedule', 'group_id', $employee['group_id'] ?? null],
+            ['att_departmentschedule', 'department_id', $employee['department_id'] ?? null],
+        ];
+        $assignments = [];
+        $shiftIds    = [];
+
+        foreach ($levels as $i => [$table, $column, $id]) {
+            if ($id === null) {
+                continue;
+            }
+
+            // Table and column names are constants above, never input.
+            foreach ($this->optional(
+                "SELECT to_char(s.start_date, 'YYYY-MM-DD') AS sd, to_char(s.end_date, 'YYYY-MM-DD') AS ed, s.shift_id, sh.cycle_unit, sh.shift_cycle
+                   FROM {$table} s
+                   JOIN att_attshift sh ON sh.id = s.shift_id
+                  WHERE s.{$column} = :id AND s.start_date <= CAST(:to AS date) AND s.end_date >= CAST(:from AS date)
+                  ORDER BY s.start_date",
+                [':id' => (int) $id] + $range
+            ) as $r) {
+                $assignments[$i][] = $r;
+                $shiftIds[(int) $r['shift_id']] = true;
+            }
+        }
+
+        $details = [];
+
+        if ($shiftIds !== []) {
+            $params = [];
+
+            foreach (array_keys($shiftIds) as $n => $shiftId) {
+                $params[':s' . $n] = $shiftId;
+            }
+
+            foreach ($this->optional(
+                "SELECT d.shift_id, d.day_index, to_char(d.in_time, 'HH24:MI:SS') AS d_in, to_char(d.out_time, 'HH24:MI:SS') AS d_out,
+                        t.alias, to_char(t.in_time, 'HH24:MI:SS') AS t_in, t.duration, t.in_above_margin
+                   FROM att_shiftdetail d
+                   JOIN att_timeinterval t ON t.id = d.time_interval_id
+                  WHERE d.shift_id IN (" . implode(', ', array_keys($params)) . ')
+                  ORDER BY d.shift_id, d.day_index, t.in_time',
+                $params
+            ) as $r) {
+                $details[(int) $r['shift_id']][(int) $r['day_index']][] = self::entry(
+                    $r['alias'],
+                    $r['d_in'] ?? $r['t_in'],
+                    $r['d_out'],
+                    $r['duration'],
+                    $r['in_above_margin']
+                );
+            }
+        }
+
+        for ($day = $from; $day <= $to; $day = $day->modify('+1 day')) {
+            $date = $day->format('Y-m-d');
+
+            if (isset($days[$date])) {
+                continue;
+            }
+
+            if (isset($temporary[$date])) {
+                $days[$date] = $temporary[$date];
+
+                continue;
+            }
+
+            foreach ([0, 1, 2] as $level) {
+                $current = null;
+
+                foreach ($assignments[$level] ?? [] as $a) {
+                    if ($a['sd'] <= $date && $date <= $a['ed']) {
+                        $current = $a;
+                    }
+                }
+
+                if ($current === null) {
+                    continue;
+                }
+
+                $index        = self::dayIndex((int) $current['cycle_unit'], (int) $current['shift_cycle'], new \DateTimeImmutable((string) $current['sd']), $day);
+                $days[$date]  = $details[(int) $current['shift_id']][$index] ?? [];
+
+                break;
+            }
+        }
+
+        ksort($days);
+
+        return ['days' => $days];
+    }
+
+    /**
+     * The date's position in a shift cycle (see planned()).
+     */
+    public static function dayIndex(int $unit, int $cycle, \DateTimeImmutable $start, \DateTimeImmutable $date): int
+    {
+        $cycle = max(1, $cycle);
+        $diff  = (int) $start->diff($date)->format('%r%a');
+
+        return match ($unit) {
+            1       => (($diff + (int) $start->format('w')) % (7 * $cycle) + 7 * $cycle) % (7 * $cycle),
+            2       => ((((int) $date->format('Y') * 12 + (int) $date->format('n')) - ((int) $start->format('Y') * 12 + (int) $start->format('n'))) % $cycle) * 31 + (int) $date->format('j') - 1,
+            default => (($diff % $cycle) + $cycle) % $cycle,
+        };
+    }
+
+    /**
+     * One timetable: start, end (the given end, else start + duration minutes) and the cut-off
+     * between check-in and check-out: the end of the timetable's check-in window, i.e. the start
+     * + in_above_margin minutes (ZKBioTime's "End Check-In"); null without a window.
+     *
+     * @return array{name: ?string, start: ?string, end: ?string, cutoff: ?string}
+     */
+    private static function entry(mixed $name, mixed $start, mixed $end, mixed $duration, mixed $inAboveMargin): array
+    {
+        $start = \is_string($start) && $start !== '' ? $start : null;
+        $end   = \is_string($end) && $end !== '' ? $end : null;
+
+        if ($end === null && $start !== null && (int) $duration > 0) {
+            $end = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . (int) $duration . ' minutes')->format('H:i:s');
+        }
+
+        $cutoff = null;
+
+        if ($start !== null && (int) $inAboveMargin > 0) {
+            $at     = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . (int) $inAboveMargin . ' minutes');
+            // A window running past midnight has no cut-off on the same day.
+            $cutoff = $at->format('Y-m-d') === '2000-01-01' ? $at->format('H:i:s') : null;
+        }
+
+        return [
+            'name'   => self::text($name),
+            'start'  => $start,
+            'end'    => $end,
+            'cutoff' => $cutoff,
+        ];
+    }
+
+    /**
+     * Rows of a query on a table that may be missing or not readable: none then.
+     *
+     * @param array<string, scalar|null> $params
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function optional(string $sql, array $params): array
+    {
+        try {
+            return $this->q()->rows($sql, $params);
+        } catch (DbException $e) {
+            if ($e->getKind() !== DbException::QUERY) {
+                throw $e;
+            }
+
+            return [];
+        }
     }
 
     /**

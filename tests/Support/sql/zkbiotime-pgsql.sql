@@ -2,7 +2,8 @@
 -- from a real server's Test Database report (PostgreSQL 15), and invented sample data.
 -- Used by tests/Unit/AttendanceReaderTest.php (BIOTIME_TEST_PG). Never run on a real server.
 DROP TABLE IF EXISTS personnel_employee, personnel_department, personnel_position, att_attemployee,
-  iclock_transaction, att_payloadbase, att_timeinterval, att_payloadovertime, att_holiday CASCADE;
+  iclock_transaction, att_payloadbase, att_timeinterval, att_payloadovertime, att_holiday, att_attshift, att_shiftdetail,
+  att_attschedule, att_groupschedule, att_departmentschedule, att_temporaryschedule, att_tempschedule CASCADE;
 
 CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200));
 CREATE TABLE personnel_position (id integer PRIMARY KEY, position_code varchar(50), position_name varchar(100));
@@ -11,7 +12,16 @@ CREATE TABLE personnel_employee (id integer PRIMARY KEY, emp_code varchar(20), f
 CREATE TABLE att_attemployee (id integer PRIMARY KEY, emp_id integer, group_id integer);
 CREATE TABLE iclock_transaction (id serial PRIMARY KEY, emp_code varchar(20), punch_time timestamptz, punch_state varchar(5),
   verify_type integer, terminal_sn varchar(50), terminal_alias varchar(50), area_alias varchar(100), emp_id integer);
-CREATE TABLE att_timeinterval (id integer PRIMARY KEY, alias varchar(50), in_time time, duration integer);
+CREATE TABLE att_timeinterval (id integer PRIMARY KEY, alias varchar(50), in_time time, in_ahead_margin integer, in_above_margin integer,
+  out_ahead_margin integer, out_above_margin integer, duration integer, allow_late integer, allow_leave_early integer);
+CREATE TABLE att_attshift (id integer PRIMARY KEY, alias varchar(50), cycle_unit smallint, shift_cycle integer);
+CREATE TABLE att_shiftdetail (id integer PRIMARY KEY, in_time time, out_time time, day_index integer, shift_id integer, time_interval_id integer);
+CREATE TABLE att_attschedule (id integer PRIMARY KEY, start_date date, end_date date, employee_id integer, shift_id integer);
+CREATE TABLE att_groupschedule (id integer PRIMARY KEY, status smallint, start_date date, end_date date, group_id integer, shift_id integer);
+CREATE TABLE att_departmentschedule (id integer PRIMARY KEY, status smallint, start_date date, end_date date, department_id integer, shift_id integer);
+CREATE TABLE att_temporaryschedule (id integer PRIMARY KEY, status smallint, att_date date, employee_id integer, time_interval_id integer);
+CREATE TABLE att_tempschedule (id integer PRIMARY KEY, att_date date, start_time timestamptz, end_time timestamptz, rule_flag smallint,
+  work_type smallint, employee_id integer, time_interval_id integer);
 CREATE TABLE att_payloadovertime (uuid varchar(36) PRIMARY KEY, total_ot integer);
 CREATE TABLE att_payloadbase (uuid varchar(36) PRIMARY KEY, att_date date, weekday smallint, check_in timestamptz, check_out timestamptz,
   duration integer, duty_duration integer, work_day double precision, clock_in timestamptz, clock_out timestamptz, total_time integer,
@@ -25,7 +35,15 @@ INSERT INTO personnel_department VALUES (10, 'IT', 'Information Technology'), (1
 INSERT INTO personnel_position VALUES (20, 'DEV', 'Developer');
 INSERT INTO personnel_employee VALUES (1, 'E1', 'Alice', 'A', 'a@example.com', '2024-09-01', 10, 20), (2, 'E2', 'Bob', 'B', 'b@example.com', NULL, 11, NULL);
 INSERT INTO att_attemployee VALUES (1, 1, 5);
-INSERT INTO att_timeinterval VALUES (100, 'Day 07:30-15:30', '07:30', 480);
+INSERT INTO att_timeinterval VALUES (100, 'Day 07:30-15:30', '07:30', 60, 240, 240, 240, 480, 5, 5),
+  (101, 'Exam duty', '09:00', 30, 60, 60, 60, 240, 0, 0);
+-- A weekly shift Sunday to Thursday (day_index 0-4) for Alice from Sunday 1 November; Bob's department works Saturdays too.
+INSERT INTO att_attshift VALUES (7, 'Week Sun-Thu', 1, 1), (8, 'HR week', 1, 1);
+INSERT INTO att_shiftdetail VALUES (1, NULL, NULL, 0, 7, 100), (2, NULL, NULL, 1, 7, 100), (3, NULL, NULL, 2, 7, 100), (4, NULL, NULL, 3, 7, 100),
+  (5, NULL, NULL, 4, 7, 100), (6, NULL, NULL, 6, 8, 100);
+INSERT INTO att_attschedule VALUES (1, '2026-11-01', '2026-12-31', 1, 7);
+INSERT INTO att_departmentschedule VALUES (1, 0, '2026-01-01', '2026-12-31', 11, 8);
+INSERT INTO att_tempschedule VALUES (1, '2026-11-23', '2026-11-23 09:00+03', '2026-11-23 13:00+03', 0, 0, 1, 101);
 -- Server time zone Asia/Riyadh (UTC+3): stored in UTC, shown in local time.
 INSERT INTO iclock_transaction (emp_code, punch_time, punch_state, verify_type, terminal_alias, area_alias, emp_id) VALUES
   ('E1', '2026-11-02 07:42:10+03', '0', 15, 'Main Gate', 'HQ', 1),

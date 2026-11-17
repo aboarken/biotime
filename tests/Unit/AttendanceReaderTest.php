@@ -36,7 +36,9 @@ final class AttendanceReaderTest extends TestCase
             'clock_in' => $cin, 'clock_out' => $cout, 'duration' => $in !== null ? 480 * $durationFactor : 0,
             'late' => $late * $durationFactor, 'early_leave' => $early * $durationFactor, 'total_worked' => $worked * $durationFactor,
             'absent' => 0, 'leave' => 0, 'day_off' => 0, 'timetable' => $in !== null ? 'Day 07:30-15:30' : null, 'total_ot' => null,
+            'in_above_margin' => $in !== null ? 240 : null,
         ];
+        $interval = ['alias' => 'Day 07:30-15:30', 't_in' => '07:30:00', 'duration' => 480, 'in_above_margin' => 240, 'd_in' => null, 'd_out' => null];
 
         return [
             'FROM personnel_employee' => [['id' => 1, 'department_id' => 10, 'dept_name' => 'Information Technology', 'position_name' => 'Developer', 'hire_date' => '2024-09-01']],
@@ -46,6 +48,9 @@ final class AttendanceReaderTest extends TestCase
                 ['punch_time' => '2026-11-02 15:05:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-09 08:00:00', 'emp_code' => 'E1', 'punch_state' => '0', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-09 16:00:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
+                // Thursday 19th, not calculated: the timetable's cut-off is 11:30, so 11:40 is not a check-in.
+                ['punch_time' => '2026-11-19 11:40:00', 'emp_code' => 'E1', 'punch_state' => '0', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
+                ['punch_time' => '2026-11-19 15:35:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 1, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-20 13:10:00', 'emp_code' => 'E1', 'punch_state' => '1', 'verify_type' => 15, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
                 ['punch_time' => '2026-11-03 07:00:00', 'emp_code' => 'E2', 'punch_state' => '0', 'verify_type' => 1, 'terminal_alias' => 'X', 'area_alias' => 'X'],
             ],
@@ -57,6 +62,14 @@ final class AttendanceReaderTest extends TestCase
                 $base('2026-11-11', '07:30:00', '11:30:00', '07:35:00', '11:30:00', 5, 0, 235, ['timetable' => 'Morning']),
                 $base('2026-11-11', '13:00:00', '17:00:00', '13:10:00', '16:50:00', 10, 10, 220, ['timetable' => 'Afternoon']),
             ],
+            // Schedules for the dates ZKBioTime has not calculated.
+            'FROM att_tempschedule'   => [['d' => '2026-11-23', 's' => '09:00:00', 'e' => '13:00:00', 'alias' => 'Exam duty', 'in_above_margin' => 60]],
+            'FROM att_temporaryschedule' => [],
+            // A weekly shift, Sunday to Thursday (day_index 0–4), from Sunday 1 November.
+            'FROM att_attschedule'    => [['sd' => '2026-11-01', 'ed' => '2026-12-31', 'shift_id' => 7, 'cycle_unit' => 1, 'shift_cycle' => 1]],
+            'FROM att_groupschedule'  => [],
+            'FROM att_departmentschedule' => [],
+            'FROM att_shiftdetail'    => array_map(static fn (int $i): array => ['shift_id' => 7, 'day_index' => $i] + $interval, [0, 1, 2, 3, 4]),
             'FROM att_holiday'        => [
                 ['alias' => 'National Day', 'first_day' => '2026-11-15', 'last_day' => '2026-11-16', 'department_id' => null, 'att_group_id' => null],
                 ['alias' => 'HR Day', 'first_day' => '2026-11-17', 'last_day' => '2026-11-17', 'department_id' => 11, 'att_group_id' => null],
@@ -78,12 +91,19 @@ final class AttendanceReaderTest extends TestCase
             $days = array_column($r->days($emp, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30')), null, 'date');
 
             self::assertSame([12, 25, 443, 30], [$days['2026-11-02']['late'], $days['2026-11-02']['early'], $days['2026-11-02']['worked'], $days['2026-11-02']['overtime']], 'stored in ' . $unit);
-            self::assertSame(['Day 07:30-15:30', '07:30:00', '15:30:00', '07:42:10', '15:05:00'], [$days['2026-11-02']['schedule'], $days['2026-11-02']['sched_start'], $days['2026-11-02']['sched_end'], $days['2026-11-02']['check_in'], $days['2026-11-02']['check_out']]);
+            self::assertSame(['Day 07:30-15:30', '07:30:00', '15:30:00', '11:30:00'], [$days['2026-11-02']['schedule'], $days['2026-11-02']['sched_start'], $days['2026-11-02']['sched_end'], $days['2026-11-02']['cutoff']]);
+            self::assertArrayNotHasKey('check_in', $days['2026-11-02'], 'check-in is told from the punches, not taken from ZKBioTime');
             self::assertTrue($days['2026-11-04']['absent']);
             self::assertTrue($days['2026-11-10']['off']);
-            self::assertSame(['Morning + Afternoon', '07:30:00', '17:00:00', '07:35:00', '16:50:00', 15, 10], [$days['2026-11-11']['schedule'], $days['2026-11-11']['sched_start'], $days['2026-11-11']['sched_end'], $days['2026-11-11']['check_in'], $days['2026-11-11']['check_out'], $days['2026-11-11']['late'], $days['2026-11-11']['early']], 'split shift');
+            self::assertSame(['Morning + Afternoon', '07:30:00', '17:00:00', 15, 10], [$days['2026-11-11']['schedule'], $days['2026-11-11']['sched_start'], $days['2026-11-11']['sched_end'], $days['2026-11-11']['late'], $days['2026-11-11']['early']], 'split shift');
+
+            // Not calculated by ZKBioTime: the schedule from the shift and temporary schedules.
+            self::assertSame(['Day 07:30-15:30', '07:30:00', '15:30:00', '11:30:00'], [$days['2026-11-19']['schedule'], $days['2026-11-19']['sched_start'], $days['2026-11-19']['sched_end'], $days['2026-11-19']['cutoff']], 'Thursday');
+            self::assertArrayNotHasKey('late', $days['2026-11-19'], 'late-in only from ZKBioTime\'s calculation');
+            self::assertTrue($days['2026-11-20']['off'], 'Friday: no timetable in the shift');
+            self::assertSame(['Exam duty', '09:00:00', '13:00:00', '10:00:00'], [$days['2026-11-23']['schedule'], $days['2026-11-23']['sched_start'], $days['2026-11-23']['sched_end'], $days['2026-11-23']['cutoff']], 'temporary schedule wins');
             self::assertSame(['National Day', 'National Day', 'Group Day'], [$days['2026-11-15']['holiday'], $days['2026-11-16']['holiday'], $days['2026-11-18']['holiday']]);
-            self::assertArrayNotHasKey('2026-11-17', $days, 'another department\'s holiday');
+            self::assertArrayNotHasKey('holiday', $days['2026-11-17'], 'another department\'s holiday');
         }
 
         // A fixed unit overrides the check.
@@ -157,9 +177,15 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame('present', $period->day('2026-11-09')->status, 'not calculated yet: from the punches');
         self::assertNull($period->day('2026-11-09')->late);
 
-        // No 12:00 rule with the database: today's one punch at 13:10 is the check-in.
+        // The cut-off comes from the timetable: 11:30 on the 19th, so 11:40 is not the check-in.
+        $d19 = $period->day('2026-11-19');
+        self::assertSame([null, '15:35:00', 'Day 07:30-15:30'], [$d19->checkIn, $d19->checkOut, $d19->schedule]);
+        self::assertTrue($d19->missingMorning());
+        self::assertNull($d19->late, 'not calculated by ZKBioTime yet: no late-in');
+
+        // A day without a timetable: 12:00. Today's 13:10 punch is the check-out.
         $today = $period->day('2026-11-20');
-        self::assertSame(['13:10:00', null, 'checked_in'], [$today->checkIn, $today->checkOut, $today->status]);
+        self::assertSame([null, '13:10:00', 'checked_out'], [$today->checkIn, $today->checkOut, $today->status]);
         self::assertSame([], $period->day('2026-11-03')->punches, 'Bob\'s punch is never shown');
 
         $s = $period->summary();
@@ -201,8 +227,11 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame(['2026-11-02 07:42:10', '2026-11-02 15:05:00', '2026-11-03 07:31:00'], array_column($r->punches('E1', $from, $to), 'punch_time'), 'local time, this month, Alice only');
 
         $days = array_column($r->days($emp, $from, $to), null, 'date');
-        self::assertSame([12, 25, 443, 30, '07:42:10'], [$days['2026-11-02']['late'], $days['2026-11-02']['early'], $days['2026-11-02']['worked'], $days['2026-11-02']['overtime'], $days['2026-11-02']['check_in']]);
+        self::assertSame([12, 25, 443, 30, '11:30:00'], [$days['2026-11-02']['late'], $days['2026-11-02']['early'], $days['2026-11-02']['worked'], $days['2026-11-02']['overtime'], $days['2026-11-02']['cutoff']]);
+        self::assertSame(['Day 07:30-15:30', '07:30:00', '15:30:00', '11:30:00'], [$days['2026-11-19']['schedule'], $days['2026-11-19']['sched_start'], $days['2026-11-19']['sched_end'], $days['2026-11-19']['cutoff']], 'from the weekly shift');
+        self::assertTrue($days['2026-11-20']['off'], 'Friday: no timetable');
+        self::assertSame(['Exam duty', '09:00:00', '13:00:00', '10:00:00'], [$days['2026-11-23']['schedule'], $days['2026-11-23']['sched_start'], $days['2026-11-23']['sched_end'], $days['2026-11-23']['cutoff']], 'temporary schedule, in local time');
         self::assertSame(['National Day', 'National Day', 'Group Day'], [$days['2026-11-08']['holiday'], $days['2026-11-09']['holiday'], $days['2026-11-15']['holiday']]);
-        self::assertArrayNotHasKey('2026-11-12', $days, 'HR Day is for another department');
+        self::assertArrayNotHasKey('holiday', $days['2026-11-12'], 'HR Day is for another department');
     }
 }

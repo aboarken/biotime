@@ -154,6 +154,8 @@ final class DatabaseTest extends TestCase
                 ['id' => 4, 'name' => 'personnel_employee', 'readable' => true, 'writable' => false],
             ],
             'FROM pg_attribute'   => static fn (array $p): array => [['name' => 'col' . $p[':id'], 'type' => 'integer']],
+            'FROM att_attshift'   => [['alias' => 'Week Sun-Thu', 'cycle_unit' => 1, 'shift_cycle' => 1, 'days' => '0=Day, 1=Day, 2=Day, 3=Day, 4=Day']],
+            'FROM att_payloadbase' => [['count' => 42]],
         ]);
 
         $r = (new SchemaInspector())->inspect($q);
@@ -165,8 +167,16 @@ final class DatabaseTest extends TestCase
         self::assertSame(['auth_user'], $r['others'], 'other tables by name only, no columns');
         self::assertSame(['iclock_transaction' => true, 'iclock_terminal' => false], array_intersect_key(array_column($r['expected'], 'readable', 'name'), ['iclock_transaction' => 1, 'iclock_terminal' => 1]));
 
+        self::assertSame([['name' => 'Week Sun-Thu', 'unit' => 1, 'cycle' => 1, 'days' => '0=Day, 1=Day, 2=Day, 3=Day, 4=Day']], $r['shifts']);
+        self::assertSame(42, $r['calculated_days']);
+
         foreach ($q->sent as $sql) {
-            self::assertDoesNotMatchRegularExpression('/\bFROM\s+(iclock_|personnel_|att_|auth_)/i', $sql, 'never reads a ZKBioTime table');
+            // Only shift settings and a count of calculated days: no employee or punch data.
+            self::assertDoesNotMatchRegularExpression('/\bFROM\s+(iclock_|personnel_|auth_)/i', $sql, 'never reads employees, punches or accounts');
+
+            if (preg_match('/\bFROM\s+att_payloadbase\b/i', $sql)) {
+                self::assertStringStartsWith('SELECT COUNT(*)', trim($sql));
+            }
         }
     }
 
@@ -180,6 +190,8 @@ final class DatabaseTest extends TestCase
             'has_database_privilege' => [['?column?' => true]],
             'FROM pg_class'          => [['id' => 3, 'name' => 'iclock_transaction', 'readable' => true, 'writable' => true]],
             'FROM pg_attribute'      => [],
+            'FROM att_attshift'      => [],
+            'FROM att_payloadbase'   => [['count' => 0]],
         ]);
 
         $r = (new SchemaInspector())->inspect($q);
@@ -198,6 +210,8 @@ final class DatabaseTest extends TestCase
             'FROM pg_roles'          => [['rolsuper' => false, 'rolcreaterole' => false, 'rolcreatedb' => false, 'config' => '']],
             'has_database_privilege' => [['?column?' => false]],
             'FROM pg_class'          => [],
+            'FROM att_attshift'      => [],
+            'FROM att_payloadbase'   => [['count' => 0]],
         ]);
 
         self::assertTrue((new SchemaInspector())->inspect($q)['role_read_only'], 'pgAdmin Parameters with the database chosen');

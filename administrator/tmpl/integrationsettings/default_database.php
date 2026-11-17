@@ -48,6 +48,12 @@ $when  = HTMLHelper::_('date', gmdate('Y-m-d H:i:s', (int) ($r['at'] ?? time()))
 
             $summary[] = '';
             $summary[] = 'Other tables: ' . implode(', ', (array) $r['others']);
+            $summary[] = '';
+            $summary[] = 'Days calculated by ZKBioTime in the last 31 days: ' . var_export($r['calculated_days'] ?? null, true);
+
+            foreach ((array) ($r['shifts'] ?? []) as $sh) {
+                $summary[] = 'Shift ' . $sh['name'] . ': unit ' . $sh['unit'] . ', cycle ' . $sh['cycle'] . '; day numbers: ' . $sh['days'];
+            }
             ?>
             <table class="table table-sm w-auto">
                 <tbody>
@@ -89,6 +95,16 @@ $when  = HTMLHelper::_('date', gmdate('Y-m-d H:i:s', (int) ($r['at'] ?? time()))
                     <?php endforeach; ?>
                 </ul>
             </details>
+
+            <?php if (!empty($r['shifts'])) : ?>
+                <h3 class="h5"><?php echo Text::_('COM_BIOTIME_DB_SHIFTS'); ?></h3>
+                <p class="small"><?php echo Text::sprintf('COM_BIOTIME_DB_CALCULATED_DAYS', $r['calculated_days'] === null ? '—' : (int) $r['calculated_days']); ?></p>
+                <ul class="small">
+                    <?php foreach ((array) $r['shifts'] as $sh) : ?>
+                        <li><strong><?php echo $e($sh['name']); ?></strong> · <?php echo $e(Text::_('COM_BIOTIME_DB_SHIFT_UNIT_' . (in_array($sh['unit'], [0, 1, 2], true) ? $sh['unit'] : 'X')) . ' × ' . $sh['cycle']); ?>: <?php echo $e($sh['days'] !== '' ? $sh['days'] : '—'); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
 
             <label class="form-label" for="biotime-db-summary"><?php echo Text::_('COM_BIOTIME_DB_COPY'); ?></label>
             <textarea class="form-control font-monospace small" id="biotime-db-summary" rows="8" readonly><?php echo $e(implode("\n", $summary)); ?></textarea>

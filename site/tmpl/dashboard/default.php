@@ -53,7 +53,7 @@ $panelHead = static fn (string $title, string $url = '', string $linkText = ''):
 $overview = [
     ['attended', Text::_('COM_BIOTIME_STATUS_PRESENT'), $s->presentDays, 'green'],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT'), $s->absentDays, 'red'],
-    ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND'), $s->weekendDays, 'slate'],
+    ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND'), $s->weekendDays, 'weekend'],
     ['missingmorning', Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays, 'orange'],
     ['missingafternoon', Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays, 'pink'],
     ['weekendworked', Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, 'purple'],
@@ -61,7 +61,7 @@ $overview = [
 
 if ($calc) {
     // Holidays after Weekend, so a holiday is never counted as absent.
-    array_splice($overview, 3, 0, [['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY'), $s->holidayDays, 'teal']]);
+    array_splice($overview, 3, 0, [['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY'), $s->holidayDays, 'sky']]);
 }
 
 // The bar splits the days so far in the tiles' own colours and order: present (complete), absent,
@@ -69,8 +69,8 @@ if ($calc) {
 $bar  = [
     ['green', max(0, $s->presentDays - $s->missingPunchDays)],
     ['red', $s->absentDays],
-    ['slate', $s->weekendDays],
-    ['teal', $calc ? $s->holidayDays : 0],
+    ['weekend', $s->weekendDays],
+    ['sky', $calc ? $s->holidayDays : 0],
     ['orange', $s->missingMorningDays],
     ['pink', $s->missingAfternoonDays],
 ];
@@ -254,7 +254,7 @@ $days = array_sum(array_column($bar, 1));
                     </thead>
                     <tbody>
                     <?php foreach ($this->recent as $day) : ?>
-                        <tr class="<?php echo $day->weekend ? 'bt-row-weekend' : ''; ?><?php echo $day->date === $this->today ? ' bt-row-today' : ''; ?>">
+                        <tr class="<?php echo $day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ''); ?><?php echo $day->date === $this->today ? ' bt-row-today' : ''; ?>">
                             <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a></th>
                             <td><?php echo $e($f->weekday($day->weekday())); ?></td>
                             <?php if ($calc) : ?><td><?php echo LayoutHelper::render('biotime.schedule', ['day' => $day, 'f' => $f]); ?></td><?php endif; ?>

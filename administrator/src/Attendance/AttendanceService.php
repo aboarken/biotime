@@ -245,10 +245,10 @@ final class AttendanceService
             $db          = isset($row['db']);
 
             if ($checkIn === null && $checkOut === null && $p !== []) {
-                // ZKBioTime gave no calculated times. From the database (a day ZKBioTime has not
-                // calculated yet, usually today): first and last punch, no time-of-day rule. From
-                // the API, which has nothing else: by the time of day (12:00).
-                [$checkIn, $checkOut] = $this->database !== null ? self::firstAndLast($p) : self::checkTimes($p);
+                // Check-in and check-out from the punches, by the time of day: from the database,
+                // the cut-off of the day's timetable (the end of its check-in window); otherwise,
+                // and with the API, 12:00.
+                [$checkIn, $checkOut] = self::checkTimes($p, $row['cutoff'] ?? self::CHECK_OUT_FROM);
                 $fromPunches          = true;
             }
 
@@ -516,24 +516,25 @@ final class AttendanceService
     }
 
     /**
-     * Check-in and check-out from one day's punches (in time order), exactly as recorded, when
-     * ZKBioTime's calculated times are not available. The time of day decides, whatever state the
-     * device recorded:
-     *  - check-in:  the first punch before 12:00 (CHECK_OUT_FROM);
-     *  - check-out: the last punch at 12:00 or later;
-     *  - a day with punches only in the morning has no check-out, a day with punches only from
-     *    12:00 has no check-in ("Missing Punch").
+     * Check-in and check-out from one day's punches (in time order), exactly as recorded. The time
+     * of day decides, whatever state the device recorded:
+     *  - check-in:  the first punch before the cut-off;
+     *  - check-out: the last punch at the cut-off or later;
+     *  - a day with punches only before the cut-off has no check-out, a day with punches only from
+     *    it has no check-in ("Missing Punch").
+     * The cut-off is 12:00 (CHECK_OUT_FROM), or, from the database, the end of the check-in window
+     * of the day's timetable.
      *
      * @param list<Punch> $punches
      *
      * @return array{0: ?string, 1: ?string}
      */
-    public static function checkTimes(array $punches): array
+    public static function checkTimes(array $punches, string $cutoff = self::CHECK_OUT_FROM): array
     {
         $in = $out = null;
 
         foreach ($punches as $punch) {
-            if ($punch->time < self::CHECK_OUT_FROM) {
+            if ($punch->time < $cutoff) {
                 $in ??= $punch->time;
             } else {
                 $out = $punch->time;
@@ -541,24 +542,6 @@ final class AttendanceService
         }
 
         return [$in, $out];
-    }
-
-    /**
-     * Check-in = the first punch, check-out = the last punch when there are two or more, whatever
-     * the time of day (database mode, a day ZKBioTime has not calculated yet). One punch so far is
-     * the check-in.
-     *
-     * @param list<Punch> $punches in time order
-     *
-     * @return array{0: ?string, 1: ?string}
-     */
-    public static function firstAndLast(array $punches): array
-    {
-        if ($punches === []) {
-            return [null, null];
-        }
-
-        return [$punches[0]->time, \count($punches) > 1 ? $punches[\count($punches) - 1]->time : null];
     }
 
     /** "YYYY-MM-DD HH:MM[:SS]" (or with T), kept as the server recorded it: never shifted. */
