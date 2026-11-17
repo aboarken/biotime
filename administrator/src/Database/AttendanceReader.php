@@ -188,7 +188,7 @@ final class AttendanceReader
                     to_char(b.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS sched_out,
                     CAST(EXTRACT(EPOCH FROM (b.check_out - b.check_in)) AS integer) AS sched_seconds,
                     b.duration, b.late, b.early_leave, b.total_worked, b.absent, b.leave, b.day_off,
-                    t.alias AS timetable, t.in_above_margin, o.total_ot
+                    t.alias AS timetable, t.in_above_margin, t.duration AS tt_duration, o.total_ot
                FROM att_payloadbase b
                LEFT JOIN att_timeinterval t ON t.id = b.timetable_id
                LEFT JOIN att_payloadovertime o ON o.uuid = b.overtime_id
@@ -214,7 +214,7 @@ final class AttendanceReader
             $d  ??= ['date' => $date, 'entries' => [], 'late' => 0, 'early' => 0, 'worked' => 0, 'overtime' => 0, 'absent' => false, 'leave' => false, 'off' => true];
 
             if ($r['sched_in'] !== null || self::text($r['timetable']) !== null) {
-                $d['entries'][] = self::entry($r['timetable'], $r['sched_in'], $r['sched_out'], null, $r['in_above_margin']);
+                $d['entries'][] = self::entry($r['timetable'], $r['sched_in'], $r['sched_out'], $r['tt_duration'], $r['in_above_margin']);
             }
 
             $d['late']     += $minutes($r['late']) ?? 0;
@@ -292,7 +292,7 @@ final class AttendanceReader
             "SELECT to_char(c.att_date, 'YYYY-MM-DD') AS d, c.time_table_alias,
                     to_char(c.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
                     to_char(c.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
-                    t.in_above_margin
+                    t.in_above_margin, t.duration
                FROM att_payloadtimecard c
                LEFT JOIN att_timeinterval t ON t.id = c.time_table_id
               WHERE c.emp_id = :emp AND c.att_date >= CAST(:from AS date) AND c.att_date <= CAST(:to AS date)
@@ -303,7 +303,7 @@ final class AttendanceReader
             $day($days, $date);
 
             if ($r['s'] !== null || self::text($r['time_table_alias']) !== null) {
-                $days[$date]['entries'][] = self::entry($r['time_table_alias'], $r['s'], $r['e'], null, $r['in_above_margin']);
+                $days[$date]['entries'][] = self::entry($r['time_table_alias'], $r['s'], $r['e'], $r['duration'], $r['in_above_margin']);
             }
         }
 
@@ -452,7 +452,8 @@ final class AttendanceReader
             ) as $r) {
                 $details[(int) $r['shift_id']][(int) $r['day_index']][] = self::entry(
                     $r['alias'],
-                    $r['d_in'] ?? $r['t_in'],
+                    // A shift day's own start, unless unset (null or 00:00): then the timetable's.
+                    $r['d_in'] !== null && $r['d_in'] !== '00:00:00' ? $r['d_in'] : $r['t_in'],
                     $r['d_out'],
                     $r['duration'],
                     $r['in_above_margin']
@@ -525,8 +526,18 @@ final class AttendanceReader
         $start = \is_string($start) && $start !== '' ? $start : null;
         $end   = \is_string($end) && $end !== '' ? $end : null;
 
-        if ($end === null && $start !== null && (int) $duration > 0) {
-            $end = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . (int) $duration . ' minutes')->format('H:i:s');
+        // The timetable's length in minutes (a value over a day is taken as seconds).
+        $minutes = (int) $duration > 1440 ? intdiv((int) $duration, 60) : (int) $duration;
+
+        // ZKBioTime stores 00:00 where a shift day's end is not set: an end that is not after the
+        // start is not used. The end is then the start plus the timetable's length (which also
+        // gives the right end of a shift that runs past midnight).
+        if ($end !== null && $start !== null && $end <= $start) {
+            $end = null;
+        }
+
+        if ($end === null && $start !== null && $minutes > 0) {
+            $end = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . $minutes . ' minutes')->format('H:i:s');
         }
 
         $cutoff = null;

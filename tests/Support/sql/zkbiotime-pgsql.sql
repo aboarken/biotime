@@ -48,7 +48,8 @@ INSERT INTO att_timeinterval VALUES (100, 'Day 07:30-15:30', '07:30', 60, 240, 2
   (101, 'Exam duty', '09:00', 30, 60, 60, 60, 240, 0, 0);
 -- A weekly shift Sunday to Thursday (day_index 0-4) for Alice from Sunday 1 November; Bob's department works Saturdays too.
 INSERT INTO att_attshift VALUES (7, 'Week Sun-Thu', 1, 1), (8, 'HR week', 1, 1);
-INSERT INTO att_shiftdetail VALUES (1, NULL, NULL, 0, 7, 100), (2, NULL, NULL, 1, 7, 100), (3, NULL, NULL, 2, 7, 100), (4, NULL, NULL, 3, 7, 100),
+-- As on the real server, a shift day's own out_time can be 00:00 (not set): the timetable's length gives the end.
+INSERT INTO att_shiftdetail VALUES (1, '07:30', '00:00', 0, 7, 100), (2, '07:30', '00:00', 1, 7, 100), (3, NULL, NULL, 2, 7, 100), (4, '07:30', '00:00', 3, 7, 100),
   (5, NULL, NULL, 4, 7, 100), (6, NULL, NULL, 6, 8, 100);
 INSERT INTO att_attschedule VALUES (1, '2026-11-01', '2026-12-31', 1, 7);
 INSERT INTO att_departmentschedule VALUES (1, 0, '2026-01-01', '2026-12-31', 11, 8);

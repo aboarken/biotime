@@ -36,9 +36,10 @@ final class AttendanceReaderTest extends TestCase
             'clock_in' => $cin, 'clock_out' => $cout, 'duration' => $in !== null ? 480 * $durationFactor : 0,
             'late' => $late * $durationFactor, 'early_leave' => $early * $durationFactor, 'total_worked' => $worked * $durationFactor,
             'absent' => 0, 'leave' => 0, 'day_off' => 0, 'timetable' => $in !== null ? 'Day 07:30-15:30' : null, 'total_ot' => null,
-            'in_above_margin' => $in !== null ? 240 : null,
+            'in_above_margin' => $in !== null ? 240 : null, 'tt_duration' => $in !== null ? 480 : null,
         ];
-        $interval = ['alias' => 'Day 07:30-15:30', 't_in' => '07:30:00', 'duration' => 480, 'in_above_margin' => 240, 'd_in' => null, 'd_out' => null];
+        // As on the real server: the shift day's own end is 00:00 (not set); the timetable gives 15:30.
+        $interval = ['alias' => 'Day 07:30-15:30', 't_in' => '07:30:00', 'duration' => 480, 'in_above_margin' => 240, 'd_in' => '07:30:00', 'd_out' => '00:00:00'];
 
         return [
             'FROM personnel_employee' => [['id' => 1, 'department_id' => 10, 'dept_name' => 'Information Technology', 'position_name' => 'Developer', 'hire_date' => '2024-09-01']],
@@ -151,10 +152,11 @@ final class AttendanceReaderTest extends TestCase
         $answers = $this->answers();
         $answers['FROM att_payloadbase'] = [];
         $answers['FROM att_payloadtimecard'] = [
-            ['d' => '2026-11-02', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240],
-            ['d' => '2026-11-04', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240],
-            ['d' => '2026-11-05', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240],
-            ['d' => '2026-11-06', 'time_table_alias' => null, 's' => null, 'e' => null, 'in_above_margin' => null],
+            ['d' => '2026-11-02', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240, 'duration' => 480],
+            // A time card whose end is midnight: the timetable's length gives the end.
+            ['d' => '2026-11-04', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '00:00:00', 'in_above_margin' => 240, 'duration' => 480],
+            ['d' => '2026-11-05', 'time_table_alias' => 'IN07:30-OUT15:30', 's' => '07:30:00', 'e' => '15:30:00', 'in_above_margin' => 240, 'duration' => 480],
+            ['d' => '2026-11-06', 'time_table_alias' => null, 's' => null, 'e' => null, 'in_above_margin' => null, 'duration' => null],
         ];
         $answers['FROM att_payloadpaycode'] = [
             ['d' => '2026-11-02', 'name' => 'Late In', 'symbol' => 'L', 'minutes' => '12.0'],
@@ -175,6 +177,7 @@ final class AttendanceReaderTest extends TestCase
             $days['2026-11-02']['late'], $days['2026-11-02']['early'], $days['2026-11-02']['worked'],
         ]);
         self::assertTrue($days['2026-11-04']['absent']);
+        self::assertSame('15:30:00', $days['2026-11-04']['sched_end'], 'not 00:00');
         self::assertSame('Annual Leave', $days['2026-11-05']['leave_name']);
         self::assertTrue($days['2026-11-06']['off']);
         self::assertSame('Holiday', $days['2026-11-08']['holiday'], 'a HOLIDAY pay code');
@@ -290,6 +293,7 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame([12, 25, 443, 30, '11:30:00'], [$days['2026-11-02']['late'], $days['2026-11-02']['early'], $days['2026-11-02']['worked'], $days['2026-11-02']['overtime'], $days['2026-11-02']['cutoff']]);
         self::assertSame(['Day 07:30-15:30', '07:30:00', '15:30:00', '11:30:00'], [$days['2026-11-19']['schedule'], $days['2026-11-19']['sched_start'], $days['2026-11-19']['sched_end'], $days['2026-11-19']['cutoff']], 'from the weekly shift');
         self::assertTrue($days['2026-11-20']['off'], 'Friday: no timetable');
+        self::assertSame(['07:30:00', '15:30:00'], [$days['2026-11-22']['sched_start'], $days['2026-11-22']['sched_end']], 'Sunday: the shift day\'s end is stored as 00:00');
         self::assertSame(['Exam duty', '09:00:00', '13:00:00', '10:00:00'], [$days['2026-11-23']['schedule'], $days['2026-11-23']['sched_start'], $days['2026-11-23']['sched_end'], $days['2026-11-23']['cutoff']], 'temporary schedule, in local time');
         self::assertSame(['National Day', 'National Day', 'Group Day'], [$days['2026-11-08']['holiday'], $days['2026-11-09']['holiday'], $days['2026-11-15']['holiday']]);
         self::assertArrayNotHasKey('holiday', $days['2026-11-12'], 'HR Day is for another department');
