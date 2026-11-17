@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-11-18
+
+### Fixed
+- **Test Database said "Read only by default: No" although it was set**, when the setting was made for the biotime database only (pgAdmin's Parameters tab with a database chosen, or `ALTER ROLE … IN DATABASE`). Such settings are now found as well.
+
 ## [0.6.0] - 2026-11-18
 
 ### Added

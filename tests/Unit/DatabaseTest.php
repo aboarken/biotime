@@ -144,6 +144,7 @@ final class DatabaseTest extends TestCase
         $q = new CatalogueQuery('pgsql', [
             'SHOW server_version' => [['server_version' => '10.23']],
             'pg_stat_ssl'         => [['ssl' => true, 'version' => 'TLSv1.3']],
+            'pg_db_role_setting'  => [['v' => '']],
             'FROM pg_roles'       => [['rolsuper' => false, 'rolcreaterole' => false, 'rolcreatedb' => false, 'config' => 'default_transaction_read_only=on']],
             'has_database_privilege' => [['?column?' => true]],
             'FROM pg_class'       => [
@@ -174,6 +175,7 @@ final class DatabaseTest extends TestCase
         $q = new CatalogueQuery('pgsql', [
             'SHOW server_version'    => [['server_version' => '16']],
             'pg_stat_ssl'            => [['ssl' => false, 'version' => null]],
+            'pg_db_role_setting'     => [['v' => '']],
             'FROM pg_roles'          => [['rolsuper' => true, 'rolcreaterole' => true, 'rolcreatedb' => true, 'config' => '']],
             'has_database_privilege' => [['?column?' => true]],
             'FROM pg_class'          => [['id' => 3, 'name' => 'iclock_transaction', 'readable' => true, 'writable' => true]],
@@ -185,6 +187,20 @@ final class DatabaseTest extends TestCase
         self::assertFalse($r['safe']);
         self::assertSame(['iclock_transaction'], $r['writable']);
         self::assertFalse($r['ssl']);
+    }
+
+    public function testReadOnlySetForThisDatabaseOnlyCounts(): void
+    {
+        $q = new CatalogueQuery('pgsql', [
+            'SHOW server_version'    => [['server_version' => '15.2']],
+            'pg_stat_ssl'            => [['ssl' => true, 'version' => 'TLSv1.3']],
+            'pg_db_role_setting'     => [['v' => 'default_transaction_read_only=on']],
+            'FROM pg_roles'          => [['rolsuper' => false, 'rolcreaterole' => false, 'rolcreatedb' => false, 'config' => '']],
+            'has_database_privilege' => [['?column?' => false]],
+            'FROM pg_class'          => [],
+        ]);
+
+        self::assertTrue((new SchemaInspector())->inspect($q)['role_read_only'], 'pgAdmin Parameters with the database chosen');
     }
 
     public function testSqlServerCatalogue(): void
