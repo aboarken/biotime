@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.4.8] - 2026-11-16
+
+### Changed
+- **My Dashboard → Monthly Overview:** the tiles and the colour bar now follow the same order: **Present, Absent, Weekend, Missing Punch** (then Weekend Worked). The amber Missing Punch part of the bar no longer sits next to the red Absent part.
+
 ## [0.4.7] - 2026-11-16
 
 ### Security
