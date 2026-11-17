@@ -34,6 +34,9 @@
 .com-biotime .bt-tone-teal { --bt-tone: #0f766e; --bt-tone-soft: #f0fdfa; }
 .com-biotime .bt-tone-slate { --bt-tone: #475569; --bt-tone-soft: #f1f5f9; }
 .com-biotime .bt-tone-muted { --bt-tone: #6b7280; --bt-tone-soft: #f3f4f6; }
+/* Monthly Overview: the two missing punches in two clearly different warm colours. */
+.com-biotime .bt-tone-orange { --bt-tone: #c2410c; --bt-tone-soft: #fff7ed; }
+.com-biotime .bt-tone-gold { --bt-tone: #a16207; --bt-tone-soft: #fefce8; }
 
 /* Page heading row: title (and meta line) left, month navigation or action right */
 .com-biotime .bt-head {
@@ -536,11 +539,17 @@
 
 .com-biotime .bt-tile {
   display: block;
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 1rem 0.875rem 0.875rem;
   color: var(--bt-tone);
   text-decoration: none;
   background: var(--bt-tone-soft);
+  border-left: 4px solid var(--bt-tone);
   border-radius: 0.625rem;
+}
+
+/* A tile with 0 keeps its own colour (so it is never mistaken for Weekend), only fainter. */
+.com-biotime .bt-tile--zero {
+  opacity: 0.55;
 }
 
 .com-biotime a.bt-tile:hover,
@@ -565,10 +574,23 @@
   font-weight: 600;
 }
 
+/* The tile's colour as a dot, the same as its part of the bar above. */
+.com-biotime .bt-tile-label::before {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-right: 0.375rem;
+  vertical-align: 0.05em;
+  content: "";
+  background: var(--bt-tone);
+  border-radius: 50%;
+}
+
 /* Distribution bar above the tiles (decorative: the tiles carry the numbers) */
 .com-biotime .bt-bar {
   display: flex;
-  height: 0.625rem;
+  gap: 3px;
+  height: 0.875rem;
   margin: 0 0 1rem;
   overflow: hidden;
   background: #f3f4f6;
@@ -577,6 +599,7 @@
 
 .com-biotime .bt-bar > span {
   display: block;
+  min-width: 6px;
   height: 100%;
   background: var(--bt-tone);
 }

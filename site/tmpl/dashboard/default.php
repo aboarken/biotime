@@ -54,8 +54,8 @@ $overview = [
     ['attended', Text::_('COM_BIOTIME_STATUS_PRESENT'), $s->presentDays, 'green'],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT'), $s->absentDays, 'red'],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND'), $s->weekendDays, 'slate'],
-    ['missingmorning', Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays, 'amber'],
-    ['missingafternoon', Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays, 'amber'],
+    ['missingmorning', Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays, 'orange'],
+    ['missingafternoon', Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays, 'gold'],
     ['weekendworked', Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, 'purple'],
 ];
 
@@ -64,14 +64,15 @@ if ($calc) {
     array_splice($overview, 3, 0, [['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY'), $s->holidayDays, 'teal']]);
 }
 
-// The bar splits the days so far, in the order of the tiles: present (complete), absent, weekend,
-// present with a missing punch.
+// The bar splits the days so far in the tiles' own colours and order: present (complete), absent,
+// weekend, holiday, present with a missing morning punch, with a missing afternoon punch.
 $bar  = [
     ['green', max(0, $s->presentDays - $s->missingPunchDays)],
     ['red', $s->absentDays],
     ['slate', $s->weekendDays],
     ['teal', $calc ? $s->holidayDays : 0],
-    ['amber', $s->missingPunchDays],
+    ['orange', $s->missingMorningDays],
+    ['gold', $s->missingAfternoonDays],
 ];
 $days = array_sum(array_column($bar, 1));
 ?>
@@ -168,7 +169,8 @@ $days = array_sum(array_column($bar, 1));
                 <div class="bt-tiles">
                     <?php foreach ($overview as [$key, $label, $count, $tone]) :
                         $inner = '<span class="bt-tile-value">' . $count . '</span><span class="bt-tile-label">' . $e($label) . '</span>';
-                        $cls   = 'bt-tile bt-tone-' . Ui::countTone($count, $tone);
+                        // Every tile keeps its colour (the bar's), a tile with 0 only fainter.
+                        $cls   = 'bt-tile bt-tone-' . $tone . ($count > 0 ? '' : ' bt-tile--zero');
                         ?>
                         <?php if ($this->canAttendance) : ?>
                             <a class="<?php echo $cls; ?>" href="<?php echo $this->attendanceUrl($key); ?>"><?php echo $inner; ?></a>
