@@ -38,6 +38,8 @@ final class Summary
      * @param ?int    $workedMinutes  total worked time as ZKBioTime calculated it; null without it
      * @param int     $overtimeMinutes total overtime
      * @param int     $holidayDays    holidays without punches
+     * @param int     $missingMorningDays   missing-punch days without a check-in (morning)
+     * @param int     $missingAfternoonDays missing-punch days without a check-out (afternoon)
      */
     public function __construct(
         public readonly int $workingDays,
@@ -61,7 +63,9 @@ final class Summary
         public readonly int $earlyDays = 0,
         public readonly ?int $workedMinutes = null,
         public readonly int $overtimeMinutes = 0,
-        public readonly int $holidayDays = 0
+        public readonly int $holidayDays = 0,
+        public readonly int $missingMorningDays = 0,
+        public readonly int $missingAfternoonDays = 0
     ) {
     }
 
@@ -103,7 +107,9 @@ final class Summary
             $count(static fn (Day $d): bool => ($d->early ?? 0) > 0),
             array_filter($days, static fn (Day $d): bool => $d->worked !== null) === [] ? null : array_sum(array_map(static fn (Day $d): int => $d->worked ?? 0, $days)),
             array_sum(array_map(static fn (Day $d): int => $d->overtime ?? 0, $days)),
-            $count(static fn (Day $d): bool => $d->status === 'holiday' && $d->punches === [])
+            $count(static fn (Day $d): bool => $d->status === 'holiday' && $d->punches === []),
+            $count(static fn (Day $d): bool => $d->missingMorning()),
+            $count(static fn (Day $d): bool => $d->missingAfternoon())
         );
     }
 

@@ -245,6 +245,7 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame(15, $s->workingDays, '20 days so far minus 5 weekend days');
         self::assertSame(3, $s->presentDays, 'the missing-punch day counts as present ...');
         self::assertSame(1, $s->missingPunchDays, '... and as a missing punch');
+        self::assertSame([0, 1], [$s->missingMorningDays, $s->missingAfternoonDays], 'the 4th has a check-in only: the afternoon punch is missing');
         self::assertSame(12, $s->absentDays);
         self::assertSame(5, $s->weekendDays);
         self::assertSame(0, $s->weekendWorked);

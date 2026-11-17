@@ -116,6 +116,7 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Compare one month with ZKBioTime's Time Card / Transaction report for the same employee: schedule, late in, early out and worked time per day match. If late in is 60 times too large or small, set Duration unit.
 - [ ] A public holiday shows as Holiday (not Absent); a day off in the schedule as Rest Day.
 - [ ] My Attendance filters Late In, Early Out and Holiday list only those days.
+- [ ] Cards Missing Morning Punch (no check-in) and Missing Afternoon Punch (no check-out) count those days and open My Attendance filtered to them.
 - [ ] Read attendance from: API again: the pages look as in 0.5.1.
 
 ### 0.5.1 – Database Server and Connect via

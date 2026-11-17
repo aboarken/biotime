@@ -25,6 +25,8 @@ $filters = [
     'attended'      => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
     'present'       => Text::_('COM_BIOTIME_STATUS_PRESENT'),
     'missingpunch'  => Text::_('COM_BIOTIME_MISSING_PUNCH'),
+    'missingmorning'   => Text::_('COM_BIOTIME_CARD_MISSING_MORNING'),
+    'missingafternoon' => Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'),
     'absent'        => Text::_('COM_BIOTIME_STATUS_ABSENT'),
     'weekend'       => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
     'weekendworked' => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
@@ -62,12 +64,14 @@ $dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" a
     ])) . '"'
     . ' value="' . $e($this->date !== '' ? (new DateTimeImmutable($this->date))->format('d/m/Y') : '') . '">';
 
-// Summary cards: [label, value html, tone, filter]. From the database: 5 + 5 + 3 cards, with
-// ZKBioTime's late-in, early-out, worked time and overtime; from the API: 5 + 3 as before.
+// Summary cards: [label, value html, tone, filter]. Missing punches as two cards: morning (no
+// check-in) and afternoon (no check-out). From the database: 5 + 5 + 4 cards, with ZKBioTime's
+// late-in, early-out, worked time and overtime; from the API: 5 + 4.
 $cards = $calc ? [
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_PUNCH_DAYS'), (string) $s->missingPunchDays, Ui::countTone($s->missingPunchDays, 'amber'), 'missingpunch'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
     [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'teal'), 'holiday'],
     [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'purple'), 'weekendworked'],
     [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $e($f->duration($s->lateMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::countTone($s->lateMinutes, 'amber'), 'late'],
@@ -81,7 +85,8 @@ $cards = $calc ? [
 ] : [
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_PUNCH_DAYS'), (string) $s->missingPunchDays, Ui::countTone($s->missingPunchDays, 'amber'), 'missingpunch'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
     [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'purple'), 'weekendworked'],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', ''],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', ''],
