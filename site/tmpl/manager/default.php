@@ -126,6 +126,8 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
                 ['id' => 'bt-emp', 'label' => Text::_('COM_BIOTIME_MANAGER_EMPLOYEE'), 'html' => $empSelect],
                 ['id' => 'bt-status', 'label' => Text::_('COM_BIOTIME_COL_STATUS'), 'html' => $statusSelect],
                 ['break' => true],
+                // Employee ID search (1.0.4): Enter applies it.
+                ['id' => 'bt-code', 'label' => Text::_('COM_BIOTIME_MANAGER_SEARCH_ID'), 'html' => '<input class="bt-input" type="search" id="bt-code" name="code" maxlength="20" autocomplete="off" placeholder="' . $e(Text::_('COM_BIOTIME_MANAGER_SEARCH_ID_HINT')) . '" value="' . $e($this->code) . '">'],
                 ['id' => 'bt-from', 'label' => Text::_('COM_BIOTIME_DATE_FROM'), 'html' => $dateInput('bt-from', 'from', $this->from)],
                 ['id' => 'bt-to', 'label' => Text::_('COM_BIOTIME_DATE_TO'), 'html' => $dateInput('bt-to', 'to', $this->to)],
             ],
@@ -138,6 +140,9 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
             </div>
         <?php endforeach; ?>
 
+        <?php if ($this->tooMany > 0) : ?>
+            <div class="bt-alert bt-tone-amber" role="status"><?php echo $e(Text::sprintf('COM_BIOTIME_MANAGER_TOO_MANY', $this->tooMany, $this::MAX_EMPLOYEES)); ?></div>
+        <?php else : ?>
         <div class="bt-stats bt-stats--5">
             <?php foreach ($cards as [$label, $value, $tone, $filter]) :
                 $inner = '<span class="bt-stat-label">' . $e($label) . '</span><span class="bt-stat-value">' . $value . '</span>';
@@ -156,7 +161,7 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
         <section class="bt-panel" id="bt-records">
             <div class="bt-panel-head">
                 <h2 class="bt-panel-title" id="bt-mgr-range"><?php echo $e($range); ?></h2>
-                <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_MANAGER_N_EMPLOYEES', \count($this->rows))); ?> · <?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', \count($this->dates))); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
+                <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_MANAGER_N_EMPLOYEES', $this->rowCount)); ?> · <?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', \count($this->dates))); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
             </div>
             <?php if ($this->rows === [] || $this->dates === []) : ?>
                 <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NO_DAYS'); ?></p>
@@ -223,6 +228,14 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
                     </table>
                 </div>
             <?php endif; ?>
+            <?php if ($this->pages > 1) : ?>
+                <nav class="bt-pager" aria-label="<?php echo $e(Text::_('COM_BIOTIME_MANAGER_PAGES')); ?>">
+                    <?php if ($this->page > 1) : ?><a class="bt-btn bt-btn--ghost" href="<?php echo $this->filterUrl(['page' => (string) ($this->page - 1)]); ?>#bt-records">&larr; <?php echo Text::_('COM_BIOTIME_MANAGER_PREV'); ?></a><?php endif; ?>
+                    <span><?php echo $e(Text::sprintf('COM_BIOTIME_MANAGER_PAGE_OF', $this->page, $this->pages)); ?></span>
+                    <?php if ($this->page < $this->pages) : ?><a class="bt-btn bt-btn--ghost" href="<?php echo $this->filterUrl(['page' => (string) ($this->page + 1)]); ?>#bt-records"><?php echo Text::_('COM_BIOTIME_MANAGER_NEXT'); ?> &rarr;</a><?php endif; ?>
+                </nav>
+            <?php endif; ?>
         </section>
+        <?php endif; ?>
     <?php endif; ?>
 </div>

@@ -103,6 +103,14 @@ final class ManagerModel extends PortalModel
     }
 
     /**
+     * Employee ID search (?code=, 1.0.4): the text typed, at most 20 characters; '' for none.
+     */
+    public function searchedCode(): string
+    {
+        return mb_substr(trim(Factory::getApplication()->getInput()->getString('code', '')), 0, 20);
+    }
+
+    /**
      * The department and those below it (for the department filter).
      *
      * @return list<int>
@@ -136,9 +144,12 @@ final class ManagerModel extends PortalModel
     {
         $dept = $this->selectedDepartment();
         $emp  = $this->selectedEmployee();
+        $code = $this->searchedCode();
         $ids  = $dept > 0 ? $this->departmentAndBelow($dept) : null;
 
+        // The ID search only narrows the manager's own employees (case-insensitive, part of the ID).
         return array_values(array_filter($this->team(), static fn (array $e): bool => ($emp === '' || $e['emp_code'] === $emp)
+            && ($code === '' || mb_stripos($e['emp_code'], $code) !== false)
             && ($ids === null || \in_array($e['department_id'], $ids, true))));
     }
 

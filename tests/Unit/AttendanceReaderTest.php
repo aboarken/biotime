@@ -380,4 +380,14 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame($q, $queries, 'read ahead: no query for an employee read again');
         self::assertGreaterThan(0, $before);
     }
+
+    /** 1.0.4: a weekend's time card with only a midnight start is no schedule ("—", not "00:00–—"). */
+    public function testAMidnightStartWithoutAnEndIsNoSchedule(): void
+    {
+        $entry = new \ReflectionMethod(AttendanceReader::class, 'entry');
+
+        self::assertSame(['name' => null, 'start' => null, 'end' => null, 'cutoff' => null], $entry->invoke(null, null, '00:00:00', null, 0, 0));
+        self::assertSame('08:00:00', $entry->invoke(null, 'Night', '00:00:00', null, 480, 0)['end'], 'a real night shift from midnight keeps its times');
+        self::assertSame('00:00:00', $entry->invoke(null, 'Night', '00:00:00', null, 480, 0)['start']);
+    }
 }

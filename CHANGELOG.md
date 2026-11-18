@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.4] - 2026-11-18
+
+### Added
+- **Manager Dashboard → Employee ID search**: type an ID (e.g. E993, or part of one) and press Enter; only the manager's own employees are searched.
+
+### Fixed
+- **"PHP regular expression limit reached (pcre.backtrack_limit)"** on the Manager Dashboard with many employees (e.g. View all departments): the page grew too large for Joomla's plugins, which scan the whole page. The table now shows 50 employees per page (Previous / Next; the cards still count everyone shown), and when more than 300 employees match, the page asks to choose a department or an employee, or to search an Employee ID, instead of reading them all.
+- **Weekend schedules showed "00:00–—"**: ZKBioTime's weekend time cards hold only a midnight start. They now show "—", and a schedule is shown as times only when it has both a start and an end.
+
 ## [1.0.3] - 2026-11-18
 
 ### Added
