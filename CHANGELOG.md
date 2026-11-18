@@ -3,9 +3,12 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
-## [0.9.1] - 2026-11-18
+## [0.10.0] - 2026-11-18
 
 ### Changed
+- **My Dashboard → Statistics replaces Recent Activity**: charts of the cards' figures, drawn on the server as SVG (no script): *Days so far* (donut: present, absent, holiday, weekend, leave, with the attendance rate inside), *Days per month* (stacked columns), *Late in and early out per month* (grouped columns, database only), *Average check-in and check-out per month* (lines) and *Missing punches, weekend work, late and early days* (bars). Each mark shows its value on hover; legends name every colour; screen readers get the figures as text.
+- **My Dashboard: the employee as a table row** under the heading: Department, Position, Employee ID, Name and Period (from 1 August to today). On phones, one line per column.
+- **Plainer note under the pages**: "Your schedule, late in, early out, worked time and holidays come from the Attendance Management System; late in and early out appear once the system has processed the day. Check-in is your first punch of the day and check-out your last; a punch after your schedule's check-in window (after 12:00 on days without a schedule) counts as a check-out." and "Weekend days: Friday, Saturday. They show as Weekend unless you punched that day."
 - **The portal pages name "the Attendance Management System" instead of "ZKBioTime"**: the note under the pages (schedule, late-in, early-out, worked time and holidays come from the Attendance Management System; late-in and early-out appear once the system has calculated the day), the error messages, the time zone note and the unmatched-account message. The administrator pages still name ZKBioTime.
 - **My Attendance shows every day on one page**: a From – To range (up to a year) is no longer split into pages of 31 days.
 
