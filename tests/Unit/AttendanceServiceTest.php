@@ -472,4 +472,16 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame('8:05', $f->duration(485));
         self::assertSame('—', $f->duration(null));
     }
+
+    /** 1.0.9: the Manager Dashboard reads without Joomla's cache (neither stored nor read). */
+    public function testARangeWithoutTheCacheNeitherStoresNorReadsIt(): void
+    {
+        $this->service()->range($this->alice, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-20'), false);
+        self::assertSame([], $this->session, 'nothing stored');
+        self::assertSame(1, $this->reads());
+
+        $this->service()->range($this->alice, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-20'));
+        $this->service()->range($this->alice, new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-20'), false);
+        self::assertSame(3, $this->reads(), 'the cached copy is not used either');
+    }
 }

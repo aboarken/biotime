@@ -61,20 +61,21 @@ final class TeamReader
      * What the employee's own ZKBioTime user account may see (1.0.8): ZKBioTime has employees and,
      * separately, users (auth_user) whose data permissions list departments (auth_user_auth_dept).
      * The employee's users are those linked to the employee code (emp_pin), whose username is the
-     * employee code, or with the employee's e-mail address (or one of $emails); active and not
-     * deleted. A superuser or a user who may manage all departments (can_manage_all_dept) sees
+     * employee code, or whose e-mail or username is the employee's e-mail address (or one of
+     * $emails, e.g. the Joomla account's); active and not deleted. A superuser or a user who may manage all departments (can_manage_all_dept) sees
      * every department. Only these columns of auth_user are read: id, username, email, emp_pin,
      * is_active, is_superuser, can_manage_all_dept, del_flag (never the password).
      *
      * @param  list<string> $emails further e-mail addresses of the same person (e.g. Joomla's)
-     * @return array{readable: bool, superuser: bool, departments: list<int>} readable false when
-     *         ZKBioTime's users cannot be read (not granted, or another ZKBioTime version)
+     * @return array{readable: bool, superuser: bool, departments: list<int>, users: int} readable
+     *         false when ZKBioTime's users cannot be read (not granted, or another ZKBioTime
+     *         version); users: how many active ZKBioTime users matched (1.0.9, for the log)
      *
      * @throws DbException when the database cannot be reached
      */
     public function userScope(string $empCode, array $emails = []): array
     {
-        $none = ['readable' => false, 'superuser' => false, 'departments' => []];
+        $none = ['readable' => false, 'superuser' => false, 'departments' => [], 'users' => 0];
 
         try {
             foreach ($this->q()->rows('SELECT email FROM personnel_employee WHERE emp_code = :code', [':code' => $empCode]) as $r) {
@@ -101,7 +102,11 @@ final class TeamReader
             }
 
             if ($emails !== []) {
-                $who[] = 'LOWER(email) IN (' . implode(', ', array_keys(\array_slice($bind, 1, null, true))) . ')';
+                $in    = implode(', ', array_keys(\array_slice($bind, 1, null, true)));
+                $who[] = 'LOWER(email) IN (' . $in . ')';
+                // Many ZKBioTime users log in with their e-mail address as the username and leave
+                // the e-mail field empty (1.0.9).
+                $who[] = 'LOWER(username) IN (' . $in . ')';
             }
 
             $users = $this->q()->rows(
@@ -137,15 +142,15 @@ final class TeamReader
         }
 
         if ($users === []) {
-            return ['readable' => true, 'superuser' => false, 'departments' => []];
+            return ['readable' => true, 'superuser' => false, 'departments' => [], 'users' => 0];
         }
 
         if (array_filter($users, static fn (array $u): bool => \in_array($u['is_superuser'], [true, 't', 1, '1'], true)) !== []) {
-            return ['readable' => true, 'superuser' => true, 'departments' => []];
+            return ['readable' => true, 'superuser' => true, 'departments' => [], 'users' => \count($users)];
         }
 
         if ($userCol === null || $deptCol === null) {
-            return $none;
+            return ['users' => \count($users)] + $none;
         }
 
         // Column names come from the database catalogue and are checked above; ids are integers.
@@ -158,10 +163,10 @@ final class TeamReader
                 throw $e;
             }
 
-            return $none;
+            return ['users' => \count($users)] + $none;
         }
 
-        return ['readable' => true, 'superuser' => false, 'departments' => array_values(array_unique(array_map(static fn (array $r): int => (int) $r['d'], $rows)))];
+        return ['readable' => true, 'superuser' => false, 'departments' => array_values(array_unique(array_map(static fn (array $r): int => (int) $r['d'], $rows))), 'users' => \count($users)];
     }
 
     /**

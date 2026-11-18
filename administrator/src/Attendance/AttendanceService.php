@@ -72,6 +72,9 @@ final class AttendanceService
     /** @var array<string, ?array<string, mixed>> cache entries already looked up by range() */
     private array $peek = [];
 
+    /** False while range() reads without the cache. */
+    private bool $cacheOn = true;
+
     /**
      * @param \Closure(): AttendanceReader           $database    ZKBioTime's database, opened when first needed
      * @param \DateTimeZone                         $serverZone  ZKBioTime server time zone; times are shown as recorded
@@ -180,7 +183,20 @@ final class AttendanceService
     /**
      * Every day from $from to $to (inclusive); callers limit the length.
      */
-    public function range(Identity $identity, \DateTimeImmutable $from, \DateTimeImmutable $to): Period
+    public function range(Identity $identity, \DateTimeImmutable $from, \DateTimeImmutable $to, bool $cache = true): Period
+    {
+        // Without the cache (1.0.9, Manager Dashboard): the team is read ahead in a few queries, so
+        // storing and reading every employee's months in Joomla's database would only cost time.
+        $this->cacheOn = $cache;
+
+        try {
+            return $this->readRange($identity, $from, $to);
+        } finally {
+            $this->cacheOn = true;
+        }
+    }
+
+    private function readRange(Identity $identity, \DateTimeImmutable $from, \DateTimeImmutable $to): Period
     {
         $from = new \DateTimeImmutable($from->format('Y-m-d'));
         $to   = new \DateTimeImmutable($to->format('Y-m-d'));
@@ -201,7 +217,7 @@ final class AttendanceService
             foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY] as $type) {
                 $key = self::cacheKey($type, (int) $m->format('Y'), (int) $m->format('n'));
 
-                if (($this->peek[$key] = $this->cache->get($identity, $key)) === null) {
+                if (($this->peek[$key] = $this->cacheOn ? $this->cache->get($identity, $key) : null) === null) {
                     $missing[$m->format('Y-m')] = $m;
                 }
             }
@@ -394,7 +410,7 @@ final class AttendanceService
 
         // Rows of older versions are never read from the cache (CACHE_VERSION).
         $key    = self::cacheKey($type, $year, $month);
-        $cached = \array_key_exists($key, $this->peek) ? $this->peek[$key] : $this->cache->get($identity, $key);
+        $cached = \array_key_exists($key, $this->peek) ? $this->peek[$key] : ($this->cacheOn ? $this->cache->get($identity, $key) : null);
         unset($this->peek[$key]);
 
         if ($cached !== null && isset($cached['rows'], $cached['at'])) {
@@ -425,7 +441,10 @@ final class AttendanceService
                 $rows = array_map(static fn (array $r): array => $r + ['db' => true], $reader->days($employee, $first, $last));
                 $at   = ($this->clock)()->getTimestamp();
                 $stat['read'] += \count($rows);
-                $this->cache->set($identity, $key, ['rows' => $rows, 'at' => $at], $ttl);
+
+                if ($this->cacheOn) {
+                    $this->cache->set($identity, $key, ['rows' => $rows, 'at' => $at], $ttl);
+                }
 
                 return ['rows' => $rows, 'at' => $at, 'error' => null];
             }
@@ -472,7 +491,10 @@ final class AttendanceService
         $stat['hidden'] += $hidden;
 
         $at = ($this->clock)()->getTimestamp();
-        $this->cache->set($identity, $key, ['rows' => $rows, 'at' => $at], $ttl);
+
+        if ($this->cacheOn) {
+            $this->cache->set($identity, $key, ['rows' => $rows, 'at' => $at], $ttl);
+        }
 
         return ['rows' => $rows, 'at' => $at, 'error' => null];
     }

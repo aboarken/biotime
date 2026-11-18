@@ -52,6 +52,11 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.9 – Faster Manager Dashboard, access log
+- [ ] A manager whose ZKBioTime username is their e-mail address (e-mail field empty) sees the departments of that user's permissions.
+- [ ] Manager Dashboard from 25 October to 5 November: as quick as a single month.
+- [ ] A manager who gets "You don't have access…": `administrator/logs/com_biotime.php` says why (no employee, no ZKBioTime user, user without departments, or users not readable).
+
 ### 1.0.8 – Manager card order
 - [ ] Manager Dashboard: Workforce, then All Days (highlighted); the Employee ID field shows "e.g. EXXXX, then Enter".
 - [ ] On the BioTime server run the column grant from docs/DATABASE.md; as `joomla_portal`, `SELECT password FROM auth_user` is refused.

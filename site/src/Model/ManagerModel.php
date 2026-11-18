@@ -51,6 +51,8 @@ final class ManagerModel extends PortalModel
         $own = $this->biotime()->getAttendanceReader()->employee($this->identity()->empCode());
 
         if ($own === null) {
+            $this->logger()->warning(\sprintf('Manager Dashboard, Joomla user %d: no department shown: the mapped employee code is not exactly one ZKBioTime employee', $this->identity()->joomlaUserId));
+
             return $this->departments = [];
         }
 
@@ -83,6 +85,20 @@ final class ManagerModel extends PortalModel
 
         foreach ($team->departmentsByIds($scope['departments']) as $d) {
             $out[$d['id']] ??= $d;
+        }
+
+        // Why a manager sees nothing (1.0.9), in administrator/logs/com_biotime.php: no names.
+        if ($out === []) {
+            $this->logger()->warning(\sprintf(
+                'Manager Dashboard, Joomla user %d: no department shown: %s',
+                $this->identity()->joomlaUserId,
+                match (true) {
+                    !$scope['readable'] && $scope['users'] === 0 => 'ZKBioTime users could not be read (see the grant in docs/DATABASE.md), and the employee is no Department Manager',
+                    !$scope['readable']                          => \sprintf('%d ZKBioTime user(s) matched, but their department permissions (auth_user_auth_dept) could not be read', $scope['users']),
+                    $scope['users'] === 0                        => 'no active ZKBioTime user matched the employee ID (emp_pin or username) or the e-mail of the employee or the Joomla account, and the employee is no Department Manager',
+                    default                                      => \sprintf('%d ZKBioTime user(s) matched, but none is a superuser or may manage all departments, and their data permissions list no department', $scope['users']),
+                }
+            ));
         }
 
         return $this->departments = array_values($out);
@@ -203,7 +219,7 @@ final class ManagerModel extends PortalModel
         }
 
         foreach ($employees as $e) {
-            $period = $this->attendance()->range(Identity::matched($user, (string) $e['id'], $e['emp_code']), new \DateTimeImmutable($from), new \DateTimeImmutable($to));
+            $period = $this->attendance()->range(Identity::matched($user, (string) $e['id'], $e['emp_code']), new \DateTimeImmutable($from), new \DateTimeImmutable($to), false);
 
             foreach ($period->errors as $type => $kind) {
                 $errors[$type] = (string) $kind;
