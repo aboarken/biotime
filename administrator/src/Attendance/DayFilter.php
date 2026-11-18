@@ -18,7 +18,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 final class DayFilter
 {
     /** Filter values, in the Status list's order. */
-    public const FILTERS = ['attended', 'present', 'missingpunch', 'missingmorning', 'missingafternoon', 'absent', 'weekend', 'weekendworked', 'late', 'early', 'holiday', 'exceptions', 'punches', 'nopunches'];
+    public const FILTERS = ['attended', 'present', 'missingpunch', 'missingmorning', 'missingafternoon', 'absent', 'leave', 'weekend', 'weekendworked', 'late', 'early', 'holiday', 'exceptions', 'punches', 'nopunches'];
 
     /** $status when it is a filter; '' (every day) otherwise. */
     public static function valid(string $status): string
@@ -41,6 +41,7 @@ final class DayFilter
             'missingafternoon' => $d->missingAfternoon(),
             'late'             => ($d->late ?? 0) > 0,
             'early'            => ($d->early ?? 0) > 0,
+            'leave'            => ChartData::kind($d) === 'leave',
             default            => $d->status === $status,
         };
     }

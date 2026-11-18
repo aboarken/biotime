@@ -18,7 +18,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 final class Summary
 {
     /**
-     * @param int     $workingDays    days so far that are not weekend, holiday or rest days (plus weekend days worked)
+     * @param int     $workingDays    present + absent days (1.0.3): leave, weekend, holiday and rest days are not working days
      * @param int     $presentDays    days with attendance (check-in and/or check-out)
      * @param int     $missingPunchDays present days with a check-in or a check-out missing
      * @param int     $absentDays     past working days without any punch
@@ -40,6 +40,8 @@ final class Summary
      * @param int     $holidayDays    holidays without punches
      * @param int     $missingMorningDays   missing-punch days without a check-in (morning)
      * @param int     $missingAfternoonDays missing-punch days without a check-out (afternoon)
+     * @param int     $leaveDays      leave days without punches (1.0.3)
+     * @param int     $allDays        every day so far with a status: present + absent + leave + holiday + weekend (1.0.3)
      */
     public function __construct(
         public readonly int $workingDays,
@@ -65,7 +67,9 @@ final class Summary
         public readonly int $overtimeMinutes = 0,
         public readonly int $holidayDays = 0,
         public readonly int $missingMorningDays = 0,
-        public readonly int $missingAfternoonDays = 0
+        public readonly int $missingAfternoonDays = 0,
+        public readonly int $leaveDays = 0,
+        public readonly int $allDays = 0
     ) {
     }
 
@@ -79,8 +83,11 @@ final class Summary
         $count = static fn (\Closure $test): int => \count(array_filter($days, $test));
 
         $present  = $count(static fn (Day $d): bool => \in_array($d->status, Day::ATTENDED, true) || ($d->status === null && $d->punches !== []));
-        $off      = $count(static fn (Day $d): bool => \in_array($d->status, [Day::STATUS_WEEKEND, 'rest', 'holiday'], true) && $d->punches === []);
-        $working  = \count($days) - $off;
+        $absent   = $count(static fn (Day $d): bool => $d->status === 'absent');
+        // Days Present is "present / (present + absent)" (1.0.3): leave days are not counted
+        // against the employee, nor are weekends, holidays and rest days.
+        $working  = $present + $absent;
+        $kinds    = ChartData::breakdown($days, $today);
         $spans    = array_values(array_filter(array_map(static fn (Day $d): ?int => $d->span(), $days), static fn (?int $m): bool => $m !== null));
         $ins      = array_values(array_filter(array_map(static fn (Day $d): ?string => $d->checkIn, $days)));
         $outs     = array_values(array_filter(array_map(static fn (Day $d): ?string => $d->checkOut, $days)));
@@ -89,7 +96,7 @@ final class Summary
             $working,
             $present,
             $count(static fn (Day $d): bool => $d->missingPunch()),
-            $count(static fn (Day $d): bool => $d->status === 'absent'),
+            $absent,
             $count(static fn (Day $d): bool => $d->status === Day::STATUS_WEEKEND),
             $count(static fn (Day $d): bool => $d->workedOnWeekend()),
             $working > 0 ? (int) round(100 * min($present, $working) / $working) : null,
@@ -109,7 +116,9 @@ final class Summary
             array_sum(array_map(static fn (Day $d): int => $d->overtime ?? 0, $days)),
             $count(static fn (Day $d): bool => $d->status === 'holiday' && $d->punches === []),
             $count(static fn (Day $d): bool => $d->missingMorning()),
-            $count(static fn (Day $d): bool => $d->missingAfternoon())
+            $count(static fn (Day $d): bool => $d->missingAfternoon()),
+            $kinds['leave'],
+            array_sum($kinds)
         );
     }
 

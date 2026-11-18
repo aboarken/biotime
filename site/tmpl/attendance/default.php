@@ -26,6 +26,7 @@ $filters = [
     'missingmorning'   => Text::_('COM_BIOTIME_CARD_MISSING_MORNING'),
     'missingafternoon' => Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'),
     'absent'        => Text::_('COM_BIOTIME_STATUS_ABSENT'),
+    'leave'         => Text::_('COM_BIOTIME_CARD_LEAVES'),
     'weekend'       => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
     'weekendworked' => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
     'late'          => Text::_('COM_BIOTIME_FILTER_LATE'),
@@ -66,11 +67,13 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
 // check-in) and afternoon (no check-out). 3 rows of 5.
 // The first card, All Days, clears the status filter ('*'); a card with a filter shows only the
 // matching days and jumps down to them (#bt-records, 1.0.0).
-$allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) \count(array_filter($this->period->days, fn ($d): bool => $d->date <= $this->period->today)), 'slate', '*'];
+// All Days: present + absent + leaves + holidays + weekend days so far (1.0.3).
+$allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, 'slate', '*'];
 $cards = [
     $allDays,
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
+    [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::countTone($s->leaveDays, 'amber'), 'leave'],
     [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
     [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
     [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'purple'), 'holiday'],

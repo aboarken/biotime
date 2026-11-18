@@ -47,6 +47,7 @@ $filters = [
     ''                 => Text::_('COM_BIOTIME_FILTER_ALL'),
     'attended'         => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
     'absent'           => Text::_('COM_BIOTIME_STATUS_ABSENT'),
+    'leave'            => Text::_('COM_BIOTIME_CARD_LEAVES'),
     'missingmorning'   => Text::_('COM_BIOTIME_CARD_MISSING_MORNING'),
     'missingafternoon' => Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'),
     'late'             => Text::_('COM_BIOTIME_FILTER_LATE'),
@@ -83,6 +84,7 @@ $cards = $s === null ? [] : [
     [Text::_('COM_BIOTIME_MANAGER_WORKFORCE'), (string) \count($this->employees), 'blue', '*'],
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
+    [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::countTone($s->leaveDays, 'amber'), 'leave'],
     [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
     [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
     // Days with a check-in (morning punch) and with a check-out (afternoon punch), 1.0.2.

@@ -43,4 +43,22 @@ final class DayFilterTest extends TestCase
         self::assertTrue(DayFilter::matches($absent, 'nopunches'));
         self::assertTrue(DayFilter::matches($present, 'punches'));
     }
+
+    /** 1.0.3: Leaves card and filter; Days Present is present / (present + absent); All Days is the sum. */
+    public function testLeavesAndDaysPresent(): void
+    {
+        $days = [
+            new Day('2026-11-01', [null], true, null, null, null, null, null, '07:30:00', '15:00:00', true, null, null, null, null, 'present', null),
+            new Day('2026-11-02', [], true, null, null, null, null, null, null, null, true, null, null, null, null, 'absent', null),
+            new Day('2026-11-03', [], true, null, null, null, null, null, null, null, true, null, null, null, null, 'other', 'Annual Leave'),
+            new Day('2026-11-04', [], true, null, null, null, null, null, null, null, true, null, null, null, null, 'holiday', null),
+            new Day('2026-11-06', [], true, null, null, null, null, null, null, null, true, null, null, null, null, 'weekend', null, true),
+        ];
+
+        self::assertTrue(DayFilter::matches($days[2], 'leave'));
+        self::assertFalse(DayFilter::matches($days[1], 'leave'));
+
+        $s = \BiotimePortal\Component\Biotime\Administrator\Attendance\Summary::of($days, '2026-11-18');
+        self::assertSame([1, 1, 2, 50, 1, 5], [$s->presentDays, $s->absentDays, $s->workingDays, $s->rate, $s->leaveDays, $s->allDays], 'present 1 of 2 (leave not counted); All Days = 5');
+    }
 }

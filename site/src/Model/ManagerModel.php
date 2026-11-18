@@ -58,8 +58,10 @@ final class ManagerModel extends PortalModel
         // repeated.
         $team = $this->biotime()->getTeamReader();
         $out  = [];
+        // "View all departments" (1.0.3; Super Users have it): every department, whoever manages it.
+        $roots = $this->can('zkb.manager.all') ? $team->topDepartments() : $team->managedDepartments((int) $own['id']);
 
-        foreach ($team->managedDepartments((int) $own['id']) as $root) {
+        foreach ($roots as $root) {
             if (isset($out[$root])) {
                 continue;
             }

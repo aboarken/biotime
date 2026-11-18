@@ -58,6 +58,35 @@ final class TeamReader
     }
 
     /**
+     * The top departments (no parent, or a parent that does not exist), by id: with the
+     * departments below them, every department (1.0.3, "View all departments").
+     *
+     * @return list<int>
+     *
+     * @throws DbException
+     */
+    public function topDepartments(): array
+    {
+        try {
+            $rows = $this->q()->rows(
+                'SELECT d.id FROM personnel_department d
+                  WHERE d.parent_dept_id IS NULL OR d.parent_dept_id = d.id
+                     OR NOT EXISTS (SELECT 1 FROM personnel_department p WHERE p.id = d.parent_dept_id)
+                  ORDER BY d.id'
+            );
+        } catch (DbException $e) {
+            if ($e->getKind() !== DbException::QUERY) {
+                throw $e;
+            }
+
+            // Without parent_dept_id: every department is a top department.
+            $rows = $this->q()->rows('SELECT id FROM personnel_department ORDER BY id');
+        }
+
+        return array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
+    }
+
+    /**
      * The department $rootId and every department below it, as a tree in display order (each
      * department followed by its sub-departments, by name).
      *
