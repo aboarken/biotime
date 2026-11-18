@@ -2,9 +2,11 @@
 **A read-only employee self-service attendance portal for ZKTeco ZKBioTime 9.5, inside Joomla 6.**
 
 Employees log in to Joomla and see their own attendance from ZKBioTime: each day's check-in and
-check-out (with the device and how they were verified), the time between them, and whether the
-day was Present, Absent or a Weekend,
-and how many times they punched by fingerprint and face, per month and per device.
+check-out (with the device and how they were verified), late-in and early-out, whether the day
+was Present, Absent, Leave, a Holiday or a Weekend, statistics for the school year, and how many
+times they punched by fingerprint and face, per month and per device. Managers see their teams on
+the **Manager Dashboard**, exactly the departments ZKBioTime lets them see, and can export it as a
+**PDF on the organisation's letterhead**.
 
 ZKBioTime is the single source of truth. Joomla only reads and displays: it never creates,
 edits or corrects attendance data. Everything is read from **ZKBioTime's own PostgreSQL
@@ -25,15 +27,26 @@ are respected.
 
 | Menu item type | What the user sees |
 |---|---|
-| **My Dashboard** | The school year so far: **from 1 August** (this year's, or last year's before August) **to today**, with no month selection. Under the heading, one table row: department, position, employee ID, name and the period shown. **Today**: check-in, check-out, late in, early out and the status. Cards, 5 per row: days present (of the working days so far), days absent, missing morning punch, missing afternoon punch, holidays, weekend days worked, attendance rate, average check-in (and the earliest), average check-out (and the latest), punches, total late in, total early out, late in + early out, worked time, overtime. **Statistics** (charts of the same figures): days so far (donut), days per month, late in and early out per month, average check-in and check-out per month (a column from check-in to check-out), and circles for missing punches, weekend work and late or early days. Every card with a filter opens My Attendance for the same range. |
-| **My Attendance** | One row per day: date (link to the day's details), day, the schedule, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), late in, early out, worked time and the status; the day's punches are on its details page. Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, late in, early out, holiday, exceptions, with or without punches) or From – To dates below the month (a date alone: From that date to today). Dashboard figures open it for the same range. |
+| **My Dashboard** | The school year so far: **from 1 August** (this year's, or last year's before August) **to today**. Under the heading, one table row: department, position, employee ID, name and the period shown. **Today**: check-in, check-out, late in, early out and the status. **Cards**, 5 per row, each in its own colour: *All Days* (selected by default), days present (of present + absent), days absent, leaves, holidays, weekends, weekend days worked, attendance rate, missing morning punch, missing afternoon punch, punches, average check-in (and the earliest), average check-out (and the latest), total late in, total early out, late in + early out, worked time, overtime. A card with a filter opens My Attendance for the same days. **Statistics** (drawn on the server, no script): days so far (donut), days per month, late in and early out per month (thick bars), average check-in and check-out per month, attendance rate per month (horizontal bars: red below 70 %, yellow to 95 %, green above) and the devices used (fingerprint and face; devices without punches are left out). |
+| **My Attendance** | One row per day: date (link to the day's details), day, the schedule, **check-in** and **check-out** (each with its arrow, colour and device, or *Missing*), late in, early out, **Total Exceptions** (late in + early out) and the status. Weekend rows and today are shaded. Filters: month and year, **From – To** dates (every day of the range on one page), and status. The same cards as My Dashboard (All Days by default); a card shows only its days. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
-| **Manager Dashboard** | For managers (permission *View Manager Dashboard*): every employee of the departments ZKBioTime lets them see: those of their own ZKBioTime user's data permissions (all departments for a ZKBioTime superuser), and those ZKBioTime names them Department Manager of with the departments below (not employees who have resigned); someone with neither sees a "no access" message. Filters: department, employee, status, From – To (today by default, up to 31 days). Cards: **Workforce** and the My Attendance figures for everyone shown. Below, one row per employee with a column per date (that day's check-in and check-out), then Late In, Early Out and Total for the period. |
+| **Manager Dashboard** | For managers (one permission, *View Manager Dashboard*). **ZKBioTime decides who they see**: the manager's own ZKBioTime *user* (the account they log in to ZKBioTime with, found by employee ID or by the employee record's e-mail; see *Manager Dashboard access* below) gives every department when it is a superuser or may manage all departments, otherwise exactly the departments of its data permissions; departments ZKBioTime names them *Department Manager* of count too, with those below them. Someone with neither sees a "no access" message. Filters: department (*All Departments*), employee, status, **Employee ID** search (e.g. `E993`, then Enter), From – To (today by default, up to 31 days). Cards: **Workforce** (selected by default), All Days and the My Attendance figures for everyone shown, plus total morning and afternoon punches. The table: one row per employee, **a column per date** (check-in, check-out, the day's late-in + early-out; amber when there are any), then Late In, Early Out and **Total Exceptions**; 50 employees per page, the header row and the employee column stay in view while scrolling. **Export PDF** under the table: every employee (all pages) as an A4 report on the letterhead, see below. |
 
 Day details (one day: check-in, check-out, time between, status, every punch with how it was
 counted, exceptions) open from the Dashboard, Attendance and Calendar pages; they are not a
 menu item type.
+
+**Export PDF (Manager Dashboard, 1.0.11).** The button under the table opens the report in a new
+tab and the browser's print dialog; choose **Save as PDF**. The report has the letterhead set in
+*Integration Settings → Report Letterhead* (logo or banner image, a line of text on each side
+under it, up to six footer lines on every page with clickable web and e-mail addresses, and the
+main colour), a title band with the period, the filters used, who printed it and when, the same
+cards and the table in the page's own colours, and page numbers. It is **A4 portrait** when every
+date fits (up to 6 days) and **A4 landscape** otherwise, the dates then split into tables of at
+most 12 days, each repeating the employee column, the totals in the last one. The header row
+repeats on every page, and an employee's row never breaks across pages. It is made by the browser,
+so no PDF library is installed on the server and Arabic text is shown correctly.
 
 **Design.** The pages use the same design as the ServiceDesk Plus portal: summary cards, panels,
 tables and coloured status pills, month navigation in the heading, and filters that apply as soon
@@ -71,10 +84,13 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 ### Administrator pages
 
 - **Integration Settings**: the connection to ZKBioTime's database (password encrypted), employee
-  mapping, modules, system settings; **Test Database**, **Close**, **Options**.
+  mapping, modules, the report letterhead, system settings; **Test Database**, **Close**,
+  **Options**.
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
   source filters, and pages. **New** (map by employee code), **Confirm**, **Suspend**,
-  **Re-match**. The status filter *No mapping yet* lists Joomla users that are not matched.
+  **Re-match**. The status filter *No mapping yet* lists Joomla users that are not matched, and
+  *Suspended / waiting for approval* the new matches by e-mail an administrator still has to
+  confirm (select several, **Confirm**).
 
 ## Requirements
 
@@ -101,8 +117,10 @@ newer package over the existing one also works; settings and mappings are kept.
 
 ### 1. Read-only database user
 
-Create a PostgreSQL user for the portal that may only read ZKBioTime's tables (step by step in
-[docs/DATABASE.md](docs/DATABASE.md)). The portal reads through this one user and enforces on
+Create a PostgreSQL user for the portal that may only read **the 23 tables it uses**, plus eight
+non-secret columns of ZKBioTime's users table `auth_user` for the Manager Dashboard (never the
+password); step by step, with the exact `GRANT` statements, in
+[docs/DATABASE.md](docs/DATABASE.md). The portal reads through this one user and enforces on
 the Joomla server that each employee only ever sees their own records.
 
 ### 2. Integration Settings
@@ -115,6 +133,7 @@ the Joomla server that each employee only ever sees their own records.
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. Since 1.0.10 every match by e-mail waits for an administrator to confirm it in User Mappings (Joomla does not verify e-mail changes). |
 | Modules | Charts | No longer used since 0.9.0 (My Dashboard has no Monthly Overview). |
+| Report Letterhead | Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), e.g. the whole letterhead banner; empty shows the site name. Footer: up to 6 lines. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
 | | Date format, Time format | How the portal shows dates and times. |
@@ -170,7 +189,24 @@ late-in and early-out once ZKBioTime has calculated it (Auto Calculate, e.g. nig
 later days show their schedule from the employee's shift. Details:
 [docs/DATABASE.md](docs/DATABASE.md).
 
-### 5. Permissions
+### 5. Manager Dashboard access
+
+Give the managers' Joomla group the permission *View Manager Dashboard*; ZKBioTime decides which
+departments each manager sees (1.0.8). ZKBioTime has **employees** (the people who punch) and
+**users** (the accounts that log in to ZKBioTime, `auth_user`). The portal finds the manager's
+ZKBioTime user by, in order:
+
+- the user's employee link (`emp_pin`) or **username** equal to the manager's **employee ID**;
+- the user's **e-mail** or **username** equal to the **e-mail of the manager's employee record**
+  in ZKBioTime (a username that is an e-mail address, with the e-mail field empty, also works).
+
+Only active, not deleted users count. A **superuser** or a user that may manage all departments
+sees every department; any other user exactly the departments of its *data permissions*
+(`auth_user_auth_dept`). The Joomla profile e-mail is never used (users can change it). The
+departments and team are kept for the cache time, so a change in ZKBioTime shows within it.
+When a manager sees "no access", `administrator/logs/com_biotime.php` says why (no names).
+
+### 6. Permissions
 
 All administrator pages need **core.admin** (Super User level) on the component.
 
@@ -203,12 +239,17 @@ it, and it survives logging out. Each entry belongs to one Joomla user and one e
   is on; *Cache time* 0 turns everything off.)
 - Expired entries are deleted automatically; the table holds only what was read recently (a few KB
   per employee and month, a few MB for a whole school).
-- **One connection per page load**: all queries of a page share one read-only connection to
-  ZKBioTime's database, opened when first needed.
+- **One connection, kept open**: all queries of a page share one read-only connection to
+  ZKBioTime's database, opened when first needed and kept open between pages (a persistent
+  connection, 1.0.10), so a page does not wait for a new encrypted connection. A closed one is
+  replaced once automatically.
+- **Manager Dashboard**: the whole team is read in a few queries (not per employee), without the
+  per-user cache; the manager's departments and team list are kept for the cache time.
 - **Daily employee check**: once a day each user's mapping is checked against ZKBioTime. If
   ZKBioTime does not answer, the check is tried again after an hour, not on every page.
 
-Pages show "Updated hh:mm" (when ZKBioTime was read).
+With *Detailed logging* on, each page's log line ends with `database: connect X ms, N queries,
+Y ms; page: Z ms`, to see where the time goes.
 
 Database reads per page load, for one month (cold cache; a warm cache reads **nothing**):
 
@@ -233,6 +274,13 @@ Database reads per page load, for one month (cold cache; a warm cache reads **no
 - Every state-changing action is a POST with a CSRF token and a permission check; database
   tests are limited per administrator and hour.
 - Portal pages are `noindex, nofollow` and sent with `Cache-Control: no-store`.
+- **New matches by e-mail wait for an administrator** (1.0.10): Joomla lets users change their own
+  e-mail without verifying it, so a match by e-mail is held as *Suspended / waiting for approval*
+  until an administrator confirms it in User Mappings.
+- The Manager Dashboard shows only what ZKBioTime grants the manager's own ZKBioTime user; filters
+  in the URL can only narrow that list.
+- The database user reads only the tables the portal needs, and of `auth_user` only eight
+  non-secret columns; only reading statements are ever sent (also inside `WITH`).
 - Input is checked against strict patterns and whitelists; all output is escaped.
 - The integration is read-only: the database connection is opened read only, and the user should only be allowed to read (Test Database checks it).
 
@@ -249,6 +297,8 @@ Passwords and personal data are never written to it. With *Detailed logging* off
 | did not accept the portal's credentials | The database user and password (and `pg_hba.conf`) |
 | is not available right now | The database name, and that the read-only user may read the tables (**Test Database**) |
 | could not find what was asked for | No (or more than one) employee in ZKBioTime has the user's mapped employee code |
+| You don't have access to view departments (Manager Dashboard) | The manager's ZKBioTime user (see *Manager Dashboard access*), its data permissions, and the `auth_user` grant (docs/DATABASE.md); the log line says which one is missing |
+| Colours or the letterhead missing in the PDF | Turn on *Background graphics* in the print dialog; set the logo and texts in *Integration Settings → Report Letterhead* |
 | Your account could not be matched | **User Mappings**: the user's status (Not found / Ambiguous / Suspended) and employee code field |
 | a working day shows Absent although the person was there | No punch was recorded that day (check the device in ZKBioTime), or the day should be a weekend day (*Weekend days*). A holiday shows as Holiday only when it is set up in ZKBioTime. |
 

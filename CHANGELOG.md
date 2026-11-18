@@ -3,6 +3,18 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.11] - 2026-11-18
+
+### Added
+- **Manager Dashboard: Export PDF.** A button under the table (left) opens the report in a new tab with the browser's print dialog ("Save as PDF"). The report has the organisation's letterhead (logo, a line of text on each side under it, footer lines on every page with links), a title band with the period, the filters used, who printed it and when, the same cards and table in the page's colours, page numbers, and **every employee**, not only the 50 of one page. **A4 portrait** when the dates fit (up to 6 days), **landscape** otherwise, with the dates in tables of at most 12 days (employee column repeated, totals in the last one); the header row repeats on every page and a row is never split.
+- **Integration Settings → Report Letterhead**: logo (an image of the Media Manager, below `images/`), header text left and right (right-to-left text supported), up to 6 footer lines, main colour.
+
+### Fixed
+- **Manager Dashboard: white space under the site footer** once data showed. With templates that position the page's content, the hidden screen-reader labels of the times in rows scrolled out of the table's box made the page as tall as the whole table. The table's box now contains everything inside it.
+
+### Changed
+- README updated to the current features (cards, statistics, Manager Dashboard access by ZKBioTime users, Export PDF, approval of new matches, database grants, performance).
+
 ## [1.0.10] - 2026-11-18
 
 ### Security

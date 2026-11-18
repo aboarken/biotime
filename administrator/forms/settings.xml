@@ -22,6 +22,19 @@
         </field>
     </fieldset>
 
+    <fieldset name="report" label="COM_BIOTIME_SETTINGS_FIELDSET_REPORT">
+        <field name="report_logo" type="media" label="COM_BIOTIME_SETTINGS_REPORT_LOGO" description="COM_BIOTIME_SETTINGS_REPORT_LOGO_DESC"
+               types="images" preview="tooltip" />
+        <field name="report_header_left" type="text" label="COM_BIOTIME_SETTINGS_REPORT_HEADER_LEFT" description="COM_BIOTIME_SETTINGS_REPORT_HEADER_LEFT_DESC"
+               filter="string" size="50" maxlength="200" />
+        <field name="report_header_right" type="text" label="COM_BIOTIME_SETTINGS_REPORT_HEADER_RIGHT" description="COM_BIOTIME_SETTINGS_REPORT_HEADER_RIGHT_DESC"
+               filter="string" size="50" maxlength="200" />
+        <field name="report_footer" type="textarea" label="COM_BIOTIME_SETTINGS_REPORT_FOOTER" description="COM_BIOTIME_SETTINGS_REPORT_FOOTER_DESC"
+               filter="string" rows="4" cols="60" />
+        <field name="report_color" type="color" label="COM_BIOTIME_SETTINGS_REPORT_COLOR" description="COM_BIOTIME_SETTINGS_REPORT_COLOR_DESC"
+               default="#1d3f74" />
+    </fieldset>
+
     <fieldset name="database" label="COM_BIOTIME_SETTINGS_FIELDSET_DATABASE">
         <field name="db_engine" type="list" label="COM_BIOTIME_SETTINGS_DB_ENGINE" description="COM_BIOTIME_SETTINGS_DB_ENGINE_DESC" default="" validate="options">
             <option value="">COM_BIOTIME_SETTINGS_DB_ENGINE_OFF</option>
