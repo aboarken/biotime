@@ -13,9 +13,10 @@ namespace BiotimePortal\Component\Biotime\Administrator\Database;
 
 /**
  * Manager Dashboard (1.0.0): the departments and employees a manager may see, read from
- * ZKBioTime's database (read-only). A manager sees their own department and every department
- * below it (personnel_department.parent_dept_id), and the employees in them who have not resigned
- * (personnel_resign) by the given date. Names only: no other personal data is read.
+ * ZKBioTime's database (read-only). A manager sees the departments ZKBioTime names them Department
+ * Manager of (personnel_department.dept_manager_id, 1.0.2) and every department below those
+ * (parent_dept_id), and the employees in them who have not resigned (personnel_resign) by the
+ * given date. Names only: no other personal data is read.
  */
 final class TeamReader
 {
@@ -30,6 +31,30 @@ final class TeamReader
      */
     public function __construct(private readonly \Closure $connect)
     {
+    }
+
+    /**
+     * The departments this employee manages in ZKBioTime (personnel_department.dept_manager_id,
+     * the department's "Department Manager"), by id; [] when none, or when this ZKBioTime version
+     * has no department managers.
+     *
+     * @return list<int>
+     *
+     * @throws DbException when the database cannot be reached
+     */
+    public function managedDepartments(int $employeeId): array
+    {
+        try {
+            $rows = $this->q()->rows('SELECT id FROM personnel_department WHERE dept_manager_id = :emp ORDER BY id', [':emp' => $employeeId]);
+        } catch (DbException $e) {
+            if ($e->getKind() !== DbException::QUERY) {
+                throw $e;
+            }
+
+            return [];
+        }
+
+        return array_values(array_unique(array_map(static fn (array $r): int => (int) $r['id'], $rows)));
     }
 
     /**

@@ -16,6 +16,14 @@ namespace BiotimePortal\Component\Biotime\Administrator\Database;
  */
 class Query
 {
+    /** Queries run and the time they took this request, for the page's log line (1.0.2). */
+    public static int $count = 0;
+
+    public static float $seconds = 0.0;
+
+    /** Time spent connecting (with the TLS handshake) this request. */
+    public static float $connectSeconds = 0.0;
+
     public function __construct(private readonly ?\PDO $pdo, public readonly string $engine)
     {
     }
@@ -37,6 +45,8 @@ class Query
             throw new \LogicException('No connection');
         }
 
+        $start = microtime(true);
+
         try {
             $statement = $this->pdo->prepare($sql);
             $statement->execute($params);
@@ -44,6 +54,9 @@ class Query
             return array_values($statement->fetchAll(\PDO::FETCH_ASSOC));
         } catch (\PDOException $e) {
             throw DbException::fromDriver($e, 'query');
+        } finally {
+            self::$count++;
+            self::$seconds += microtime(true) - $start;
         }
     }
 

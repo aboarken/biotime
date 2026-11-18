@@ -52,6 +52,13 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.2 – Department Manager, scrolling, rate bars
+- [ ] In ZKBioTime, set a manager's employee as Department Manager of a department: the Manager Dashboard lists that department and those below it. An employee who manages no department sees "You don't have access to view departments …".
+- [ ] Total Morning Punches and Total Afternoon Punches cards; the table's sideways scrollbar is visible without scrolling down; the date row and employee column stay while scrolling.
+- [ ] My Dashboard: Attendance rate per month as bars (red < 70 %, yellow 70–94 %, green ≥ 95 %).
+- [ ] My Attendance: choose Days Absent, then another month (list or arrow) or a From date: all days are shown again.
+- [ ] With Detailed logging on, `administrator/logs/com_biotime.php` lines end with "database: connect … ms, N queries, … ms; page: … ms".
+
 ### 1.0.1 – Faster Manager Dashboard, dates as columns
 - [ ] Manager Dashboard with a whole department and a month: opens within a few seconds (it was much slower in 1.0.0).
 - [ ] One row per employee; a column per date with check-in and check-out (or the day's status); a day with late-in or early-out is amber with its minutes; Late In, Early Out and Total for the period at the end. The table scrolls sideways and the employee column stays.

@@ -110,20 +110,22 @@ final class AttendanceServiceTest extends TestCase
         };
 
         return new CatalogueQuery('pgsql', [
-            'FROM personnel_employee' => $answer('FROM personnel_employee', static fn (array $p): array => match ($p[':code']) {
-                'E1'    => [['id' => 1, 'department_id' => 10, 'first_name' => 'Alice', 'last_name' => 'A', 'dept_name' => 'IT', 'position_name' => 'Developer', 'hire_date' => '2024-09-01']],
-                'E2'    => [['id' => 2, 'department_id' => 10, 'first_name' => 'Bob', 'last_name' => 'B', 'dept_name' => 'IT', 'position_name' => 'Tester', 'hire_date' => null]],
+            // One code (:code) or several read ahead together (:c0, :c1, ...; 1.0.2).
+            'FROM personnel_employee' => $answer('FROM personnel_employee', static fn (array $p): array => array_merge([], ...array_map(static fn (string $code): array => match ($code) {
+                'E1'    => [['id' => 1, 'emp_code' => 'E1', 'department_id' => 10, 'first_name' => 'Alice', 'last_name' => 'A', 'dept_name' => 'IT', 'position_name' => 'Developer', 'hire_date' => '2024-09-01']],
+                'E2'    => [['id' => 2, 'emp_code' => 'E2', 'department_id' => 10, 'first_name' => 'Bob', 'last_name' => 'B', 'dept_name' => 'IT', 'position_name' => 'Tester', 'hire_date' => null]],
                 default => [],
-            }),
+            }, isset($p[':code']) ? [$p[':code']] : array_values(array_filter($p, static fn (string $k): bool => preg_match('/^:c\d+$/', $k) === 1, ARRAY_FILTER_USE_KEY))))),
             'FROM att_attemployee'    => [],
             // Only the month asked for, but every employee (the service checks the code itself).
             'FROM iclock_transaction' => $answer('FROM iclock_transaction', fn (array $p): array => array_values(array_filter(
                 $this->punches,
                 static fn (array $r): bool => $r['punch_time'] >= $p[':from'] && $r['punch_time'] < $p[':to']
             ))),
-            'FROM att_payloadbase'    => $answer('FROM att_payloadbase', fn (array $p): array => $p[':emp'] !== 1 ? [] : array_values(array_filter(
-                $this->base,
-                static fn (array $r): bool => $r['att_date'] >= $p[':from'] && $r['att_date'] <= $p[':to']
+            // Alice's rows (emp_id 1), asked for alone (:emp) or read ahead with others (k).
+            'FROM att_payloadbase'    => $answer('FROM att_payloadbase', fn (array $p): array => ($p[':emp'] ?? 1) !== 1 ? [] : array_values(array_map(
+                static fn (array $r): array => $r + ['k' => 1],
+                array_filter($this->base, static fn (array $r): bool => $r['att_date'] >= $p[':from'] && $r['att_date'] <= $p[':to'])
             ))),
             'FROM att_holiday'        => $answer('FROM att_holiday', fn (): array => $this->holidays),
             // Time cards, pay codes and schedules: not on this server (optional tables).
@@ -370,22 +372,25 @@ final class AttendanceServiceTest extends TestCase
 
     public function testPastMonthsAreKeptForADayTheCurrentMonthForTheCacheTime(): void
     {
-        $time    = strtotime('2026-11-20 12:00:00 UTC');
-        $service = $this->service(300, '2026-11-20 12:00:00', [5, 6], static function () use (&$time): int {
-            return $time;
-        });
-        $range = fn () => $service->range($this->alice, new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-20'));
+        $time  = strtotime('2026-11-20 12:00:00 UTC');
+        // Each call is a new page load: a new service and reader, the same cache.
+        $range = function () use (&$time): void {
+            $this->service(300, '2026-11-20 12:00:00', [5, 6], static function () use (&$time): int {
+                return $time;
+            })->range($this->alice, new \DateTimeImmutable('2026-10-01'), new \DateTimeImmutable('2026-11-20'));
+        };
 
         $range();
-        self::assertSame(2, $this->reads(), 'October and November read');
+        self::assertSame(1, $this->reads(), 'October and November read together (1.0.2)');
 
         $time += 600; // 10 minutes later: past the 5-minute cache time
         $range();
-        self::assertSame(3, $this->reads(), 'only November (the current month) is read again');
+        self::assertSame(2, $this->reads(), 'only November (the current month) is read again');
+        self::assertSame('2026-11-01 00:00:00', $this->params['FROM iclock_transaction'][1][':from']);
 
-        $time += 86400; // a day later: October is read again too
+        $time += 86400; // a day later: October is read again too, together with November
         $range();
-        self::assertSame(5, $this->reads());
+        self::assertSame(3, $this->reads());
     }
 
     public function testOneFailingPartDoesNotHideTheOthers(): void
@@ -422,7 +427,8 @@ final class AttendanceServiceTest extends TestCase
         $period = $this->service()->range($this->alice, new \DateTimeImmutable('2026-10-25'), new \DateTimeImmutable('2026-11-03'));
 
         self::assertCount(10, $period->days);
-        self::assertSame(2, $this->reads());
+        self::assertSame(1, $this->reads(), 'both months in one read (1.0.2)');
+        self::assertSame(['2026-10-01 00:00:00', '2026-12-01 00:00:00'], [$this->params['FROM iclock_transaction'][0][':from'], $this->params['FROM iclock_transaction'][0][':to']]);
         self::assertSame('2026-10-25', $period->from);
         self::assertSame('Late Shift', $period->day('2026-11-03')->schedule);
     }

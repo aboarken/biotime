@@ -69,6 +69,9 @@ final class AttendanceService
     /** @var array<string, array{read: int, hidden: int, skipped: int, cached: int, error: ?string, state: string}> */
     private array $stats = [];
 
+    /** @var array<string, ?array<string, mixed>> cache entries already looked up by range() */
+    private array $peek = [];
+
     /**
      * @param \Closure(): AttendanceReader           $database    ZKBioTime's database, opened when first needed
      * @param \DateTimeZone                         $serverZone  ZKBioTime server time zone; times are shown as recorded
@@ -189,6 +192,28 @@ final class AttendanceService
         $data = [self::TYPE_PUNCHES => [], self::TYPE_DAILY => []];
         $errors  = [];
         $fetched = null;
+
+        // Months not in the cache are read ahead together (1.0.2): about ten queries for all of
+        // them instead of about fifteen per month (My Dashboard reads up to a school year).
+        $missing = [];
+
+        for ($m = $from->modify('first day of this month'); $m <= $to; $m = $m->modify('first day of next month')) {
+            foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY] as $type) {
+                $key = self::cacheKey($type, (int) $m->format('Y'), (int) $m->format('n'));
+
+                if (($this->peek[$key] = $this->cache->get($identity, $key)) === null) {
+                    $missing[$m->format('Y-m')] = $m;
+                }
+            }
+        }
+
+        if (\count($missing) >= 2 && $identity->isMatched()) {
+            try {
+                ($this->database)()->preload([$identity->empCode()], reset($missing), end($missing)->modify('last day of this month'));
+            } catch (DbException) {
+                // Each month is then read on its own and its error shown as usual.
+            }
+        }
 
         for ($m = $from->modify('first day of this month'); $m <= $to; $m = $m->modify('first day of next month')) {
             foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY] as $type) {
@@ -357,14 +382,20 @@ final class AttendanceService
      *
      * @return array{rows: list<array<string, mixed>>, at: ?int, error: ?string}
      */
+    private static function cacheKey(string $type, int $year, int $month): string
+    {
+        return 'db' . self::CACHE_VERSION . ':' . $type . ':' . \sprintf('%04d-%02d', $year, $month);
+    }
+
     private function monthRows(Identity $identity, string $type, int $year, int $month): array
     {
         $stat = &$this->stats[$type];
         $stat ??= ['read' => 0, 'hidden' => 0, 'skipped' => 0, 'cached' => 0, 'error' => null, 'state' => 'ok'];
 
         // Rows of older versions are never read from the cache (CACHE_VERSION).
-        $key    = 'db' . self::CACHE_VERSION . ':' . $type . ':' . \sprintf('%04d-%02d', $year, $month);
-        $cached = $this->cache->get($identity, $key);
+        $key    = self::cacheKey($type, $year, $month);
+        $cached = \array_key_exists($key, $this->peek) ? $this->peek[$key] : $this->cache->get($identity, $key);
+        unset($this->peek[$key]);
 
         if ($cached !== null && isset($cached['rows'], $cached['at'])) {
             $stat['cached']++;

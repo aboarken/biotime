@@ -171,12 +171,20 @@ abstract class PortalModel extends BaseModel
                     : \sprintf('%s: %d read%s, %d hidden (other employee), %d skipped (unreadable)', $type, $s['read'], $s['cached'] > 0 ? ' (cached)' : '', $s['hidden'], $s['skipped']));
         }
 
+        $q = \BiotimePortal\Component\Biotime\Administrator\Database\Query::class;
+
+        // How long the page waited for ZKBioTime's database (1.0.2): a slow page with many
+        // queries or a long total points at the connection to the BioTime server.
         $this->biotime()->getLogger()->info(\sprintf(
-            'Page %s %s, Joomla user %d: %s',
+            'Page %s %s, Joomla user %d: %s; database: connect %d ms, %d queries, %d ms; page: %d ms',
             $view,
             $context,
             (int) Factory::getApplication()->getIdentity()?->id,
-            $parts !== [] ? implode('; ', $parts) : 'nothing read'
+            $parts !== [] ? implode('; ', $parts) : 'nothing read',
+            (int) round($q::$connectSeconds * 1000),
+            $q::$count,
+            (int) round($q::$seconds * 1000),
+            (int) round((microtime(true) - (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true))) * 1000)
         ));
     }
 

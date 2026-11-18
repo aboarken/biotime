@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS personnel_employee, personnel_department, personnel_positio
   att_attschedule, att_groupschedule, att_departmentschedule, att_temporaryschedule, att_tempschedule,
   att_payloadtimecard, att_payloadpaycode, att_payloadattcode, iclock_terminal, iclock_terminalemployee CASCADE;
 
-CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200), parent_dept_id integer);
+CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200), parent_dept_id integer, dept_manager_id integer);
 CREATE TABLE personnel_resign (id integer PRIMARY KEY, resign_date date, resign_type integer, disableatt boolean, reason varchar(200), employee_id integer);
 CREATE TABLE personnel_position (id integer PRIMARY KEY, position_code varchar(50), position_name varchar(100));
 CREATE TABLE personnel_employee (id integer PRIMARY KEY, emp_code varchar(20), first_name varchar(100), last_name varchar(100), email varchar(50),
@@ -43,8 +43,9 @@ CREATE TABLE iclock_terminalemployee (id integer PRIMARY KEY, terminal_sn varcha
 CREATE TABLE att_holiday (id integer PRIMARY KEY, alias varchar(50), start_date date, duration_day smallint, end_date date,
   att_group_id integer, department_id integer);
 
--- Human Resources sits below Information Technology (Manager Dashboard); Bob resigns on 1 January 2027.
-INSERT INTO personnel_department VALUES (10, 'IT', 'Information Technology', NULL), (11, 'HR', 'Human Resources', 10);
+-- Human Resources sits below Information Technology, whose Department Manager is Alice (Manager
+-- Dashboard); Bob manages nothing and resigns on 1 January 2027.
+INSERT INTO personnel_department VALUES (10, 'IT', 'Information Technology', NULL, 1), (11, 'HR', 'Human Resources', 10, NULL);
 INSERT INTO personnel_resign VALUES (1, '2027-01-01', 0, true, NULL, 2);
 INSERT INTO personnel_position VALUES (20, 'DEV', 'Developer');
 INSERT INTO personnel_employee VALUES (1, 'E1', 'Alice', 'A', 'a@example.com', '2024-09-01', 10, 20), (2, 'E2', 'Bob', 'B', 'b@example.com', NULL, 11, NULL);

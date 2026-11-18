@@ -9,7 +9,7 @@
  *  2. Days per month (stacked columns): present, absent, holiday, leave.
  *  3. Late in and early out per month (grouped columns, minutes).
  *  4. Average check-in and check-out per month (a floating column from check-in to check-out).
- *  5. Attendance rate per month (a small card per month, 1.0.0).
+ *  5. Attendance rate per month (a horizontal bar per month: red below 70 %, yellow to 95 %, green).
  *  6. Devices used, punches split by fingerprint and face (1.0.0).
  *
  * Colours: the portal's tones (validated together for colour-blind separation): green present,
@@ -221,9 +221,9 @@ if ($known !== []) {
     $lines .= $xLabels();
 }
 
-// 5. Attendance rate per month: one small card per month (present of working days), coloured
-// green from 90 %, amber from 75 %, red below; the percentage is always written.
-$rateTone = static fn (?int $r): string => $r === null ? 'muted' : ($r >= 90 ? 'green' : ($r >= 75 ? 'amber' : 'red'));
+// 5. Attendance rate per month: a horizontal bar per month, like Your Devices (1.0.2): red below
+// 70 %, yellow from 70 % to below 95 %, green from 95 %; the percentage is always written.
+$rateColor = static fn (?int $r): string => $r === null ? '#9ca3af' : ($r >= 95 ? '#15803d' : ($r >= 70 ? '#eab308' : '#dc2626'));
 
 // 6. Devices used: every device the employee punches on (or is registered on), its punches split
 // by fingerprint and face.
@@ -275,21 +275,21 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
             );
         }
 
-        $tiles = '<div class="bt-rate-months">';
+        $tiles = '<div class="bt-devices">';
 
         foreach ($months as $m) {
             $r      = $m['summary']->rate;
-            $tiles .= '<div class="bt-rate-month bt-tone-' . $rateTone($r) . '" title="' . $e($long($m) . ': ' . Text::_('COM_BIOTIME_CARD_RATE') . ' ' . ($r === null ? '—' : $r . '%')) . '">'
-                . '<span class="bt-rate-name">' . $e($short($m)) . '</span>'
-                . '<span class="bt-rate-value">' . ($r === null ? '—' : $r . '<small>%</small>') . '</span>'
-                . '<span class="bt-rate-track"><span style="width:' . (int) ($r ?? 0) . '%"></span></span>'
-                . '<span class="bt-rate-note">' . $e(Text::sprintf('COM_BIOTIME_CHART_PRESENT_OF', $m['summary']->presentDays, $m['summary']->workingDays)) . '</span></div>';
+            $tiles .= '<div class="bt-device" title="' . $e($long($m) . ': ' . Text::_('COM_BIOTIME_CARD_RATE') . ' ' . ($r === null ? '—' : $r . '%') . ' · ' . Text::sprintf('COM_BIOTIME_CHART_PRESENT_OF', $m['summary']->presentDays, $m['summary']->workingDays)) . '">'
+                . '<span class="bt-device-name">' . $e($long($m)) . '</span>'
+                . '<span class="bt-device-track">' . ($r ? '<span style="width:' . min(100, (int) $r) . '%;background:' . $rateColor($r) . '"></span>' : '') . '</span>'
+                . '<span class="bt-device-total">' . ($r === null ? '—' : $r . '%') . '</span></div>';
         }
 
         echo $chart(
             Text::_('COM_BIOTIME_CHART_RATE_PER_MONTH'),
             implode('; ', array_map(static fn (array $m): string => $long($m) . ': ' . ($m['summary']->rate ?? '—') . '%', $months)),
-            $tiles . '</div>'
+            $tiles . '</div>',
+            $legend([['#dc2626', Text::_('COM_BIOTIME_CHART_RATE_LOW'), null], ['#eab308', Text::_('COM_BIOTIME_CHART_RATE_MID'), null], ['#15803d', Text::_('COM_BIOTIME_CHART_RATE_HIGH'), null]])
         );
 
         $rows = '<div class="bt-devices">';

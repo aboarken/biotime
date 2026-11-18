@@ -61,6 +61,11 @@ final class HtmlView extends BaseHtmlView
      */
     public array $rows = [];
 
+    /** Days with a check-in (morning punches) and with a check-out (afternoon punches), 1.0.2. */
+    public int $morningPunches = 0;
+
+    public int $afternoonPunches = 0;
+
     /** @var list<string> the period's dates up to today, the table's columns */
     public array $dates = [];
 
@@ -106,6 +111,8 @@ final class HtmlView extends BaseHtmlView
 
                     foreach ($read['days'][$e['emp_code']] ?? [] as $day) {
                         $all[]                   = $day;
+                        $this->morningPunches   += $day->checkIn !== null ? 1 : 0;
+                        $this->afternoonPunches += $day->checkOut !== null ? 1 : 0;
                         $row['days'][$day->date] = $day;
                         $row['late']            += $day->late ?? 0;
                         $row['early']           += $day->early ?? 0;
