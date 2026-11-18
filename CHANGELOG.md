@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.17] - 2026-11-18
+
+### Changed
+- **Manager Dashboard export buttons**: *Export PDF (A4)* first, then *Export PDF (A3)*, A4 in the portal's blue and A3 in green; the note beside them says what each paper does (A4: up to 12 days per table, a longer period in parts; A3: the whole period in one table, one row per employee).
+
 ## [1.0.16] - 2026-11-18
 
 ### Added
