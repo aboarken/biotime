@@ -9,6 +9,7 @@
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
+use BiotimePortal\Component\Biotime\Site\View\Manager\ReportColumns;
 use Joomla\CMS\Uri\Uri;
 
 /** @var \BiotimePortal\Component\Biotime\Site\View\Manager\HtmlView $this */
@@ -31,9 +32,9 @@ $labels = $this->statusLabels();
 $app    = Factory::getApplication();
 $site   = trim((string) $app->get('sitename', ''));
 
-// The paper: A4 landscape (1.0.14), and the main colour.
+// The paper: A4 or A3 (1.0.16), always landscape (1.0.14), and the main colour.
 $this->getDocument()->getWebAssetManager()->addInlineStyle(
-    '@page { size: A4 landscape; }'
+    '@page { size: ' . ($this->paper === 'a3' ? 'A3' : 'A4') . ' landscape; }'
     . ' .com-biotime.bt-report { --bt-report: ' . $head['color'] . '; --bt-foot-h: ' . ($head['footer'] === [] ? 0 : 4 + 4.2 * min(\count($head['footer']), 6)) . 'mm; }'
 );
 
@@ -76,7 +77,7 @@ $meta = [
     [Text::_('COM_BIOTIME_REPORT_PRINTED'), trim($this->printedAt . ($this->printedBy !== '' ? ' · ' . $this->printedBy : ''))],
 ];
 ?>
-<div class="com-biotime bt-report bt-report--landscape" data-bt-root="manager-report" data-bt-report data-autoprint="<?php echo $this->problem === '' && $this->tooMany === 0 ? '1' : '0'; ?>">
+<div class="com-biotime bt-report bt-report--landscape bt-report--<?php echo $this->paper; ?><?php echo max(array_map('count', $this->dateChunks ?: [[]])) > ReportColumns::A4 ? ' bt-report--dense' : ''; ?>" data-bt-root="manager-report" data-bt-report data-autoprint="<?php echo $this->problem === '' && $this->tooMany === 0 ? '1' : '0'; ?>">
     <div class="bt-report-tools">
         <button type="button" class="bt-btn" data-bt-print><?php echo Text::_('COM_BIOTIME_REPORT_PRINT'); ?></button>
         <button type="button" class="bt-btn bt-btn--ghost" data-bt-close><?php echo Text::_('COM_BIOTIME_REPORT_CLOSE'); ?></button>

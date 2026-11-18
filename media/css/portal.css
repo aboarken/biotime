@@ -1376,6 +1376,41 @@
   max-width: 297mm;
 }
 
+/* A3 (1.0.16): the whole period in one table */
+.com-biotime.bt-report--a3 {
+  max-width: 420mm;
+}
+
+.com-biotime.bt-report--landscape.bt-report--a3 .bt-report-cards.bt-stats {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+
+/* More than 12 days in one table (A3): smaller text and padding, so 31 days fit the page */
+.com-biotime.bt-report--dense .bt-report-table {
+  font-size: 6.5pt;
+}
+
+.com-biotime.bt-report--dense .bt-report-table thead th {
+  padding: 1.25mm 0.6mm;
+  font-size: 6pt;
+}
+
+.com-biotime.bt-report--dense .bt-report-table td,
+.com-biotime.bt-report--dense .bt-report-table tbody th {
+  padding: 1mm 0.6mm;
+}
+
+.com-biotime.bt-report--dense .bt-report-table .bt-badge {
+  padding: 0.2mm 0.8mm;
+  font-size: 5.5pt;
+  white-space: nowrap;
+}
+
+.com-biotime.bt-report--dense .bt-report-table .bt-mgr-mins,
+.com-biotime.bt-report--dense .bt-report-table .bt-sub {
+  font-size: 5.5pt;
+}
+
 .com-biotime .bt-report-tools {
   display: flex;
   flex-wrap: wrap;

@@ -110,6 +110,9 @@ final class HtmlView extends BaseHtmlView
      */
     public array $dateChunks = [];
 
+    /** The report's paper (1.0.16): 'a4' or 'a3', always landscape (ReportColumns). */
+    public string $paper = 'a4';
+
     /** @var array{logo: string, left: string, right: string, footer: list<string>, color: string} */
     public array $letterhead = ['logo' => '', 'left' => '', 'right' => '', 'footer' => [], 'color' => '#1d3f74'];
 
@@ -182,7 +185,8 @@ final class HtmlView extends BaseHtmlView
 
                 if ($this->report) {
                     // The report has every row; its dates are cut into tables that fit the paper.
-                    $this->dateChunks = ReportColumns::of($this->dates);
+                    $this->paper      = ReportColumns::paper($input->getCmd('paper', 'a4'));
+                    $this->dateChunks = ReportColumns::of($this->dates, $this->paper);
                 } else {
                     $this->pages = max(1, (int) ceil($this->rowCount / self::PAGE_SIZE));
                     $this->page  = min(max(1, $input->getInt('page', 1)), $this->pages);
