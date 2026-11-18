@@ -186,6 +186,7 @@ group (or the group your employees are in). Without them users get "You are not 
 | `zkb.calendar.view` | Attendance Calendar (and day details) |
 | `zkb.punches.view` | My Punches |
 | `zkb.manager.view` | Manager Dashboard (give it only to the managers' group) |
+| `zkb.manager.all` | Manager Dashboard shows every department, not only those the user manages in ZKBioTime (administrators and HR; Super Users always have it) |
 
 My Dashboard also opens day details. Updating from 0.3.x moves menu items of the removed My
 Schedules, Attendance Reports and My Profile pages to the trash; updating from 0.4.0 or 0.4.1 turns

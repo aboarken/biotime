@@ -52,6 +52,12 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.3 – Leaves, Days Present, View all departments
+- [ ] My Attendance, My Dashboard and Manager Dashboard show a **Leaves** card; clicking it lists only leave days.
+- [ ] A **Weekends** card shows the weekend days so far; Present + Absent + Leaves + Holidays + Weekends = All Days.
+- [ ] Days Present reads present / (present + absent); a leave day changes neither number. All Days = Present + Absent + Leaves + Holidays + weekend days.
+- [ ] A Super User (or a group with View all departments) opens the Manager Dashboard and sees every department; a manager without it sees only the departments they manage in ZKBioTime.
+
 ### 1.0.2 – Department Manager, scrolling, rate bars
 - [ ] In ZKBioTime, set a manager's employee as Department Manager of a department: the Manager Dashboard lists that department and those below it. An employee who manages no department sees "You don't have access to view departments …".
 - [ ] Total Morning Punches and Total Afternoon Punches cards; the table's sideways scrollbar is visible without scrolling down; the date row and employee column stay while scrolling.

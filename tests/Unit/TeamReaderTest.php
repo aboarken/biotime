@@ -110,6 +110,7 @@ final class TeamReaderTest extends TestCase
 
         self::assertSame([10], $team->managedDepartments(1), 'Alice is the Department Manager of IT');
         self::assertSame([], $team->managedDepartments(2), 'Bob manages nothing');
+        self::assertSame([10], $team->topDepartments(), 'View all departments: IT is the only top department (HR is below it)');
         self::assertSame([[10, 0], [11, 1]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(10)), 'IT and HR below it');
         self::assertSame([[11, 0]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(11)), 'HR alone');
         self::assertSame(['E2', 'E1'], array_column($team->employees([10, 11], '2026-11-18'), 'emp_code'), 'by department name: Human Resources, then Information Technology');
