@@ -56,6 +56,7 @@ those releases.
 - [ ] Change your Joomla profile e-mail to a ZKBioTime administrator's: the Manager Dashboard still shows only your own departments (then change it back).
 - [ ] After narrowing the database user (docs/DATABASE.md), every portal page and Test Database still work; `SELECT count(*) FROM django_session` as `joomla_portal` is refused.
 - [ ] Integration Settings: change only the SSL mode and save: the database password must be entered again.
+- [ ] A Joomla user who never opened the portal opens it: "…waiting for an administrator to approve it"; User Mappings shows them as Suspended / waiting for approval with their employee; Confirm: the portal opens for them. An employee already matched before the update is not affected.
 
 ### 1.0.10 – Workforce default
 - [ ] With Detailed logging on, the second page load shows a connect time near 0 ms (the connection is kept); restart PostgreSQL on the BioTime server, reload: the page still works.

@@ -113,7 +113,7 @@ the Joomla server that each employee only ever sees their own records.
 | | Duration unit | Automatic by default. |
 | | Connection timeout, Query timeout | Seconds; connection ≤ query. |
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
-| | Match by e-mail when the field is empty | On by default. |
+| | Match by e-mail when the field is empty | On by default. Since 1.0.10 every match by e-mail waits for an administrator to confirm it in User Mappings (Joomla does not verify e-mail changes). |
 | Modules | Charts | No longer used since 0.9.0 (My Dashboard has no Monthly Overview). |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |

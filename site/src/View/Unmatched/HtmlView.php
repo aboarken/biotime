@@ -22,10 +22,20 @@ final class HtmlView extends BaseHtmlView
 {
     public string $kind = '';
 
+    /** Matched by e-mail and waiting for an administrator to confirm it (1.0.10). */
+    public bool $pending = false;
+
     public function display($tpl = null): void
     {
         $kind       = Factory::getApplication()->getInput()->getCmd('kind', '');
         $this->kind = \in_array($kind, SourceException::KINDS, true) ? $kind : '';
+
+        $component = Factory::getApplication()->bootComponent('com_biotime');
+        $mapping   = $component instanceof \BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent
+            ? $component->getUserMapRepository()->find((int) Factory::getApplication()->getIdentity()?->id)
+            : null;
+        $this->pending = $mapping !== null && $mapping->status === \BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::STATUS_SUSPENDED
+            && $mapping->employeeId !== null && $mapping->source === \BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::SOURCE_AUTO;
 
         $document = $this->getDocument();
         $document->setMetaData('robots', 'noindex, nofollow');

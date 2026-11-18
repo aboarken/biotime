@@ -127,11 +127,10 @@ final class IdentityResolver
             return Identity::notMatched($userId, $mapping->status ?? UserMapping::STATUS_NOT_FOUND);
         }
 
-        // A user who was not matched and then changed their Joomla e-mail (which Joomla does not
-        // verify) could choose a colleague's address: such a match waits for an administrator.
-        $hold = $mapping !== null && !$mapping->isActive() && $mapping->email !== '' && $mapping->email !== $email;
-
-        return $this->lookup($userId, $email, $now, $hold);
+        // Security (1.0.10): Joomla lets a user change their own e-mail without verifying it, so
+        // anyone could choose a colleague's address before their first visit. Every new match by
+        // e-mail therefore waits for an administrator to confirm it in User Mappings.
+        return $this->lookup($userId, $email, $now, true);
     }
 
     /**
@@ -215,8 +214,8 @@ final class IdentityResolver
 
         if ($hold) {
             $this->repository->save(new UserMapping($userId, $employeeId, $empCode, $email, UserMapping::STATUS_SUSPENDED, UserMapping::SOURCE_AUTO, $now, $now));
-            $this->audit->record($userId, 'identity.suspended', AuditLogInterface::RESULT_DENIED, 'email_changed_while_unmatched employee:' . $employeeId);
-            $this->logger->warning(\sprintf('Joomla user %d matched an employee only after changing their e-mail; the mapping waits for an administrator to confirm it in User Mappings', $userId));
+            $this->audit->record($userId, 'identity.pending', AuditLogInterface::RESULT_DENIED, 'awaiting_confirmation employee:' . $employeeId);
+            $this->logger->warning(\sprintf('Joomla user %d matched an employee by e-mail; the mapping waits for an administrator to confirm it in User Mappings', $userId));
 
             return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
         }
