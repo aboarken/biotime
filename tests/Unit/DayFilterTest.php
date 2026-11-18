@@ -59,6 +59,8 @@ final class DayFilterTest extends TestCase
         self::assertFalse(DayFilter::matches($days[1], 'leave'));
 
         $s = \BiotimePortal\Component\Biotime\Administrator\Attendance\Summary::of($days, '2026-11-18');
-        self::assertSame([1, 1, 2, 50, 1, 5], [$s->presentDays, $s->absentDays, $s->workingDays, $s->rate, $s->leaveDays, $s->allDays], 'present 1 of 2 (leave not counted); All Days = 5');
+        self::assertSame([1, 1, 2, 50, 1, 1, 5], [$s->presentDays, $s->absentDays, $s->workingDays, $s->rate, $s->leaveDays, $s->offDays, $s->allDays], 'present 1 of 2 (leave not counted); All Days = 5');
+        self::assertTrue(DayFilter::matches($days[4], 'weekend'));
+        self::assertFalse(DayFilter::matches($days[0], 'weekend'));
     }
 }

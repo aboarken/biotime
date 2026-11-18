@@ -7,6 +7,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 
 ### Added
 - **Leaves** card (My Attendance, My Dashboard, Manager Dashboard) and Status filter: the leave days so far (leave from ZKBioTime's pay codes, e.g. Annual Leave). Clicking it shows those days.
+- **Weekends** card (same pages) and filter: weekend and rest days without punches so far; with Present, Absent, Leaves and Holidays it adds up to All Days.
 - **View all departments** permission (`zkb.manager.all`): with View Manager Dashboard, the Manager Dashboard shows every department, whoever is its Department Manager in ZKBioTime. Super Users always have it. (ZKBioTime's own administrator accounts cannot be used: they live in its login table, which the portal's database user is kept out of, and they are not linked to employees.)
 
 ### Changed

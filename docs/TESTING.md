@@ -54,6 +54,7 @@ those releases.
 
 ### 1.0.3 – Leaves, Days Present, View all departments
 - [ ] My Attendance, My Dashboard and Manager Dashboard show a **Leaves** card; clicking it lists only leave days.
+- [ ] A **Weekends** card shows the weekend days so far; Present + Absent + Leaves + Holidays + Weekends = All Days.
 - [ ] Days Present reads present / (present + absent); a leave day changes neither number. All Days = Present + Absent + Leaves + Holidays + weekend days.
 - [ ] A Super User (or a group with View all departments) opens the Manager Dashboard and sees every department; a manager without it sees only the departments they manage in ZKBioTime.
 

@@ -91,6 +91,7 @@ $cards = $s === null ? [] : [
     [Text::_('COM_BIOTIME_MANAGER_MORNING_PUNCHES'), (string) $this->morningPunches, Ui::countTone($this->morningPunches, 'teal'), ''],
     [Text::_('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), (string) $this->afternoonPunches, Ui::countTone($this->afternoonPunches, 'blue'), ''],
     [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'purple'), 'holiday'],
+    [Text::_('COM_BIOTIME_CARD_WEEKENDS'), (string) $s->offDays, Ui::countTone($s->offDays, 'weekend'), 'weekend'],
     [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'sky'), 'weekendworked'],
     [Text::_('COM_BIOTIME_CARD_RATE'), $s->rate === null ? '—' : $s->rate . ' <small>%</small>', $s->rate === null ? 'muted' : ($s->rate >= 90 ? 'green' : ($s->rate >= 75 ? 'amber' : 'red')), ''],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', ''],

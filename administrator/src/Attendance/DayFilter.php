@@ -42,6 +42,8 @@ final class DayFilter
             'late'             => ($d->late ?? 0) > 0,
             'early'            => ($d->early ?? 0) > 0,
             'leave'            => ChartData::kind($d) === 'leave',
+            // The Weekends card's days: weekend and rest days without punches (1.0.3).
+            'weekend'          => ChartData::kind($d) === 'weekend',
             default            => $d->status === $status,
         };
     }

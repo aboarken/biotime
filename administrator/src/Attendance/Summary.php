@@ -41,6 +41,7 @@ final class Summary
      * @param int     $missingMorningDays   missing-punch days without a check-in (morning)
      * @param int     $missingAfternoonDays missing-punch days without a check-out (afternoon)
      * @param int     $leaveDays      leave days without punches (1.0.3)
+     * @param int     $offDays        weekend and rest days without punches (1.0.3, Weekends card)
      * @param int     $allDays        every day so far with a status: present + absent + leave + holiday + weekend (1.0.3)
      */
     public function __construct(
@@ -69,7 +70,8 @@ final class Summary
         public readonly int $missingMorningDays = 0,
         public readonly int $missingAfternoonDays = 0,
         public readonly int $leaveDays = 0,
-        public readonly int $allDays = 0
+        public readonly int $allDays = 0,
+        public readonly int $offDays = 0
     ) {
     }
 
@@ -118,7 +120,8 @@ final class Summary
             $count(static fn (Day $d): bool => $d->missingMorning()),
             $count(static fn (Day $d): bool => $d->missingAfternoon()),
             $kinds['leave'],
-            array_sum($kinds)
+            array_sum($kinds),
+            $kinds['weekend']
         );
     }
 
