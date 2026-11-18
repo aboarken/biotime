@@ -52,6 +52,12 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.4 – Large teams, Employee ID search, weekend schedule
+- [ ] As a Super User (View all departments), open the Manager Dashboard with All my departments: no "pcre.backtrack_limit" error; with more than 300 employees the page asks to narrow the list.
+- [ ] Choose a department of more than 50 employees: the table shows 50 per page with Previous / Next; the cards count all of them.
+- [ ] Employee ID: type E993 and press Enter: only that employee (or the IDs containing it).
+- [ ] My Attendance on a weekend: Schedule shows "—", not "00:00–—".
+
 ### 1.0.3 – Leaves, Days Present, View all departments
 - [ ] My Attendance, My Dashboard and Manager Dashboard show a **Leaves** card; clicking it lists only leave days.
 - [ ] A **Weekends** card shows the weekend days so far; Present + Absent + Leaves + Holidays + Weekends = All Days.

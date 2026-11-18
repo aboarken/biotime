@@ -526,6 +526,12 @@ final class AttendanceReader
             $end = (new \DateTimeImmutable('2000-01-01 ' . $start))->modify('+' . $minutes . ' minutes')->format('H:i:s');
         }
 
+        // A midnight start without an end or a length (ZKBioTime's time cards of weekends and days
+        // off) is no schedule (1.0.4).
+        if ($start === '00:00:00' && $end === null) {
+            $start = null;
+        }
+
         $cutoff = null;
 
         if ($start !== null && (int) $inAboveMargin > 0) {
