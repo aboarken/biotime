@@ -223,7 +223,8 @@ final class TeamReader
 
     /**
      * The top departments (no parent, or a parent that does not exist), by id: with the
-     * departments below them, every department (1.0.3, "View all departments").
+     * departments below them, every department (a ZKBioTime superuser's, or a user's who may manage
+     * all departments).
      *
      * @return list<int>
      *

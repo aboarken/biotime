@@ -121,7 +121,7 @@ final class TeamReaderTest extends TestCase
 
         self::assertSame([10], $team->managedDepartments(1), 'Alice is the Department Manager of IT');
         self::assertSame([], $team->managedDepartments(2), 'Bob manages nothing');
-        self::assertSame([10], $team->topDepartments(), 'View all departments: IT is the only top department (HR is below it)');
+        self::assertSame([10], $team->topDepartments(), 'every department: IT is the only top department (HR is below it)');
 
         // ZKBioTime users' data permissions (1.0.8).
         self::assertSame(['readable' => true, 'superuser' => false, 'departments' => [11]], $team->userScope('E2'), "Bob's user (same e-mail) may see HR");

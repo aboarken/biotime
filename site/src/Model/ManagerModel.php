@@ -55,7 +55,6 @@ final class ManagerModel extends PortalModel
         }
 
         // Only what ZKBioTime gives the manager (1.0.8):
-        //  - "View all departments" (Super Users have it): every department;
         //  - the manager's own ZKBioTime user account (same e-mail or username = employee ID):
         //    a superuser sees every department, others the departments of their data
         //    permissions, exactly those;
@@ -63,7 +62,8 @@ final class ManagerModel extends PortalModel
         $team  = $this->biotime()->getTeamReader();
         $out   = [];
         $mail  = (string) (Factory::getApplication()->getIdentity()?->email ?? '');
-        $scope = $this->can('zkb.manager.all') ? ['readable' => true, 'superuser' => true, 'departments' => []] : $team->userScope($this->identity()->empCode(), [$mail]);
+        // Only ZKBioTime decides (1.0.8; the Joomla permission "View all departments" is gone).
+        $scope = $team->userScope($this->identity()->empCode(), [$mail]);
 
         if (!$scope['readable']) {
             $this->logger()->warning('Manager Dashboard: ZKBioTime users (auth_user, auth_user_auth_dept) could not be read; only Department Managers are used. Grant SELECT (id, username, email, is_active, is_superuser) ON auth_user and SELECT ON auth_user_auth_dept to the portal\'s database user.');
