@@ -28,14 +28,18 @@ $min   = fn (?int $minutes): string => LayoutHelper::render('biotime.minutes', [
 
 // Summary card: the whole card opens My Attendance with the matching filter (when allowed).
 $stat = function (string $label, string $value, string $tone, string $filter = '', string $meta = ''): string {
-    $url   = $filter !== '' && $this->canAttendance ? $this->attendanceUrl($filter) : '';
+    // '*' (All Days): My Attendance with every day of the period, no status filter (1.0.7).
+    $url   = $filter !== '' && $this->canAttendance ? $this->attendanceUrl($filter === '*' ? '' : $filter) : '';
     $inner = '<span class="bt-stat-label">' . $this->escape($label) . '</span>'
         . '<span class="bt-stat-value">' . $value . '</span>'
         . ($meta !== '' ? '<span class="bt-stat-meta">' . $this->escape($meta) . '</span>' : '');
 
+    // All Days is the selected card by default, as on My Attendance and the Manager Dashboard.
+    $active = $filter === '*' ? ' is-active' : '';
+
     return $url !== ''
-        ? '<a class="bt-stat bt-tone-' . $tone . '" href="' . $url . '">' . $inner . '</a>'
-        : '<div class="bt-stat bt-tone-' . $tone . '">' . $inner . '</div>';
+        ? '<a class="bt-stat bt-tone-' . $tone . $active . '" href="' . $url . '"' . ($active !== '' ? ' aria-current="true"' : '') . '>' . $inner . '</a>'
+        : '<div class="bt-stat bt-tone-' . $tone . $active . '">' . $inner . '</div>';
 };
 
 ?>
@@ -97,6 +101,7 @@ $stat = function (string $label, string $value, string $tone, string $filter = '
     <div class="bt-stats bt-stats--5">
         <?php
         // 3 rows of 5, the last with ZKBioTime's calculation.
+        echo $stat(Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, Ui::cardTone('COM_BIOTIME_CARD_ALL_DAYS'), '*', Text::_('COM_BIOTIME_CARD_ALL_DAYS_HINT'));
         echo $stat(Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', Ui::cardTone('COM_BIOTIME_CARD_PRESENT_DAYS'), 'attended', Text::_('COM_BIOTIME_CARD_PRESENT_DAYS_HINT'));
         echo $stat(Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::cardTone('COM_BIOTIME_CARD_ABSENT_DAYS'), 'absent');
         echo $stat(Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::cardTone('COM_BIOTIME_CARD_LEAVES'), 'leave');

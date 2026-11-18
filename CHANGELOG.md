@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.7] - 2026-11-18
+
+### Added
+- **My Dashboard → All Days** card, first, as on My Attendance: present + absent + leaves + holidays + weekends of the school year so far. It opens My Attendance with every day of the period.
+- **Manager Dashboard → All Days** card, first: the days of everyone shown; it clears the status filter (this was Workforce's job, which now only counts the employees).
+
+### Changed
+- **All Days is the selected card by default** on My Dashboard, My Attendance and the Manager Dashboard (highlighted until another card is chosen).
+
 ## [1.0.6] - 2026-11-18
 
 ### Changed
