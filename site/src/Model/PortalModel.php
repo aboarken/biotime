@@ -12,6 +12,7 @@ namespace BiotimePortal\Component\Biotime\Site\Model;
 
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\DateRange;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
@@ -95,6 +96,38 @@ abstract class PortalModel extends BaseModel
         [$year, $month] = $this->selectedMonth();
 
         return $this->period ??= $this->attendance()->month($this->identity(), $year, $month);
+    }
+
+    /**
+     * The school year so far: from 1 August (this year's, or last year's before August) to today,
+     * in the ZKBioTime server's time zone. My Dashboard shows it (0.9.0).
+     *
+     * @return array{0: string, 1: string} [from, to] as YYYY-MM-DD
+     */
+    public function schoolYear(): array
+    {
+        $today = $this->attendance()->today();
+
+        return [DateRange::schoolYearStart($today), $today];
+    }
+
+    /**
+     * From date – to date from ?from=&to= (DD/MM/YYYY, or YYYY-MM-DD in links); null when neither
+     * is given (see DateRange::of()).
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public function selectedRange(): ?array
+    {
+        $input = Factory::getApplication()->getInput();
+
+        return DateRange::of($input->getString('from', ''), $input->getString('to', ''), $this->attendance()->today());
+    }
+
+    /** Every day from $from to $to (YYYY-MM-DD, from selectedRange() or schoolYear()). */
+    public function rangePeriod(string $from, string $to): Period
+    {
+        return $this->period ??= $this->attendance()->range($this->identity(), new \DateTimeImmutable($from), new \DateTimeImmutable($to));
     }
 
     public function formatter(): Formatter

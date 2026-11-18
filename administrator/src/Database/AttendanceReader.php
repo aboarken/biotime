@@ -84,7 +84,7 @@ final class AttendanceReader
         }
 
         $row = $this->q()->rows(
-            "SELECT e.id, e.department_id, d.dept_name, p.position_name, to_char(e.hire_date, 'YYYY-MM-DD') AS hire_date
+            "SELECT e.id, e.department_id, e.first_name, e.last_name, d.dept_name, p.position_name, to_char(e.hire_date, 'YYYY-MM-DD') AS hire_date
                FROM personnel_employee e
                LEFT JOIN personnel_department d ON d.id = e.department_id
                LEFT JOIN personnel_position p ON p.id = e.position_id
@@ -114,6 +114,7 @@ final class AttendanceReader
             'department'    => self::text($row[0]['dept_name']),
             'position'      => self::text($row[0]['position_name']),
             'hire_date'     => self::text($row[0]['hire_date']),
+            'name'          => self::text(trim(($row[0]['first_name'] ?? '') . ' ' . ($row[0]['last_name'] ?? ''))),
         ];
     }
 

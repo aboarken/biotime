@@ -47,9 +47,11 @@ foreach ($filters as $value => $label) {
 }
 
 $statusSelect .= '</select>';
-// A date picker in DD/MM/YYYY (media/com_biotime/js/datepicker.js); a browser date field would show
-// the browser's own order, e.g. MM/DD/YYYY. Month and weekday names are passed in translated.
-$dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" autocomplete="off" maxlength="10" data-bt-datepicker'
+// From date – to date, below the month (0.9.0). Date pickers in DD/MM/YYYY
+// (media/com_biotime/js/datepicker.js); a browser date field would show the browser's own order,
+// e.g. MM/DD/YYYY. Month and weekday names are passed in translated. Choosing a month or year
+// clears them (filters.js: data-bt-range).
+$dateInput = fn (string $id, string $name, string $value): string => '<input class="bt-input" type="text" id="' . $id . '" name="' . $name . '" autocomplete="off" maxlength="10" data-bt-datepicker data-bt-range'
     . ' pattern="\d{1,2}/\d{1,2}/\d{4}" placeholder="' . $e(Text::_('COM_BIOTIME_DATE_HINT')) . '"'
     . ' data-months="' . $e(implode(',', array_map([$f, 'monthName'], range(1, 12)))) . '"'
     . ' data-days="' . $e(implode(',', array_map(static fn (int $d): string => $f->weekday($d, true), range(1, 7)))) . '"'
@@ -62,7 +64,7 @@ $dateInput     = '<input class="bt-input" type="text" id="bt-date" name="date" a
         'today'  => Text::_('COM_BIOTIME_DATE_TODAY'),
         'clear'  => Text::_('COM_BIOTIME_DATE_CLEAR'),
     ])) . '"'
-    . ' value="' . $e($this->date !== '' ? (new DateTimeImmutable($this->date))->format('d/m/Y') : '') . '">';
+    . ' value="' . $e($value !== '' ? (new DateTimeImmutable($value))->format('d/m/Y') : '') . '">';
 
 // Summary cards: [label, value html, tone, filter]. Missing punches as two cards: morning (no
 // check-in) and afternoon (no check-out). From the database: 5 + 5 + 4 cards, with ZKBioTime's
@@ -111,7 +113,9 @@ $cards = $calc ? [
         'f'      => $f,
         'fields' => [
             ['id' => 'bt-status', 'label' => Text::_('COM_BIOTIME_COL_STATUS'), 'html' => $statusSelect],
-            ['id' => 'bt-date', 'label' => Text::_('COM_BIOTIME_SEARCH_DATE'), 'html' => $dateInput],
+            ['break' => true],
+            ['id' => 'bt-from', 'label' => Text::_('COM_BIOTIME_DATE_FROM'), 'html' => $dateInput('bt-from', 'from', $this->from)],
+            ['id' => 'bt-to', 'label' => Text::_('COM_BIOTIME_DATE_TO'), 'html' => $dateInput('bt-to', 'to', $this->to)],
         ],
     ]); ?>
 
@@ -122,7 +126,7 @@ $cards = $calc ? [
             $inner = '<span class="bt-stat-label">' . $e($label) . '</span><span class="bt-stat-value">' . $value . '</span>';
             ?>
             <?php if ($filter !== '') : ?>
-                <a class="bt-stat bt-tone-<?php echo $tone; ?><?php echo $filter === $this->status ? ' is-active' : ''; ?>" href="<?php echo $this->monthUrl('attendance', $this->year, $this->month, ['status' => $filter]); ?>"><?php echo $inner; ?></a>
+                <a class="bt-stat bt-tone-<?php echo $tone; ?><?php echo $filter === $this->status ? ' is-active' : ''; ?>" href="<?php echo $this->filterUrl($filter); ?>"><?php echo $inner; ?></a>
             <?php else : ?>
                 <div class="bt-stat bt-tone-<?php echo $tone; ?>"><?php echo $inner; ?></div>
             <?php endif; ?>
@@ -131,7 +135,7 @@ $cards = $calc ? [
 
     <section class="bt-panel">
         <div class="bt-panel-head">
-            <h2 class="bt-panel-title"><?php echo $e($this->monthTitle()); ?></h2>
+            <h2 class="bt-panel-title"><?php echo $e($this->rangeTitle()); ?></h2>
             <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', $this->total)); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
         </div>
         <?php if ($this->rows === []) : ?>

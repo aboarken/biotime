@@ -12,15 +12,14 @@ namespace BiotimePortal\Component\Biotime\Site\View\Dashboard;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
 use BiotimePortal\Component\Biotime\Site\Model\DashboardModel;
 use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
- * My Dashboard: today's check-in and check-out, summary cards counted from the punches, the
- * monthly overview (chart + the same figures as text) and recent activity.
+ * My Dashboard: the school year so far (from 1 August to today, 0.9.0): today's check-in and
+ * check-out, summary cards and recent activity.
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -33,32 +32,36 @@ final class HtmlView extends BaseHtmlView
     /** @var list<Day> newest first */
     public array $recent = [];
 
-    public bool $showChart = false;
-
     public bool $canAttendance = false;
 
     public bool $canCalendar = false;
 
     public string $today = '';
 
-    /** Today, when the month shown is the current month. */
+    /** Today (always in the range shown). */
     public ?Day $todayDay = null;
 
-    /** The month's punches per device, by fingerprint and face. */
-    public PunchStats $punchStats;
+    /** The range shown: 1 August to today (YYYY-MM-DD). */
+    public string $from = '';
 
-    /** @var array{department: ?string, position: ?string, hire_date: ?string}|null from the database */
+    public string $to = '';
+
+    /** @var array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null from the database */
     public ?array $profile = null;
+
+    /** Under the heading: department · position · employee ID · name (0.9.0). @var list<string> */
+    public array $profileLine = [];
 
     public function display($tpl = null): void
     {
         /** @var DashboardModel $model */
         $model = $this->getModel();
 
-        [$this->year, $this->month] = $model->selectedMonth();
-        $this->period        = $model->period();
+        [$this->from, $this->to] = $model->schoolYear();
+        $this->year          = (int) substr($this->to, 0, 4);
+        $this->month         = (int) substr($this->to, 5, 2);
+        $this->period        = $model->rangePeriod($this->from, $this->to);
         $this->summary       = $this->period->summary();
-        $this->showChart     = $model->settings()->moduleEnabled('charts');
         $this->canAttendance = $model->can('zkb.attendance.view');
         $this->canCalendar   = $model->can('zkb.calendar.view');
         $this->today         = $model->attendance()->today();
@@ -68,20 +71,24 @@ final class HtmlView extends BaseHtmlView
         $days = array_filter($this->period->days, fn (Day $d): bool => $d->date <= $this->today && ($d->hasData() || $d->status !== null));
         $this->recent = \array_slice(array_reverse(array_values($days)), 0, 7);
 
-        // Every device used in the selected month (most used first), by fingerprint and face.
-        // With the database: every device the employee uses, those not used this month with 0.
-        $this->punchStats = PunchStats::withDevices($this->period->days, $model->attendance()->devices($model->identity()));
-        $this->profile    = $model->attendance()->profile($model->identity());
+        $this->profile = $model->attendance()->profile($model->identity());
+        // The name from ZKBioTime; with the API, the Joomla user's name.
+        $this->profileLine = array_values(array_filter([
+            $this->profile['department'] ?? null,
+            $this->profile['position'] ?? null,
+            $model->identity()->empCode(),
+            $this->profile['name'] ?? (string) \Joomla\CMS\Factory::getApplication()->getIdentity()?->name,
+        ], static fn (?string $v): bool => $v !== null && trim($v) !== ''));
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
-        $model->logPage('dashboard', \sprintf('%04d-%02d', $this->year, $this->month));
+        $model->logPage('dashboard', $this->from . '..' . $this->to);
 
         parent::display($tpl);
     }
 
-    /** Link to My Attendance for this month, optionally filtered by status. */
+    /** Link to My Attendance for the same range, optionally filtered by status. */
     public function attendanceUrl(string $status = ''): string
     {
-        return $this->monthUrl('attendance', $this->year, $this->month, $status !== '' ? ['status' => $status] : []);
+        return $this->url('view=attendance&' . http_build_query(array_filter(['from' => $this->from, 'to' => $this->to, 'status' => $status])));
     }
 }

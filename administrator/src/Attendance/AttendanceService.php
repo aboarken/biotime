@@ -113,10 +113,10 @@ final class AttendanceService
     }
 
     /**
-     * The employee's department, position and hire date, from the database; null with the API or
-     * when it cannot be read. Kept a day in the cache.
+     * The employee's department, position, hire date and name, from the database; null with the
+     * API or when it cannot be read. Kept a day in the cache.
      *
-     * @return array{department: ?string, position: ?string, hire_date: ?string}|null
+     * @return array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null
      */
     public function profile(Identity $identity): ?array
     {
@@ -124,7 +124,7 @@ final class AttendanceService
             return null;
         }
 
-        $cached = $this->cache->get($identity, 'db:profile');
+        $cached = $this->cache->get($identity, 'db:profile2');
 
         if ($cached !== null) {
             return $cached['p'] ?? null;
@@ -138,8 +138,8 @@ final class AttendanceService
             return null;
         }
 
-        $profile = $emp === null ? null : ['department' => $emp['department'], 'position' => $emp['position'], 'hire_date' => $emp['hire_date']];
-        $this->cache->set($identity, 'db:profile', ['p' => $profile], self::PAST_MONTH_TTL);
+        $profile = $emp === null ? null : ['department' => $emp['department'], 'position' => $emp['position'], 'hire_date' => $emp['hire_date'], 'name' => $emp['name'] ?? null];
+        $this->cache->set($identity, 'db:profile2', ['p' => $profile], self::PAST_MONTH_TTL);
 
         return $profile;
     }
