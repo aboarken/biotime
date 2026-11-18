@@ -52,6 +52,11 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.14 – Organisation name on the PDF
+- [ ] Integration Settings → Report Letterhead → Organisation Name: enter the school's name and save. Export PDF: the name is above "Attendance Report" in the title band, and the file name offered when saving starts with it.
+- [ ] Without a logo the name is at the top of the page; with a logo it is under the logo only when *Show the Name with the Logo* is on.
+- [ ] Organisation Name empty: the site name is used instead.
+
 ### 1.0.13 – Chart names, cards, phones
 - [ ] My Dashboard: no *Statistics* heading; the charts are named Total Attendance, Status per Month, Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month, Punches per Device.
 - [ ] My Dashboard cards have no line under the numbers and are as tall as on My Attendance.

@@ -1446,9 +1446,25 @@
 }
 
 .com-biotime .bt-report-sitename {
+  display: block;
   font-size: 16pt;
   font-weight: 700;
   color: var(--bt-report);
+}
+
+.com-biotime .bt-report-logo img + .bt-report-sitename {
+  margin-top: 1mm;
+  font-size: 12pt;
+}
+
+/* The organisation name above the title in the title band (1.0.14) */
+.com-biotime .bt-report-company {
+  display: block;
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
 }
 
 .com-biotime .bt-report-lines {

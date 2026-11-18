@@ -29,7 +29,8 @@ $head   = $this->letterhead;
 $range  = $this->from === $this->to ? $f->date($this->from) : $f->date($this->from) . ' – ' . $f->date($this->to);
 $labels = $this->statusLabels();
 $app    = Factory::getApplication();
-$site   = trim((string) $app->get('sitename', ''));
+// The organisation name of Integration Settings (1.0.14), else the site name.
+$company = $head['company'] !== '' ? $head['company'] : trim((string) $app->get('sitename', ''));
 
 // The paper: A4, portrait or landscape (HtmlView::reportColumns()), and the main colour.
 $this->getDocument()->getWebAssetManager()->addInlineStyle(
@@ -99,9 +100,10 @@ $meta = [
                     <header class="bt-report-letterhead">
                         <div class="bt-report-logo">
                             <?php if ($logo !== '') : ?>
-                                <img src="<?php echo $e($logo); ?>" alt="<?php echo $e($site); ?>">
-                            <?php else : ?>
-                                <span class="bt-report-sitename"><?php echo $e($site); ?></span>
+                                <img src="<?php echo $e($logo); ?>" alt="<?php echo $e($company); ?>">
+                            <?php endif; ?>
+                            <?php if ($logo === '' || $head['showCompany']) : ?>
+                                <span class="bt-report-sitename"><?php echo $e($company); ?></span>
                             <?php endif; ?>
                         </div>
                         <?php if ($head['left'] !== '' || $head['right'] !== '') : ?>
@@ -119,7 +121,12 @@ $meta = [
             <tbody>
                 <tr><td>
                     <div class="bt-report-title">
-                        <h1><?php echo Text::_('COM_BIOTIME_REPORT_TITLE'); ?></h1>
+                        <div>
+                            <?php if ($company !== '') : ?>
+                                <span class="bt-report-company" dir="auto"><?php echo $e($company); ?></span>
+                            <?php endif; ?>
+                            <h1><?php echo Text::_('COM_BIOTIME_REPORT_TITLE'); ?></h1>
+                        </div>
                         <span><?php echo $e($range); ?></span>
                     </div>
 

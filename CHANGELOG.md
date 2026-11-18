@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.14] - 2026-11-18
+
+### Added
+- **Integration Settings → Report Letterhead → Organisation Name**: the school's or company's name on the PDF report, defined in the backend instead of Joomla's site name. It is shown above "Attendance Report" in the title band, at the top when there is no logo (and under the logo with *Show the Name with the Logo*), as the logo's text alternative and at the start of the PDF's file name. When it is empty the site name is used, as before.
+
 ## [1.0.13] - 2026-11-18
 
 ### Changed

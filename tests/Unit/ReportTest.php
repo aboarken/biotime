@@ -68,6 +68,8 @@ final class ReportTest extends TestCase
             'report_header_right' => 'ترخيص وزارة التعليم رقم 5203206',
             'report_footer'       => "Tel: 6977033\r\n\r\n  https://www.tis.edu.sa   info@tis.edu.sa \n<script>x</script>\n4\n5\n6\n7",
             'report_color'        => '#1D3F74',
+            'report_company'      => " Thamer <b>International</b>\n Schools ",
+            'report_company_show' => '1',
         ]);
 
         self::assertSame('images/school/letter head.png', $v['report_logo'], 'without the Media field fragment');
@@ -75,10 +77,15 @@ final class ReportTest extends TestCase
         self::assertSame('ترخيص وزارة التعليم رقم 5203206', $v['report_header_right']);
         self::assertSame("Tel: 6977033\nhttps://www.tis.edu.sa info@tis.edu.sa\nx\n4\n5\n6", $v['report_footer'], 'no markup, no empty lines, at most 6');
         self::assertSame('#1d3f74', $v['report_color']);
+        self::assertSame('Thamer International Schools', $v['report_company'], 'one line, no markup');
+        self::assertSame('1', $v['report_company_show']);
 
         $head = (new Settings($v))->letterhead();
         self::assertSame(['Tel: 6977033', 'https://www.tis.edu.sa info@tis.edu.sa', 'x', '4', '5', '6'], $head['footer']);
         self::assertSame('images/school/letter head.png', $head['logo']);
+        self::assertSame('Thamer International Schools', $head['company']);
+        self::assertTrue($head['showCompany']);
+        self::assertSame(['', false], [(new Settings())->letterhead()['company'], (new Settings())->letterhead()['showCompany']], 'default: no name (the site name is used), not shown with a logo');
     }
 
     public function testOnlyImagesOfTheImagesFolderAndRealColours(): void

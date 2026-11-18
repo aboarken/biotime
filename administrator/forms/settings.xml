@@ -23,6 +23,13 @@
     </fieldset>
 
     <fieldset name="report" label="COM_BIOTIME_SETTINGS_FIELDSET_REPORT">
+        <field name="report_company" type="text" label="COM_BIOTIME_SETTINGS_REPORT_COMPANY" description="COM_BIOTIME_SETTINGS_REPORT_COMPANY_DESC"
+               filter="string" size="50" maxlength="150" />
+        <field name="report_company_show" type="radio" label="COM_BIOTIME_SETTINGS_REPORT_COMPANY_SHOW" description="COM_BIOTIME_SETTINGS_REPORT_COMPANY_SHOW_DESC"
+               layout="joomla.form.field.radio.switcher" default="0" filter="integer">
+            <option value="0">JNO</option>
+            <option value="1">JYES</option>
+        </field>
         <field name="report_logo" type="media" label="COM_BIOTIME_SETTINGS_REPORT_LOGO" description="COM_BIOTIME_SETTINGS_REPORT_LOGO_DESC"
                types="images" preview="tooltip" />
         <field name="report_header_left" type="text" label="COM_BIOTIME_SETTINGS_REPORT_HEADER_LEFT" description="COM_BIOTIME_SETTINGS_REPORT_HEADER_LEFT_DESC"

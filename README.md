@@ -133,7 +133,7 @@ the Joomla server that each employee only ever sees their own records.
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. Since 1.0.10 every match by e-mail waits for an administrator to confirm it in User Mappings (Joomla does not verify e-mail changes). |
 | Modules | Charts | No longer used since 0.9.0 (My Dashboard has no Monthly Overview). |
-| Report Letterhead | Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), e.g. the whole letterhead banner; empty shows the site name. Footer: up to 6 lines. |
+| Report Letterhead | Organisation name, Show the name with the logo, Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). Organisation name: in the title band, at the top when there is no logo, and in the PDF's file name (empty: Joomla's site name). Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), e.g. the whole letterhead banner. Footer: up to 6 lines. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
 | | Date format, Time format | How the portal shows dates and times. |

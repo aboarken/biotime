@@ -62,6 +62,8 @@ final class Settings
         'server_timezone'  => '',
         // Letterhead of the printed and PDF reports (1.0.11): logo (an image of the Media
         // Manager), a line of text on each side under it, the footer lines and the main colour
+        'report_company'      => '',
+        'report_company_show' => '0',
         'report_logo'         => '',
         'report_header_left'  => '',
         'report_header_right' => '',
@@ -296,7 +298,9 @@ final class Settings
      * Letterhead of the printed and PDF reports (1.0.11), as stored by SettingsValidator: the logo
      * (a path below images/, '' for none), the texts under it, the footer lines and the colour.
      *
-     * @return array{logo: string, left: string, right: string, footer: list<string>, color: string}
+     * The organisation name (1.0.14) is '' when not set (the report then uses the site name).
+     *
+     * @return array{company: string, showCompany: bool, logo: string, left: string, right: string, footer: list<string>, color: string}
      */
     public function letterhead(): array
     {
@@ -304,11 +308,13 @@ final class Settings
         $color = $this->get('report_color');
 
         return [
-            'logo'   => self::isReportLogo($logo) ? $logo : '',
-            'left'   => $this->get('report_header_left'),
-            'right'  => $this->get('report_header_right'),
-            'footer' => array_values(array_filter(array_map('trim', explode("\n", $this->get('report_footer'))), static fn (string $l): bool => $l !== '')),
-            'color'  => preg_match('/^#[0-9a-f]{6}$/i', $color) ? strtolower($color) : self::DEFAULTS['report_color'],
+            'company'     => $this->get('report_company'),
+            'showCompany' => $this->get('report_company_show') === '1',
+            'logo'        => self::isReportLogo($logo) ? $logo : '',
+            'left'        => $this->get('report_header_left'),
+            'right'       => $this->get('report_header_right'),
+            'footer'      => array_values(array_filter(array_map('trim', explode("\n", $this->get('report_footer'))), static fn (string $l): bool => $l !== '')),
+            'color'       => preg_match('/^#[0-9a-f]{6}$/i', $color) ? strtolower($color) : self::DEFAULTS['report_color'],
         ];
     }
 

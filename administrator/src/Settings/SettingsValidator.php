@@ -93,6 +93,10 @@ final class SettingsValidator
 
         $values['report_logo'] = $logo;
 
+        // The organisation's name (1.0.14): one line of plain text.
+        $values['report_company']      = mb_substr(trim((string) preg_replace('/\s+/u', ' ', strip_tags(self::str($input['report_company'] ?? '')))), 0, 150);
+        $values['report_company_show'] = self::flag($input['report_company_show'] ?? '0') ? '1' : '0';
+
         foreach (['report_header_left', 'report_header_right'] as $name) {
             $values[$name] = mb_substr(trim((string) preg_replace('/\s+/u', ' ', strip_tags(self::str($input[$name] ?? '')))), 0, 200);
         }

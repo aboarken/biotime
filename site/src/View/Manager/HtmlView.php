@@ -216,8 +216,10 @@ final class HtmlView extends BaseHtmlView
         $this->printedBy  = (string) $app->getIdentity()?->name;
         $this->printedAt  = $this->f->date($now->format('Y-m-d', true)) . ' ' . $this->f->time($now->format('H:i', true));
 
-        // The file name the browser offers when saving as PDF.
-        $this->getDocument()->setTitle(Text::_('COM_BIOTIME_REPORT_FILE') . ' ' . $this->from . ($this->to !== $this->from ? ' - ' . $this->to : ''));
+        // The file name the browser offers when saving as PDF: the organisation (Integration
+        // Settings, else the site name), "Attendance report" and the period (1.0.14).
+        $company = $this->letterhead['company'] !== '' ? $this->letterhead['company'] : trim((string) $app->get('sitename', ''));
+        $this->getDocument()->setTitle(($company !== '' ? $company . ' - ' : '') . Text::_('COM_BIOTIME_REPORT_FILE') . ' ' . $this->from . ($this->to !== $this->from ? ' - ' . $this->to : ''));
         $this->getDocument()->getWebAssetManager()->useScript('com_biotime.report');
     }
 
