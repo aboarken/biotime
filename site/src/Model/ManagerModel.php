@@ -11,6 +11,7 @@ namespace BiotimePortal\Component\Biotime\Site\Model;
 // phpcs:enable PSR1.Files.SideEffects
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\DateRange;
+use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
@@ -30,6 +31,19 @@ final class ManagerModel extends PortalModel
 
     /** Cache key prefix of the manager's departments and team (1.0.10). */
     private const CACHE = 'mgr1:';
+
+    /**
+     * The manager's departments and team are kept for the cache time, but never longer than this
+     * (seconds, 1.0.18): a permission removed in ZKBioTime stops showing within five minutes even
+     * when the cache time is set to an hour.
+     */
+    public const SCOPE_TTL = 300;
+
+    /** PDF reports a manager may make per hour (1.0.18): each reads the whole team, uncached. */
+    public const EXPORTS_PER_HOUR = 30;
+
+    /** Audit action of a PDF report. */
+    public const EXPORT_ACTION = 'manager.pdf';
 
     /** @var list<array{id: int, name: string, parent: ?int, depth: int}>|null */
     private ?array $departments = null;
@@ -63,7 +77,7 @@ final class ManagerModel extends PortalModel
         $this->departments = $this->readDepartments();
 
         if ($this->departments !== []) {
-            $cache->set($this->identity(), self::CACHE . 'departments', ['d' => $this->departments]);
+            $cache->set($this->identity(), self::CACHE . 'departments', ['d' => $this->departments], $this->scopeTtl());
         }
 
         return $this->departments;
@@ -158,9 +172,33 @@ final class ManagerModel extends PortalModel
         }
 
         $this->team = $this->biotime()->getTeamReader()->employees($ids, $this->attendance()->today());
-        $cache->set($this->identity(), $key, ['t' => $this->team]);
+        $cache->set($this->identity(), $key, ['t' => $this->team], $this->scopeTtl());
 
         return $this->team;
+    }
+
+    private function scopeTtl(): int
+    {
+        return max(1, min(self::SCOPE_TTL, $this->settings()->cacheTtl()));
+    }
+
+    /**
+     * Whether this manager may make another PDF report now (1.0.18): at most EXPORTS_PER_HOUR an
+     * hour. A report that is allowed is recorded in the audit log (who exported, not what).
+     */
+    public function allowExport(): bool
+    {
+        $user = $this->identity()->joomlaUserId;
+
+        if (!$this->biotime()->getRateLimiter()->allow($user, self::EXPORT_ACTION, self::EXPORTS_PER_HOUR)) {
+            $this->logger()->warning(\sprintf('Manager Dashboard, Joomla user %d: PDF report refused (more than %d in an hour)', $user, self::EXPORTS_PER_HOUR));
+
+            return false;
+        }
+
+        $this->biotime()->getAuditLog()->record($user, self::EXPORT_ACTION, AuditLogInterface::RESULT_OK, '', $user);
+
+        return true;
     }
 
     /** The chosen department (?dept=), when it is one of the manager's; 0 for all. */

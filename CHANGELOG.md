@@ -3,6 +3,25 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.18] - 2026-11-18
+
+From an audit of the whole component against the Joomla Manual and for security (docs/AUDIT.md): no critical, high or medium security finding; the following was tightened or tidied.
+
+### Security
+- **PDF reports are limited to 30 per manager and hour** and each is recorded in the audit log (`manager.pdf`): a report reads the whole team without the cache.
+- **A manager's departments and team are kept for at most 5 minutes** (was the cache time, up to 60 minutes), so a permission removed in ZKBioTime stops showing quickly.
+- **Only the Manager Dashboard's `print` layout can be requested**; any other `layout` in a URL is ignored.
+- The stored report logo path and colour no longer accept a trailing line break.
+
+### Changed
+- **No inline `style` attributes** on any portal page (month arrows, chart legends and bars now use a CSS class and SVG attributes), so the portal works under a strict Content Security Policy.
+- User Mappings filters use Joomla's `js-select-submit-on-change` instead of inline `onchange`.
+- The release workflow lints and tests with PHP 8.3 explicitly.
+
+### Removed
+- **Integration Settings → Modules → Charts**: the switch did nothing since 0.9.0; its stored value is deleted on update.
+- A session clean-up for versions before 0.4.6, and 17 unused language strings.
+
 ## [1.0.17] - 2026-11-18
 
 ### Changed

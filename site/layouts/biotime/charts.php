@@ -101,7 +101,8 @@ $legend = static function (array $items) use ($e): string {
     $out = '<ul class="bt-chart-legend">';
 
     foreach ($items as [$c, $text, $value]) {
-        $out .= '<li><span class="bt-chart-key" style="background:' . $c . '"></span>' . $e($text)
+        // Colours as SVG attributes, never style="" attributes: those need 'unsafe-inline' under a strict CSP (1.0.18).
+        $out .= '<li><svg class="bt-chart-key" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><rect width="10" height="10" rx="2" fill="' . $c . '"/></svg>' . $e($text)
             . ($value !== null ? ' <strong>' . $e($value) . '</strong>' : '') . '</li>';
     }
 
@@ -226,6 +227,20 @@ $ps      = $displayData['devices'] ?? null;
 $devices = $ps !== null ? array_values(array_filter($ps->devices, static fn (array $d): bool => (int) $d['total'] > 0)) : [];
 $devMax  = max(1, ...array_map(static fn (array $d): int => (int) $d['total'], $devices ?: [['total' => 1]]));
 
+// A horizontal bar of coloured parts ([width in %, colour]), drawn as SVG so that no style=""
+// attribute is needed (strict Content Security Policy, 1.0.18).
+$track = static function (array $parts): string {
+    $out = '<svg class="bt-device-track" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false">';
+    $x   = 0.0;
+
+    foreach ($parts as [$width, $fill]) {
+        $out .= '<rect x="' . round($x, 1) . '" y="0" width="' . max(0, round((float) $width - 0.4, 1)) . '" height="10" fill="' . $fill . '"/>';
+        $x  += (float) $width;
+    }
+
+    return $out . '</svg>';
+};
+
 // Each chart is its own card (1.0.12), as on the ServiceDesk Plus portal's dashboard: a panel with
 // the title in its header, a line under it, and the chart and its legend in the body.
 $chart = static fn (string $title, string $summary, string $body, string $legendHtml = '', string $class = ''): string => '<figure class="bt-panel bt-chart' . $class . '">'
@@ -276,7 +291,7 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
             $r      = $m['summary']->rate;
             $tiles .= '<div class="bt-device" title="' . $e($long($m) . ': ' . Text::_('COM_BIOTIME_CARD_RATE') . ' ' . ($r === null ? '—' : $r . '%') . ' · ' . Text::sprintf('COM_BIOTIME_CHART_PRESENT_OF', $m['summary']->presentDays, $m['summary']->workingDays)) . '">'
                 . '<span class="bt-device-name">' . $e($long($m)) . '</span>'
-                . '<span class="bt-device-track">' . ($r ? '<span style="width:' . min(100, (int) $r) . '%;background:' . $rateColor($r) . '"></span>' : '') . '</span>'
+                . $track($r ? [[min(100, (int) $r), $rateColor($r)]] : [])
                 . '<span class="bt-device-total">' . ($r === null ? '—' : $r . '%') . '</span></div>';
         }
 
@@ -291,15 +306,16 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
 
         foreach ($devices as $d) {
             $tip   = $d['device'] . ': ' . Text::_('COM_BIOTIME_VERIFY_FINGERPRINT') . ' ' . (int) $d['fingerprint'] . ', ' . Text::_('COM_BIOTIME_VERIFY_FACE') . ' ' . (int) $d['face'] . ((int) $d['other'] > 0 ? ', ' . Text::_('COM_BIOTIME_VERIFY_OTHER') . ' ' . (int) $d['other'] : '');
-            $rows .= '<div class="bt-device" title="' . $e($tip) . '"><span class="bt-device-name">' . $e($d['device']) . '</span><span class="bt-device-track">';
+            $parts = [];
 
             foreach ([['fingerprint', $color['in']], ['face', $color['out']], ['other', '#64748b']] as [$k, $c]) {
                 if ((int) $d[$k] > 0) {
-                    $rows .= '<span style="width:' . round(100 * $d[$k] / $devMax, 1) . '%;background:' . $c . '"></span>';
+                    $parts[] = [round(100 * $d[$k] / $devMax, 1), $c];
                 }
             }
 
-            $rows .= '</span><span class="bt-device-total">' . (int) $d['total'] . '</span></div>';
+            $rows .= '<div class="bt-device" title="' . $e($tip) . '"><span class="bt-device-name">' . $e($d['device']) . '</span>' . $track($parts)
+                . '<span class="bt-device-total">' . (int) $d['total'] . '</span></div>';
         }
 
         $rows .= $devices === [] ? '<p class="bt-empty">' . Text::_('COM_BIOTIME_DEVICES_USED_NONE') . '</p>' : '';

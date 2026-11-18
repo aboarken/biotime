@@ -86,7 +86,7 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 ### Administrator pages
 
 - **Integration Settings**: the connection to ZKBioTime's database (password encrypted), employee
-  mapping, modules, the report letterhead, system settings; **Test Database**, **Close**,
+  mapping, the report letterhead, system settings; **Test Database**, **Close**,
   **Options**.
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
   source filters, and pages. **New** (map by employee code), **Confirm**, **Suspend**,
@@ -134,7 +134,6 @@ the Joomla server that each employee only ever sees their own records.
 | | Connection timeout, Query timeout | Seconds; connection ≤ query. |
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. Since 1.0.10 every match by e-mail waits for an administrator to confirm it in User Mappings (Joomla does not verify e-mail changes). |
-| Modules | Charts | No longer used since 0.9.0 (My Dashboard has no Monthly Overview). |
 | Report Letterhead | Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). All optional and empty by default: the report always shows the site name at the top. Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), shown above the site name. Footer: up to 6 lines. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
@@ -263,6 +262,9 @@ Database reads per page load, for one month (cold cache; a warm cache reads **no
 
 ## Security
 
+The whole component was audited at 1.0.17 (structure and security); the findings and what was
+changed are in [docs/AUDIT.md](docs/AUDIT.md).
+
 - The administrator pages (settings, user mappings, diagnostics) need **Super User** rights
   (`core.admin` on the component), for every task, not only the page itself (0.4.7).
 - When the database server, *Connect via*, database or user changes, the stored password must be
@@ -276,6 +278,9 @@ Database reads per page load, for one month (cold cache; a warm cache reads **no
 - Every state-changing action is a POST with a CSRF token and a permission check; database
   tests are limited per administrator and hour.
 - Portal pages are `noindex, nofollow` and sent with `Cache-Control: no-store`.
+- A manager may make at most 30 PDF reports an hour, each recorded in the audit log; a manager's
+  departments are kept for at most 5 minutes, so a permission removed in ZKBioTime stops showing
+  quickly. No portal page uses inline `style` attributes or scripts (strict CSP friendly).
 - **New matches by e-mail wait for an administrator** (1.0.10): Joomla lets users change their own
   e-mail without verifying it, so a match by e-mail is held as *Suspended / waiting for approval*
   until an administrator confirms it in User Mappings.

@@ -37,8 +37,6 @@ final class Settings
         // Employee mapping: the Joomla custom user field holding emp_code, then e-mail as fallback
         'match_field'      => 'employeeid',
         'auto_match'       => '1',
-        // Modules within the portal pages
-        'module_charts'    => '1',
         // Weekend days, ISO weekdays (1 = Monday … 7 = Sunday), comma-separated: Friday and Saturday
         'weekend_days'     => '5,6',
         // ZKBioTime's own database (0.5.0), read by every portal page (1.0.0); '' = not set up
@@ -106,12 +104,6 @@ final class Settings
     public function autoMatch(): bool
     {
         return $this->get('auto_match') !== '0';
-    }
-
-    /** @param 'charts' $module */
-    public function moduleEnabled(string $module): bool
-    {
-        return $this->get('module_' . $module) !== '0';
     }
 
     /** Database engine of the direct read: DbConfig::ENGINE_*, or '' when not used. */
@@ -308,14 +300,14 @@ final class Settings
             'left'   => $this->get('report_header_left'),
             'right'  => $this->get('report_header_right'),
             'footer' => array_values(array_filter(array_map('trim', explode("\n", $this->get('report_footer'))), static fn (string $l): bool => $l !== '')),
-            'color'  => preg_match('/^#[0-9a-f]{6}$/i', $color) ? strtolower($color) : self::DEFAULTS['report_color'],
+            'color'  => preg_match('/^#[0-9a-f]{6}\z/i', $color) ? strtolower($color) : self::DEFAULTS['report_color'],
         ];
     }
 
     /** A logo path the reports may show: an image file below the site's images/ folder. */
     public static function isReportLogo(string $path): bool
     {
-        return (bool) preg_match('#^images/(?:[A-Za-z0-9 _().-]+/)*[A-Za-z0-9 _().-]+\.(?:' . implode('|', self::REPORT_LOGO_TYPES) . ')$#i', $path)
+        return (bool) preg_match('#^images/(?:[A-Za-z0-9 _().-]+/)*[A-Za-z0-9 _().-]+\.(?:' . implode('|', self::REPORT_LOGO_TYPES) . ')\z#i', $path)
             && !preg_match('#(^|/)\.\.?(/|$)#', $path);
     }
 }

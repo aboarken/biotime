@@ -52,6 +52,13 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.18 – Audit fixes
+- [ ] Integration Settings has no *Modules* section; saving still works.
+- [ ] My Dashboard: the chart legends, the Attendance per Month bars and the Punches per Device bars look as before; the month arrows on My Attendance and the Calendar are hidden at the first and the current month.
+- [ ] User Mappings: choosing a Status, Source, sort order or list limit applies at once.
+- [ ] Manager Dashboard: Export PDF works; `…&view=dashboard&layout=print` shows the normal dashboard.
+- [ ] With Joomla's HTTP Headers plugin and a strict Content-Security-Policy (no `'unsafe-inline'` for styles, nonce on), the portal pages show no CSP error in the browser console.
+
 ### 1.0.17 – Export buttons
 - [ ] Manager Dashboard: *Export PDF (A4)* then *Export PDF (A3)*, A4 blue and A3 green; the note beside them explains A4 and A3.
 

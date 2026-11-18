@@ -2,6 +2,8 @@
 <!--
     None of the portal permissions is granted by default. The administrator sets them to Allowed
     for the Registered group under Options → Permissions (see README.md).
+    The administrator pages need core.admin for every task (Dispatcher); core.options and
+    core.manage are listed because Joomla's Permissions screen expects them.
 -->
 <access component="com_biotime">
     <section name="component">

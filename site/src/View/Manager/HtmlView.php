@@ -139,6 +139,11 @@ final class HtmlView extends BaseHtmlView
             $this->departments = $model->departments();
             $this->problem     = $this->departments === [] ? 'nodepartment' : '';
 
+            // A PDF report reads every employee without the cache: at most a few an hour (1.0.18).
+            if ($this->problem === '' && $this->report && !$model->allowExport()) {
+                $this->problem = 'exportlimit';
+            }
+
             if ($this->problem === '') {
                 $this->team      = $model->team();
                 $this->dept      = $model->selectedDepartment();
