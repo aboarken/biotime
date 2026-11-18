@@ -19,7 +19,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
  * My Dashboard: the school year so far (from 1 August to today, 0.9.0): today's check-in and
- * check-out, summary cards and recent activity.
+ * check-out, summary cards and Statistics charts (0.10.0).
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -28,9 +28,6 @@ final class HtmlView extends BaseHtmlView
     public Period $period;
 
     public Summary $summary;
-
-    /** @var list<Day> newest first */
-    public array $recent = [];
 
     public bool $canAttendance = false;
 
@@ -49,8 +46,13 @@ final class HtmlView extends BaseHtmlView
     /** @var array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null from the database */
     public ?array $profile = null;
 
-    /** Under the heading: department · position · employee ID · name (0.9.0). @var list<string> */
-    public array $profileLine = [];
+    /**
+     * Under the heading, one table row (0.10.0): department, position, employee ID, name and the
+     * range shown. Columns without a value are left out.
+     *
+     * @var list<array{0: string, 1: string}> [label key, value]
+     */
+    public array $profileRow = [];
 
     public function display($tpl = null): void
     {
@@ -67,18 +69,16 @@ final class HtmlView extends BaseHtmlView
         $this->today         = $model->attendance()->today();
         $this->todayDay      = $this->period->day($this->today);
 
-        // The last 7 days up to today that have something to say (punches or absent).
-        $days = array_filter($this->period->days, fn (Day $d): bool => $d->date <= $this->today && ($d->hasData() || $d->status !== null));
-        $this->recent = \array_slice(array_reverse(array_values($days)), 0, 7);
-
         $this->profile = $model->attendance()->profile($model->identity());
         // The name from ZKBioTime; with the API, the Joomla user's name.
-        $this->profileLine = array_values(array_filter([
-            $this->profile['department'] ?? null,
-            $this->profile['position'] ?? null,
-            $model->identity()->empCode(),
-            $this->profile['name'] ?? (string) \Joomla\CMS\Factory::getApplication()->getIdentity()?->name,
-        ], static fn (?string $v): bool => $v !== null && trim($v) !== ''));
+        $f = $model->formatter();
+        $this->profileRow = array_values(array_filter([
+            ['COM_BIOTIME_PROFILE_DEPARTMENT', $this->profile['department'] ?? null],
+            ['COM_BIOTIME_PROFILE_POSITION', $this->profile['position'] ?? null],
+            ['COM_BIOTIME_PROFILE_EMPLOYEE_ID', $model->identity()->empCode()],
+            ['COM_BIOTIME_PROFILE_NAME', $this->profile['name'] ?? (string) \Joomla\CMS\Factory::getApplication()->getIdentity()?->name],
+            ['COM_BIOTIME_PROFILE_PERIOD', \Joomla\CMS\Language\Text::sprintf('COM_BIOTIME_DASHBOARD_RANGE', $f->date($this->from), $f->date($this->to))],
+        ], static fn (array $c): bool => $c[1] !== null && trim($c[1]) !== ''));
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
         $model->logPage('dashboard', $this->from . '..' . $this->to);

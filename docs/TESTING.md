@@ -111,6 +111,14 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.10.0 – Statistics, employee row, Attendance Management System
+- [ ] My Dashboard has no Recent Activity; Statistics shows 5 charts (database): Days so far, Days per month, Late in and early out per month, Average check-in and check-out per month (floating columns, no lines), and the circles (one ring per figure, "of N working days" below), with the same totals as the cards. Hovering a bar, slice or point shows its value.
+- [ ] With the API: 4 charts in 2 rows (no late/early chart).
+- [ ] Under the heading, a table row: Department, Position, Employee ID, Name, Period "From 01/08/2026 to <today>". On a phone it shows one line per column.
+- [ ] The note under the pages reads "Your schedule, late in, early out ... counts as a check-out." and "Weekend days: Friday, Saturday. They show as Weekend unless you punched that day."
+- [ ] The note under My Dashboard and My Attendance reads "… come from the Attendance Management System; late-in and early-out appear once the system has calculated the day …". No portal page shows "ZKBioTime".
+- [ ] My Attendance with From 01/08 and To today lists every day on one page (no page links).
+
 ### 0.9.0 – School year dashboard, From – To
 - [ ] My Dashboard has no month arrows or month/year selection; under the heading: department · position · employee ID · name, then "From 01/08/2026 to <today>". Before August, the range starts on 1 August of last year.
 - [ ] No Monthly Overview and no Your Devices panel on My Dashboard.

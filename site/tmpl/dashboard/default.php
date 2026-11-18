@@ -13,9 +13,9 @@ use Joomla\CMS\Layout\LayoutHelper;
 /** @var \BiotimePortal\Component\Biotime\Site\View\Dashboard\HtmlView $this */
 
 /*
- * Layout (same design as the ServiceDesk Plus portal): heading with the range shown (the school
- * year so far: 1 August to today, 0.9.0), Today panel, summary cards (5 per row), then Recent
- * Activity. Styles are in media/com_biotime/css/portal.css (.bt-*). Tones: green present, amber
+ * Layout (same design as the ServiceDesk Plus portal): heading, the employee and the range shown
+ * (the school year so far: 1 August to today, 0.9.0) as one table row, Today panel, summary cards
+ * (5 per row), then Statistics charts (0.10.0, layouts/biotime/charts.php). Styles are in media/com_biotime/css/portal.css (.bt-*). Tones: green present, amber
  * missing punch, red absent, blue weekend, purple holiday, teal checked in, sky weekend worked, muted for zero.
  */
 
@@ -40,11 +40,6 @@ $stat = function (string $label, string $value, string $tone, string $filter = '
         : '<div class="bt-stat bt-tone-' . $tone . '">' . $inner . '</div>';
 };
 
-$panelHead = static fn (string $title, string $url = '', string $linkText = ''): string => '<div class="bt-panel-head">'
-    . '<h2 class="bt-panel-title">' . $title . '</h2>'
-    . ($url !== '' ? '<a class="bt-panel-link" href="' . $url . '">' . $linkText . ' &rarr;</a>' : '')
-    . '</div>';
-
 ?>
 <div class="com-biotime biotime-dashboard" data-bt-root="dashboard">
     <div class="bt-head">
@@ -55,11 +50,28 @@ $panelHead = static fn (string $title, string $url = '', string $linkText = ''):
         <?php endif; ?>
     </div>
 
-    <?php if ($this->profileLine !== []) : ?>
-        <p class="bt-profile"><?php echo $e(implode(' · ', $this->profileLine)); ?></p>
-    <?php endif; ?>
-
-    <p class="bt-range"><?php echo $e(Text::sprintf('COM_BIOTIME_DASHBOARD_RANGE', $f->date($this->from), $f->date($this->to))); ?></p>
+    <?php // The employee and the range shown, as one table row (0.10.0). ?>
+    <div class="bt-panel bt-profile-panel">
+        <div class="bt-table-wrap">
+            <table class="bt-table bt-profile-table">
+                <caption class="visually-hidden"><?php echo Text::_('COM_BIOTIME_PROFILE'); ?></caption>
+                <thead>
+                    <tr>
+                        <?php foreach ($this->profileRow as [$key]) : ?>
+                            <th scope="col"><?php echo Text::_($key); ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <?php foreach ($this->profileRow as [$key, $value]) : ?>
+                            <td data-label="<?php echo $e(Text::_($key)); ?>"><?php echo $e($value); ?></td>
+                        <?php endforeach; ?>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <?php echo $this->notices($this->period); ?>
 
@@ -122,54 +134,5 @@ $panelHead = static fn (string $title, string $url = '', string $linkText = ''):
         ?>
     </div>
 
-    <section class="bt-panel">
-        <?php echo $panelHead(Text::_('COM_BIOTIME_RECENT_ACTIVITY'), $this->canAttendance ? $this->attendanceUrl() : '', Text::_('COM_BIOTIME_VIEW_ALL')); ?>
-        <?php if ($this->period->error('punches') !== null) : ?>
-            <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NOTHING_TO_SHOW'); ?></p>
-        <?php elseif ($this->recent === []) : ?>
-            <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NO_RECENT'); ?></p>
-        <?php else : ?>
-            <div class="bt-table-wrap">
-                <table class="bt-table">
-                    <caption class="visually-hidden"><?php echo Text::_('COM_BIOTIME_RECENT_ACTIVITY'); ?></caption>
-                    <thead>
-                        <tr>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DATE'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DAY'); ?></th>
-                            <?php if ($calc) : ?><th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></th><?php endif; ?>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
-                            <?php if ($calc) : ?>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                            <?php else : ?>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
-                            <?php endif; ?>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_NOTE'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($this->recent as $day) : ?>
-                        <tr class="<?php echo $day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ''); ?><?php echo $day->date === $this->today ? ' bt-row-today' : ''; ?>">
-                            <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a></th>
-                            <td><?php echo $e($f->weekday($day->weekday())); ?></td>
-                            <?php if ($calc) : ?><td><?php echo LayoutHelper::render('biotime.schedule', ['day' => $day, 'f' => $f]); ?></td><?php endif; ?>
-                            <td><?php echo $check($day, 'in'); ?></td>
-                            <td><?php echo $check($day, 'out'); ?></td>
-                            <?php if ($calc) : ?>
-                                <td><?php echo $min($day->late); ?></td>
-                                <td><?php echo $min($day->early); ?></td>
-                            <?php else : ?>
-                                <td><?php echo $e($f->duration($day->span())); ?></td>
-                            <?php endif; ?>
-                            <td><?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f, 'tag' => false]); ?></td>
-                            <td><?php if ($day->missingPunch()) : ?><span class="bt-badge bt-tone-amber"><span aria-hidden="true">!</span><?php echo Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span><?php else : ?><span class="bt-check-none">—</span><?php endif; ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </section>
+    <?php echo LayoutHelper::render('biotime.charts', ['days' => $this->period->days, 'today' => $this->today, 'calc' => $calc, 'summary' => $s, 'f' => $f]); ?>
 </div>

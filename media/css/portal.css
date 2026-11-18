@@ -670,20 +670,180 @@
   color: var(--bt-text-muted);
 }
 
-.com-biotime .bt-profile {
-  margin: -0.5rem 0 1rem;
-  color: var(--bt-text-muted);
+/* My Dashboard: the employee and the range shown, one table row (0.10.0) */
+.com-biotime .bt-profile-panel {
+  margin-bottom: 1.25rem;
 }
 
-/* My Dashboard: the range shown (1 August to today, 0.9.0) */
-.com-biotime .bt-range {
-  margin: -0.5rem 0 1rem;
+.com-biotime .bt-profile-table td {
   font-weight: 600;
-  color: var(--bt-text-muted);
+  white-space: nowrap;
 }
 
-.com-biotime .bt-profile + .bt-range {
-  margin-top: -0.75rem;
+/* Phones: one line per column, its label before the value */
+@media (max-width: 575.98px) {
+  .com-biotime .bt-profile-table thead {
+    display: none;
+  }
+
+  .com-biotime .bt-profile-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .com-biotime .bt-profile-table td::before {
+    content: attr(data-label);
+    font-weight: 400;
+    color: var(--bt-text-muted);
+    text-align: left;
+  }
+}
+
+/* My Dashboard → Statistics (0.10.0): inline SVG charts, 2 per row on wide screens */
+.com-biotime .bt-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.125rem;
+}
+
+@media (min-width: 900px) {
+  .com-biotime .bt-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .com-biotime .bt-chart--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.com-biotime .bt-chart {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--bt-card-line);
+  border-radius: 0.75rem;
+}
+
+.com-biotime .bt-chart-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.com-biotime .bt-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.com-biotime .bt-chart-grid {
+  stroke: #eef0f3;
+  stroke-width: 1;
+}
+
+.com-biotime .bt-chart-axis {
+  font-size: 12px;
+  fill: var(--bt-text-muted);
+}
+
+.com-biotime .bt-chart-value {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #374151;
+}
+
+.com-biotime .bt-chart-mark {
+  transition: opacity 0.15s;
+}
+
+.com-biotime .bt-chart svg:hover .bt-chart-mark {
+  opacity: 0.55;
+}
+
+.com-biotime .bt-chart svg .bt-chart-mark:hover {
+  opacity: 1;
+}
+
+.com-biotime .bt-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.com-biotime .bt-chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.com-biotime .bt-chart-key {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+}
+
+.com-biotime .bt-chart--donut .bt-donut {
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.com-biotime .bt-chart--donut .bt-chart-legend {
+  justify-content: center;
+}
+
+.com-biotime .bt-donut-value {
+  font-size: 30px;
+  font-weight: 700;
+  fill: #111827;
+}
+
+.com-biotime .bt-donut-label {
+  font-size: 11px;
+  fill: var(--bt-text-muted);
+}
+
+.com-biotime .bt-rings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.com-biotime .bt-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.com-biotime .bt-ring svg {
+  width: 100%;
+  max-width: 110px;
+  height: auto;
+}
+
+.com-biotime .bt-ring-value {
+  font-size: 24px;
+  font-weight: 700;
+  fill: #111827;
+}
+
+.com-biotime .bt-ring-label {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.com-biotime .bt-ring-note {
+  font-size: 0.75rem;
+  color: var(--bt-text-muted);
 }
 
 .com-biotime .bt-check-device {
@@ -876,50 +1036,6 @@
 .com-biotime .bt-alert a {
   font-weight: 600;
   color: inherit;
-}
-
-/* Pagination */
-[data-bt-root] .pagination {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  align-items: center;
-  margin: 0 0 1.5rem;
-  padding: 0;
-  list-style: none;
-}
-
-[data-bt-root] .pagination .page-item {
-  margin: 0;
-}
-
-[data-bt-root] .pagination .page-link {
-  display: block;
-  margin: 0;
-  padding: 0.4rem 0.875rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--bt-primary);
-  text-decoration: none;
-  background: var(--bt-card-bg);
-  border: 1px solid var(--bt-card-border);
-  border-radius: 0.5rem;
-  box-shadow: var(--bt-card-shadow);
-}
-
-[data-bt-root] .pagination .page-link:hover {
-  background: var(--bt-card-hover);
-}
-
-[data-bt-root] .pagination .page-item.disabled .page-link {
-  color: var(--bt-text-muted);
-  pointer-events: none;
-  box-shadow: none;
-}
-
-[data-bt-root] .pagination .page-item.disabled:not(:first-child):not(:last-child) .page-link {
-  background: transparent;
-  border-color: transparent;
 }
 
 /*

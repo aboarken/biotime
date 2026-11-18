@@ -193,5 +193,4 @@ $cards = $calc ? [
             </div>
         <?php endif; ?>
     </section>
-    <?php echo LayoutHelper::render('biotime.pagination', ['page' => $this->page, 'pages' => $this->pages, 'url' => fn (int $p): string => $this->pageUrl($p)]); ?>
 </div>

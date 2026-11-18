@@ -27,8 +27,6 @@ final class HtmlView extends BaseHtmlView
 {
     use PortalViewTrait;
 
-    public const PAGE_SIZE = 31;
-
     /** Status filter values. */
     public const FILTERS = ['attended', 'present', 'missingpunch', 'missingmorning', 'missingafternoon', 'absent', 'weekend', 'weekendworked', 'late', 'early', 'holiday', 'exceptions', 'punches', 'nopunches'];
 
@@ -45,10 +43,6 @@ final class HtmlView extends BaseHtmlView
     public string $from = '';
 
     public string $to = '';
-
-    public int $page = 1;
-
-    public int $pages = 1;
 
     public int $total = 0;
 
@@ -85,9 +79,8 @@ final class HtmlView extends BaseHtmlView
         $rows = array_values(array_filter($this->period->days, fn (Day $d): bool => $this->matches($d)));
 
         $this->total = \count($rows);
-        $this->pages = max(1, (int) ceil($this->total / self::PAGE_SIZE));
-        $this->page  = min(max(1, $input->getInt('page', 1)), $this->pages);
-        $this->rows  = \array_slice($rows, ($this->page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
+        // Every day of the month or of From – To on one page (0.9.1): no second page.
+        $this->rows  = $rows;
 
         $this->preparePage($model, 'attendance', 'COM_BIOTIME_ATTENDANCE_TITLE');
         $model->logPage('attendance', ($range !== null ? $this->from . '..' . $this->to : \sprintf('%04d-%02d', $this->year, $this->month)) . ($this->status !== '' ? ' status=' . $this->status : ''));
@@ -96,21 +89,13 @@ final class HtmlView extends BaseHtmlView
     }
 
     /** This page with the same month or range, filtered by $status. */
-    public function filterUrl(string $status, int $page = 1): string
+    public function filterUrl(string $status): string
     {
-        $extra = array_filter([
-            'status' => $status,
-            'page'   => $page > 1 ? (string) $page : '',
-        ]);
+        $extra = array_filter(['status' => $status]);
 
         return $this->from !== ''
             ? $this->url('view=attendance&' . http_build_query(['from' => $this->from, 'to' => $this->to] + $extra))
             : $this->monthUrl('attendance', $this->year, $this->month, $extra);
-    }
-
-    public function pageUrl(int $page): string
-    {
-        return $this->filterUrl($this->status, $page);
     }
 
     /** The table's title: the month, or "01/08/2026 – 18/11/2026". */
