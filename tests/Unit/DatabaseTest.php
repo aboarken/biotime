@@ -260,4 +260,94 @@ final class DatabaseTest extends TestCase
         $this->expectExceptionMessage('read-only transaction');
         $pdo->exec('CREATE TABLE biotime_portal_write_test (i int)');
     }
+
+    /**
+     * 1.0.10: portal pages keep the connection open; one found closed is replaced once by a fresh
+     * connection, and the query runs again there. Other errors are not retried.
+     */
+    public function testAKeptConnectionFoundClosedIsReplacedOnce(): void
+    {
+        $opened  = [];
+        $closed  = new class ('sqlite::memory:') extends \PDO {
+            public function prepare(string $query, array $options = []): \PDOStatement|false
+            {
+                $e            = new \PDOException('SQLSTATE[08006]: server closed the connection unexpectedly');
+                $e->errorInfo = ['08006', 7, 'server closed the connection unexpectedly'];
+
+                throw $e;
+            }
+        };
+        $fresh   = new \PDO('sqlite::memory:');
+        $connect = static function (string $dsn, string $user, string $password, array $options) use (&$opened, $closed, $fresh): \PDO {
+            $opened[] = (bool) ($options[\PDO::ATTR_PERSISTENT] ?? false);
+
+            return \count($opened) === 1 ? $closed : $fresh;
+        };
+        $config = new DbConfig('pgsql', 'db.example.com', 5432, 'biotime', 'portal', 'pw', DbConfig::SSL_REQUIRE);
+        $q      = (new DbConnector($connect, static fn (): bool => true))->connect($config, true);
+
+        self::assertSame([['n' => 1]], $q->rows('SELECT 1 AS n'));
+        self::assertSame([true, false], $opened, 'kept open first, then one fresh connection');
+
+        // Without "keep open" (Test Database) nothing is retried.
+        $opened = [];
+        $once   = (new DbConnector(static function () use (&$opened, $closed): \PDO {
+            $opened[] = 1;
+
+            return $closed;
+        }, static fn (): bool => true))->connect($config);
+
+        try {
+            $once->rows('SELECT 1');
+            self::fail('no exception');
+        } catch (DbException) {
+            self::assertCount(1, $opened);
+        }
+    }
+
+    /** Against the PostgreSQL fixture: a kept-open connection that the server ended works again. */
+    public function testRealPostgresKeptConnectionSurvivesATermination(): void
+    {
+        $env = getenv('BIOTIME_TEST_PG');
+
+        if (!\is_string($env) || $env === '' || !\extension_loaded('pdo_pgsql')) {
+            self::markTestSkipped('BIOTIME_TEST_PG not set');
+        }
+
+        [$host, $port, $db, $user, $password] = explode(':', $env, 5);
+        $config = new DbConfig('pgsql', $host, (int) $port, $db, $user, $password, DbConfig::SSL_REQUIRE);
+        $q      = (new DbConnector())->connect($config, true);
+        $pid    = (int) $q->value('SELECT pg_backend_pid()');
+
+        // End that session from another connection, as a PostgreSQL restart would.
+        $admin = getenv('BIOTIME_TEST_PG_ADMIN');
+
+        if (!\is_string($admin) || $admin === '') {
+            self::markTestSkipped('BIOTIME_TEST_PG_ADMIN not set');
+        }
+
+        [$ah, $ap, $ad, $au, $apw] = explode(':', $admin, 5);
+        (new \PDO("pgsql:host={$ah};port={$ap};dbname={$ad}", $au, $apw))->query('SELECT pg_terminate_backend(' . $pid . ')');
+
+        self::assertSame(1, (int) $q->value('SELECT 1'), 'the query ran again on a fresh connection');
+        self::assertNotSame($pid, (int) $q->value('SELECT pg_backend_pid()'));
+    }
+
+    /** 1.0.10: only reading statements are sent, also inside a WITH; words in quotes do not count. */
+    public function testOnlyReadingStatementsAreSent(): void
+    {
+        $q = new \BiotimePortal\Component\Biotime\Administrator\Database\Query(new \PDO('sqlite::memory:'), 'pgsql');
+
+        foreach (['WITH x AS (DELETE FROM t RETURNING *) SELECT * FROM x', 'SELECT 1; DROP TABLE t', 'UPDATE t SET a = 1', 'WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x', 'SELECT set_config(\'a\', \'b\', false) FROM t WHERE 1 = 1 FOR UPDATE'] as $sql) {
+            try {
+                $q->rows($sql);
+                self::fail('sent: ' . $sql);
+            } catch (\LogicException) {
+                self::assertTrue(true);
+            }
+        }
+
+        self::assertSame([['w' => 'DELETE or UPDATE']], $q->rows("SELECT 'DELETE or UPDATE' AS w"), 'a word in a string literal is fine');
+        self::assertSame([['update_time' => 1]], $q->rows('SELECT 1 AS update_time'), 'a column named like a keyword is fine');
+    }
 }

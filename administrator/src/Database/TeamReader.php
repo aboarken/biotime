@@ -61,8 +61,9 @@ final class TeamReader
      * What the employee's own ZKBioTime user account may see (1.0.8): ZKBioTime has employees and,
      * separately, users (auth_user) whose data permissions list departments (auth_user_auth_dept).
      * The employee's users are those linked to the employee code (emp_pin), whose username is the
-     * employee code, or whose e-mail or username is the employee's e-mail address (or one of
-     * $emails, e.g. the Joomla account's); active and not deleted. A superuser or a user who may manage all departments (can_manage_all_dept) sees
+     * employee code, or whose e-mail or username is the e-mail address of the employee record (or
+     * one of $emails); active and not deleted. Callers pass no e-mail a user can change
+     * themselves (e.g. the Joomla profile's): it would let them pick someone else's user. A superuser or a user who may manage all departments (can_manage_all_dept) sees
      * every department. Only these columns of auth_user are read: id, username, email, emp_pin,
      * is_active, is_superuser, can_manage_all_dept, del_flag (never the password).
      *

@@ -35,7 +35,13 @@ final class DbConnector
     /**
      * @throws DbException
      */
-    public function connect(DbConfig $config): Query
+    /**
+     * @param bool $persistent keep the connection open between pages (1.0.10, portal pages): PHP
+     *                         reuses it, so a page does not wait for a new encrypted connection to
+     *                         the ZKBioTime server. A connection lost meanwhile (e.g. PostgreSQL
+     *                         restarted) is replaced once by a fresh one (Query).
+     */
+    public function connect(DbConfig $config, bool $persistent = false): Query
     {
         if (!($this->loaded)($config->extension())) {
             throw new DbException(DbException::DRIVER_MISSING, 'PHP extension missing', $config->extension());
@@ -44,7 +50,7 @@ final class DbConnector
         $start = microtime(true);
 
         try {
-            $pdo = ($this->pdo)($config->dsn(), $config->user, $config->password(), $config->pdoOptions());
+            $pdo = ($this->pdo)($config->dsn(), $config->user, $config->password(), $config->pdoOptions() + ($persistent ? [\PDO::ATTR_PERSISTENT => true] : []));
         } catch (\PDOException $e) {
             throw DbException::fromDriver($e, 'connect');
         } finally {
@@ -52,6 +58,19 @@ final class DbConnector
             Query::$connectSeconds += microtime(true) - $start;
         }
 
-        return new Query($pdo, $config->engine);
+        // A fresh (not persistent) connection when the kept one turns out to be closed.
+        $reconnect = $persistent ? function () use ($config): \PDO {
+            $start = microtime(true);
+
+            try {
+                return ($this->pdo)($config->dsn(), $config->user, $config->password(), $config->pdoOptions());
+            } catch (\PDOException $e) {
+                throw DbException::fromDriver($e, 'connect');
+            } finally {
+                Query::$connectSeconds += microtime(true) - $start;
+            }
+        } : null;
+
+        return new Query($pdo, $config->engine, $reconnect);
     }
 }

@@ -3,6 +3,23 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.10] - 2026-11-18
+
+### Security
+From a security review of the whole component:
+- **The Manager Dashboard no longer uses the Joomla profile e-mail** to find the manager's ZKBioTime user. A user can change that address themselves, so a manager could have chosen the address of a ZKBioTime administrator and seen every department. Only what ZKBioTime holds links them: the employee ID (`emp_pin` or username) and the e-mail of the employee record.
+- **Database user: only the tables the portal reads** (docs/DATABASE.md), no longer every table: ZKBioTime's sessions, API tokens and settings stay out of reach; `auth_user` keeps its column-only grant.
+- **Changing the database SSL mode or CA file asks for the database password again**, as changing the server does, so a weaker encryption cannot be set while the stored password is kept.
+- **Portal log lines of database errors hold the error kind and SQLSTATE only**, not the driver's text (which can name the database user or server); Test Database still shows the full text to the administrator.
+- **Only reading statements are sent to the database**, also inside a `WITH` (defence in depth: the session is read-only anyway).
+- **Every new match by e-mail waits for an administrator.** Joomla lets users change their own e-mail without verifying it, so someone who had never opened the portal could set a colleague's address and be matched to that colleague. Now the employee found by e-mail is stored as *Suspended / waiting for approval*; the user sees "…waiting for an administrator to approve it"; an administrator approves it in User Mappings (select, **Confirm**; several at once). Employees already matched are not affected; matches by an employee-code field set by an administrator, and mappings an administrator makes, are not held.
+
+### Changed
+- **Faster pages: the connection to ZKBioTime's database stays open between pages** (a persistent PDO connection), so a page no longer waits for a new encrypted connection to the BioTime server. A connection found closed (e.g. after PostgreSQL restarted) is replaced once by a fresh one and the query runs again. Test Database still opens a new connection. On the BioTime server this keeps up to one idle connection per PHP worker of the Joomla site open.
+- **Faster Manager Dashboard: the manager's departments and team list are kept for the cache time** (Integration Settings → Cache time) instead of being read from ZKBioTime on every page and every department chosen. A change of a manager's permissions in ZKBioTime shows within that time; "no access" is never kept.
+- **"Total Exceptions"**: the column of late-in + early-out is named Total Exceptions on My Attendance (was Total Late) and on the Manager Dashboard (was Total).
+- **Manager Dashboard: Workforce is the selected card by default** and clears the status filter; All Days is a plain count there. (My Dashboard and My Attendance keep All Days.)
+
 ## [1.0.9] - 2026-11-18
 
 ### Fixed

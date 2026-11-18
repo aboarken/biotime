@@ -28,6 +28,9 @@ final class ManagerModel extends PortalModel
 {
     public const MAX_DAYS = 31;
 
+    /** Cache key prefix of the manager's departments and team (1.0.10). */
+    private const CACHE = 'mgr1:';
+
     /** @var list<array{id: int, name: string, parent: ?int, depth: int}>|null */
     private ?array $departments = null;
 
@@ -48,12 +51,37 @@ final class ManagerModel extends PortalModel
             return $this->departments;
         }
 
+        // Kept for the cache time (1.0.10): the departments a manager may see change rarely, and
+        // reading them takes several queries to the ZKBioTime server on every page.
+        $cache  = $this->biotime()->getUserCache();
+        $cached = $cache->get($this->identity(), self::CACHE . 'departments');
+
+        if (isset($cached['d']) && \is_array($cached['d'])) {
+            return $this->departments = $cached['d'];
+        }
+
+        $this->departments = $this->readDepartments();
+
+        if ($this->departments !== []) {
+            $cache->set($this->identity(), self::CACHE . 'departments', ['d' => $this->departments]);
+        }
+
+        return $this->departments;
+    }
+
+    /**
+     * @return list<array{id: int, name: string, parent: ?int, depth: int}>
+     *
+     * @throws DbException
+     */
+    private function readDepartments(): array
+    {
         $own = $this->biotime()->getAttendanceReader()->employee($this->identity()->empCode());
 
         if ($own === null) {
             $this->logger()->warning(\sprintf('Manager Dashboard, Joomla user %d: no department shown: the mapped employee code is not exactly one ZKBioTime employee', $this->identity()->joomlaUserId));
 
-            return $this->departments = [];
+            return [];
         }
 
         // Only what ZKBioTime gives the manager (1.0.8):
@@ -63,9 +91,11 @@ final class ManagerModel extends PortalModel
         //  - departments ZKBioTime names them Department Manager of, with those below them.
         $team  = $this->biotime()->getTeamReader();
         $out   = [];
-        $mail  = (string) (Factory::getApplication()->getIdentity()?->email ?? '');
         // Only ZKBioTime decides (1.0.8; the Joomla permission "View all departments" is gone).
-        $scope = $team->userScope($this->identity()->empCode(), [$mail]);
+        // Security (1.0.10): only what ZKBioTime holds links the manager to a ZKBioTime user (the
+        // employee ID and the employee record's e-mail), never the Joomla profile e-mail, which a
+        // user can change themselves.
+        $scope = $team->userScope($this->identity()->empCode());
 
         if (!$scope['readable']) {
             $this->logger()->warning('Manager Dashboard: ZKBioTime users (auth_user, auth_user_auth_dept) could not be read; only Department Managers are used. Grant SELECT (id, username, email, is_active, is_superuser) ON auth_user and SELECT ON auth_user_auth_dept to the portal\'s database user.');
@@ -95,13 +125,13 @@ final class ManagerModel extends PortalModel
                 match (true) {
                     !$scope['readable'] && $scope['users'] === 0 => 'ZKBioTime users could not be read (see the grant in docs/DATABASE.md), and the employee is no Department Manager',
                     !$scope['readable']                          => \sprintf('%d ZKBioTime user(s) matched, but their department permissions (auth_user_auth_dept) could not be read', $scope['users']),
-                    $scope['users'] === 0                        => 'no active ZKBioTime user matched the employee ID (emp_pin or username) or the e-mail of the employee or the Joomla account, and the employee is no Department Manager',
+                    $scope['users'] === 0                        => 'no active ZKBioTime user matched the employee ID (emp_pin or username) or the e-mail of the employee record, and the employee is no Department Manager',
                     default                                      => \sprintf('%d ZKBioTime user(s) matched, but none is a superuser or may manage all departments, and their data permissions list no department', $scope['users']),
                 }
             ));
         }
 
-        return $this->departments = array_values($out);
+        return array_values($out);
     }
 
     /**
@@ -113,7 +143,24 @@ final class ManagerModel extends PortalModel
      */
     public function team(): array
     {
-        return $this->team ??= $this->biotime()->getTeamReader()->employees(array_column($this->departments(), 'id'), $this->attendance()->today());
+        if ($this->team !== null) {
+            return $this->team;
+        }
+
+        // Kept for the cache time (1.0.10), for the same departments and day.
+        $ids    = array_column($this->departments(), 'id');
+        $key    = self::CACHE . 'team:' . $this->attendance()->today() . ':' . md5(implode(',', $ids));
+        $cache  = $this->biotime()->getUserCache();
+        $cached = $cache->get($this->identity(), $key);
+
+        if (isset($cached['t']) && \is_array($cached['t'])) {
+            return $this->team = $cached['t'];
+        }
+
+        $this->team = $this->biotime()->getTeamReader()->employees($ids, $this->attendance()->today());
+        $cache->set($this->identity(), $key, ['t' => $this->team]);
+
+        return $this->team;
     }
 
     /** The chosen department (?dept=), when it is one of the manager's; 0 for all. */

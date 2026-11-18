@@ -452,7 +452,9 @@ final class AttendanceService
             $items = $reader->punches($identity->empCode(), $first, $last);
         } catch (DbException $e) {
             $kind = SourceException::kindOf($e);
-            $this->logger->warning('ZKBioTime database: ' . $type . ' could not be read (' . $e->getKind() . ($e->getDetail() !== '' ? ': ' . $e->getDetail() : '') . ')');
+            // The kind and SQLSTATE only (1.0.10): the driver's text can name the database user,
+            // the server or a value. Test Database shows the full text to the administrator.
+            $this->logger->warning('ZKBioTime database: ' . $type . ' could not be read (' . $e->getKind() . ($e->sqlState() !== '' ? ', SQLSTATE ' . $e->sqlState() : '') . ')');
             $stat['error'] = $kind;
 
             return ['rows' => [], 'at' => null, 'error' => $kind];

@@ -18,7 +18,7 @@ $this->getDocument()->getWebAssetManager()->useScript('multiselect');
 
 $badge = [
     'active'    => 'bg-success',
-    'suspended' => 'bg-danger',
+    'suspended' => 'bg-warning text-dark',
     'not_found' => 'bg-secondary',
     'ambiguous' => 'bg-warning text-dark',
 ];

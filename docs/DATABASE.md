@@ -48,35 +48,48 @@ CREATE ROLE joomla_portal LOGIN PASSWORD 'choose-a-long-password';
 ALTER ROLE joomla_portal SET default_transaction_read_only = on;
 GRANT CONNECT ON DATABASE biotime TO joomla_portal;
 GRANT USAGE ON SCHEMA public TO joomla_portal;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO joomla_portal;
--- Tables ZKBioTime creates later (e.g. after an upgrade) are readable as well:
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO joomla_portal;
 ```
+
+Then let it read **only the tables the portal uses** (1.0.10). ZKBioTime's other tables hold
+login sessions, API tokens and settings the portal never needs, and ZKBioTime's user accounts
+(`auth_user`) hold password hashes: of those, only eight columns are readable, never the password.
+
+```sql
+GRANT SELECT ON personnel_employee, personnel_department, personnel_position, personnel_resign,
+  iclock_transaction, iclock_terminal, iclock_terminalemployee,
+  att_attemployee, att_payloadbase, att_payloadtimecard, att_payloadpaycode, att_payloadattcode, att_payloadovertime,
+  att_timeinterval, att_holiday, att_attshift, att_shiftdetail, att_attschedule, att_groupschedule,
+  att_departmentschedule, att_temporaryschedule, att_tempschedule, auth_user_auth_dept
+  TO joomla_portal;
+GRANT SELECT (id, username, email, emp_pin, is_active, is_superuser, can_manage_all_dept, del_flag) ON auth_user TO joomla_portal;
+```
+
+If PostgreSQL answers *relation "…" does not exist* (another ZKBioTime version), remove that
+name from the list and run it again.
+
+**Already set up with "all tables"** (before 1.0.10)? Narrow it, as `postgres`:
+
+```sql
+REVOKE SELECT ON ALL TABLES IN SCHEMA public FROM joomla_portal;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE SELECT ON TABLES FROM joomla_portal;
+```
+
+then run the two `GRANT` statements above.
 
 If Test Database says *read only by default: false*, the `default_transaction_read_only`
 setting did not take: run `ALTER ROLE joomla_portal SET default_transaction_read_only = on;`
 as `postgres` (it applies to new connections).
 
-The user can read every table and change nothing: `default_transaction_read_only` refuses every
-change, and the component's own connection is read only as well. Which tables the portal reads
-is decided in Joomla, not here.
+The user can read only those tables and change nothing: `default_transaction_read_only` refuses
+every change, the component's connection is read only as well, and it sends nothing but `SELECT`.
 
 Check it: register the server again in pgAdmin as `joomla_portal`, open the Query Tool on
-`biotime` and run `SELECT count(*) FROM iclock_transaction;` (a number) and
-`CREATE TABLE test_x (i int);` (must fail: *cannot execute CREATE TABLE in a read-only transaction*).
+`biotime` and run:
 
-> All tables include ZKBioTime's own accounts (`auth_user`, with password hashes). The Manager
-> Dashboard (1.0.8) needs eight of its columns to follow ZKBioTime's user permissions, never the
-> password. Keep the table out and allow only those columns:
->
-> ```sql
-> REVOKE SELECT ON auth_user FROM joomla_portal;
-> GRANT SELECT (id, username, email, emp_pin, is_active, is_superuser, can_manage_all_dept, del_flag) ON auth_user TO joomla_portal;
-> ```
->
-> Check it as `joomla_portal`: `SELECT password FROM auth_user LIMIT 1;` must fail with
-> *permission denied*. `auth_user_auth_dept` (the departments of each user's data permissions)
-> is covered by the grant on all tables.
+- `SELECT count(*) FROM iclock_transaction;`: a number;
+- `CREATE TABLE test_x (i int);`: must fail (*cannot execute CREATE TABLE in a read-only transaction*);
+- `SELECT password FROM auth_user LIMIT 1;`: must fail (*permission denied*);
+- `SELECT count(*) FROM django_session;` (or any table not in the list): must fail (*permission denied*).
 
 ## 2. Network: only the Joomla server, encrypted
 

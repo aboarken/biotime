@@ -119,8 +119,9 @@ final class IdentityResolverTest extends TestCase
     {
         $identity = $this->resolver()->resolve(5, ' ALICE@example.COM ');
 
-        self::assertSame('11', $identity->employeeId());
-        self::assertSame(UserMapping::SOURCE_AUTO, $this->repo->find(5)?->source);
+        // Found, and waiting for an administrator (1.0.10): Joomla e-mails are not verified.
+        self::assertFalse($identity->isMatched());
+        self::assertSame(['11', 'E1', UserMapping::STATUS_SUSPENDED, UserMapping::SOURCE_AUTO], [$this->repo->find(5)?->employeeId, $this->repo->find(5)?->empCode, $this->repo->find(5)?->status, $this->repo->find(5)?->source]);
     }
 
     public function testSharedEmailIsAmbiguous(): void
@@ -228,7 +229,8 @@ final class IdentityResolverTest extends TestCase
         self::assertSame(0, $this->queries(), 'ZKBioTime is not even asked');
     }
 
-    public function testAMatchFoundOnlyAfterAnEmailChangeWaitsForAnAdministrator(): void
+    /** 1.0.10: every match by e-mail waits for an administrator, whether or not the e-mail changed. */
+    public function testEveryMatchByEmailWaitsForAnAdministrator(): void
     {
         // First visit: no employee has this e-mail.
         self::assertSame(UserMapping::STATUS_NOT_FOUND, $this->resolver()->resolve(7, 'nobody@x.com')->status);
@@ -240,10 +242,11 @@ final class IdentityResolverTest extends TestCase
         self::assertFalse($identity->isMatched());
         self::assertSame(UserMapping::STATUS_SUSPENDED, $identity->status);
         self::assertSame(UserMapping::STATUS_SUSPENDED, $this->repo->find(7)?->status);
-        self::assertContains('identity.suspended', $this->audit->actions());
+        self::assertContains('identity.pending', $this->audit->actions());
 
-        // A user who had that e-mail from the start (verified at registration) is matched directly.
-        self::assertTrue($this->resolver()->resolve(8, 'alice.b@example.com')->isMatched());
+        // Also a user who had that e-mail from the start: Joomla cannot tell the two apart.
+        self::assertFalse($this->resolver()->resolve(8, 'alice.b@example.com')->isMatched());
+        self::assertSame(UserMapping::STATUS_SUSPENDED, $this->repo->find(8)?->status);
     }
 
     /** A failed daily re-verification is not retried on every page load (each try waits for ZKBioTime's database). */
