@@ -342,14 +342,14 @@ final class AttendanceReaderTest extends TestCase
             $inner = (new DbConnector())->connect($config);
 
             return new class ($inner, $queries) extends \BiotimePortal\Component\Biotime\Administrator\Database\Query {
-                public function __construct(private readonly \BiotimePortal\Component\Biotime\Administrator\Database\Query $inner, private int &$count)
+                public function __construct(private readonly \BiotimePortal\Component\Biotime\Administrator\Database\Query $inner, private int &$counter)
                 {
                     parent::__construct(null, 'pgsql');
                 }
 
                 public function rows(string $sql, array $params = []): array
                 {
-                    $this->count++;
+                    $this->counter++;
 
                     return $this->inner->rows($sql, $params);
                 }

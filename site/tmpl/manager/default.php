@@ -78,13 +78,16 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
     ])) . '"'
     . ' value="' . $e((new DateTimeImmutable($value))->format('d/m/Y')) . '">';
 
-// Cards: [label, value html, tone, filter]; '*' = every day (clears the status filter). 3 rows of 5.
+// Cards: [label, value html, tone, filter]; '*' = every day (clears the status filter).
 $cards = $s === null ? [] : [
     [Text::_('COM_BIOTIME_MANAGER_WORKFORCE'), (string) \count($this->employees), 'blue', '*'],
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
     [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
     [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
+    // Days with a check-in (morning punch) and with a check-out (afternoon punch), 1.0.2.
+    [Text::_('COM_BIOTIME_MANAGER_MORNING_PUNCHES'), (string) $this->morningPunches, Ui::countTone($this->morningPunches, 'teal'), ''],
+    [Text::_('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), (string) $this->afternoonPunches, Ui::countTone($this->afternoonPunches, 'blue'), ''],
     [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'purple'), 'holiday'],
     [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'sky'), 'weekendworked'],
     [Text::_('COM_BIOTIME_CARD_RATE'), $s->rate === null ? '—' : $s->rate . ' <small>%</small>', $s->rate === null ? 'muted' : ($s->rate >= 90 ? 'green' : ($s->rate >= 75 ? 'amber' : 'red')), ''],
@@ -149,13 +152,14 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
 
         <section class="bt-panel" id="bt-records">
             <div class="bt-panel-head">
-                <h2 class="bt-panel-title"><?php echo $e($range); ?></h2>
+                <h2 class="bt-panel-title" id="bt-mgr-range"><?php echo $e($range); ?></h2>
                 <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_MANAGER_N_EMPLOYEES', \count($this->rows))); ?> · <?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', \count($this->dates))); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
             </div>
             <?php if ($this->rows === [] || $this->dates === []) : ?>
                 <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NO_DAYS'); ?></p>
             <?php else : ?>
-                <div class="bt-table-wrap">
+                <?php // Its own scroll area: the sideways scrollbar stays in view, the header row and the employee column stay put (1.0.2). ?>
+                <div class="bt-table-wrap bt-table-wrap--fixed" tabindex="0" role="region" aria-labelledby="bt-mgr-range">
                     <table class="bt-table bt-manager-table">
                         <caption class="visually-hidden"><?php echo $e(Text::_('COM_BIOTIME_MANAGER_TITLE') . ': ' . $range); ?></caption>
                         <thead>

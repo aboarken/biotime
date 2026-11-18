@@ -41,10 +41,15 @@ final class DbConnector
             throw new DbException(DbException::DRIVER_MISSING, 'PHP extension missing', $config->extension());
         }
 
+        $start = microtime(true);
+
         try {
             $pdo = ($this->pdo)($config->dsn(), $config->user, $config->password(), $config->pdoOptions());
         } catch (\PDOException $e) {
             throw DbException::fromDriver($e, 'connect');
+        } finally {
+            // For the page's log line (1.0.2): connecting includes the TLS handshake.
+            Query::$connectSeconds += microtime(true) - $start;
         }
 
         return new Query($pdo, $config->engine);

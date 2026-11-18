@@ -2,6 +2,7 @@
  * Filter bars of the portal pages (forms marked data-bt-filters) have no Search button:
  *  - choosing an option in a list (month, year, status, health, location) applies it at once;
  *  - choosing a month or year clears the From and To dates;
+ *  - a new month, year, From or To date clears the Status (the chosen card);
  *  - a date is applied when it is chosen in the date picker (datepicker.js) or cleared; without
  *    JavaScript it is typed as DD/MM/YYYY.
  * A filter change always starts again at page 1 (the form does not send "page").
@@ -27,6 +28,15 @@
     }
   };
 
+  // A new month, year or date starts again with every day: the chosen card (Status) is cleared.
+  const resetStatus = (form) => {
+    const status = form.querySelector('select[name="status"]');
+
+    if (status) {
+      status.value = '';
+    }
+  };
+
   const init = (form) => {
     form.querySelectorAll('.bt-toolbar-submit').forEach((el) => {
       el.hidden = true;
@@ -39,6 +49,7 @@
           form.querySelectorAll('input[data-bt-range]').forEach((input) => {
             input.value = '';
           });
+          resetStatus(form);
         }
 
         submit(form);
@@ -50,6 +61,10 @@
 
       field.addEventListener('change', () => {
         if (field.value !== initial && (field.value === '' || field.checkValidity())) {
+          if (field.name === 'from' || field.name === 'to') {
+            resetStatus(form);
+          }
+
           submit(form);
         }
       });

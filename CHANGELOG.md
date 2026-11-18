@@ -3,6 +3,17 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-11-18
+
+### Changed
+- **Manager Dashboard follows ZKBioTime's Department Manager**: a manager sees only the departments ZKBioTime names them *Department Manager* of (`personnel_department.dept_manager_id`), with the departments below them, no longer simply their own department. Without any, the page says "You don't have access to view departments in the Attendance Management System. Please contact the System Administrator."
+- **Manager Dashboard: Total Morning Punches and Total Afternoon Punches** cards (days with a check-in, days with a check-out).
+- **Manager Dashboard: the table scrolls inside its own box** (at most 70 % of the screen tall), so the sideways scrollbar is always in view; the date row and the employee column stay put.
+- **My Dashboard → Attendance rate per month**: a horizontal bar per month, like Your Devices: red below 70 %, yellow from 70 % to 94 %, green from 95 %.
+- **Choosing another month, year, From or To date clears the chosen card** (Status), on My Attendance and the Manager Dashboard; the month arrows no longer keep it either.
+- **Faster My Dashboard**: the months of the school year that are not in the cache are read together (about ten queries) instead of about fifteen queries per month.
+- **The page's log line** (with Detailed logging on) now shows the time spent connecting to ZKBioTime's database, the number of queries and their time, and the page's total time, to see where a slow page spends it.
+
 ## [1.0.1] - 2026-11-18
 
 ### Changed

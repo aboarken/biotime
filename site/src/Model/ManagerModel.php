@@ -18,7 +18,8 @@ use Joomla\CMS\Factory;
 
 /**
  * Manager Dashboard (1.0.0). A manager (permission "View Manager Dashboard") sees the employees
- * of their own ZKBioTime department and of every department below it, nobody else. The department
+ * of the departments ZKBioTime names them Department Manager of, and of every department below
+ * those (1.0.2), nobody else. The department
  * and employee filters only narrow that list: a value outside it is ignored. The period is at most
  * MAX_DAYS days (today by default), because every employee in the list is read.
  */
@@ -33,8 +34,8 @@ final class ManagerModel extends PortalModel
     private ?array $team = null;
 
     /**
-     * The manager's department and the departments below it; [] when the manager has no
-     * department in ZKBioTime.
+     * The departments the manager manages in ZKBioTime and those below them; [] when ZKBioTime
+     * names them manager of none (they then see a message, not a team).
      *
      * @return list<array{id: int, name: string, parent: ?int, depth: int}>
      *
@@ -48,9 +49,27 @@ final class ManagerModel extends PortalModel
 
         $own = $this->biotime()->getAttendanceReader()->employee($this->identity()->empCode());
 
-        return $this->departments = $own === null || $own['department_id'] === null
-            ? []
-            : $this->biotime()->getTeamReader()->departments((int) $own['department_id']);
+        if ($own === null) {
+            return $this->departments = [];
+        }
+
+        // Only what ZKBioTime gives the manager: the departments they are Department Manager of,
+        // with those below them (1.0.2). A department below another one already listed is not
+        // repeated.
+        $team = $this->biotime()->getTeamReader();
+        $out  = [];
+
+        foreach ($team->managedDepartments((int) $own['id']) as $root) {
+            if (isset($out[$root])) {
+                continue;
+            }
+
+            foreach ($team->departments($root) as $d) {
+                $out[$d['id']] ??= $d;
+            }
+        }
+
+        return $this->departments = array_values($out);
     }
 
     /**

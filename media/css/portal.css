@@ -817,60 +817,6 @@
   fill: var(--bt-text-muted);
 }
 
-.com-biotime .bt-rate-months {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 0.625rem;
-}
-
-.com-biotime .bt-rate-month {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.625rem 0.75rem;
-  background: var(--bt-tone-soft);
-  border-radius: 0.5rem;
-}
-
-.com-biotime .bt-rate-name {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--bt-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.com-biotime .bt-rate-value {
-  font-size: 1.375rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--bt-tone);
-}
-
-.com-biotime .bt-rate-value small {
-  font-size: 0.75rem;
-  margin-left: 0.1rem;
-}
-
-.com-biotime .bt-rate-track {
-  height: 0.375rem;
-  background: rgba(15, 23, 42, 0.08);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.com-biotime .bt-rate-track span {
-  display: block;
-  height: 100%;
-  background: var(--bt-tone);
-  border-radius: 3px;
-}
-
-.com-biotime .bt-rate-note {
-  font-size: 0.6875rem;
-  color: var(--bt-text-muted);
-}
-
 .com-biotime .bt-devices {
   display: grid;
   gap: 0.625rem;
@@ -1272,6 +1218,25 @@
 }
 
 .com-biotime .bt-manager-table thead th.bt-mgr-name {
+  z-index: 3;
+}
+
+/* A table that scrolls inside its own box (Manager Dashboard, 1.0.2): at most most of the screen
+   tall, so its sideways scrollbar is always visible; the header row stays at the top. */
+.com-biotime .bt-table-wrap--fixed {
+  max-height: 70vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.com-biotime .bt-table-wrap--fixed:focus-visible {
+  outline: 2px solid var(--bt-primary);
+  outline-offset: -2px;
+}
+
+.com-biotime .bt-table-wrap--fixed thead th {
+  position: sticky;
+  top: 0;
   z-index: 2;
 }
 

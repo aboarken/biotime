@@ -75,6 +75,26 @@ final class TeamReaderTest extends TestCase
         self::assertSame([], $r->employees([10], 'not a date'));
     }
 
+    public function testDepartmentsAManagerManagesInZkbioTime(): void
+    {
+        $params = null;
+        $r      = $this->reader(['WHERE dept_manager_id = :emp' => static function (array $p) use (&$params): array {
+            $params = $p;
+
+            return [['id' => 12], ['id' => 10], ['id' => 12]];
+        }]);
+
+        self::assertSame([12, 10], $r->managedDepartments(7));
+        self::assertSame([':emp' => 7], $params);
+
+        $old = $this->reader(['WHERE dept_manager_id = :emp' => static fn (): array => throw new DbException(DbException::QUERY, 'column does not exist')]);
+        self::assertSame([], $old->managedDepartments(7), 'no department managers in this ZKBioTime: none');
+
+        $down = $this->reader(['WHERE dept_manager_id = :emp' => static fn (): array => throw new DbException(DbException::UNREACHABLE, 'down')]);
+        $this->expectException(DbException::class);
+        $down->managedDepartments(7);
+    }
+
     /** Against the PostgreSQL fixture (tests/Support/sql/zkbiotime-pgsql.sql), when BIOTIME_TEST_PG is set. */
     public function testRealPostgres(): void
     {
@@ -88,6 +108,8 @@ final class TeamReaderTest extends TestCase
         $config = new \BiotimePortal\Component\Biotime\Administrator\Database\DbConfig('pgsql', $host, (int) $port, $db, $user, $password, \BiotimePortal\Component\Biotime\Administrator\Database\DbConfig::SSL_REQUIRE);
         $team   = new TeamReader(static fn () => (new \BiotimePortal\Component\Biotime\Administrator\Database\DbConnector())->connect($config));
 
+        self::assertSame([10], $team->managedDepartments(1), 'Alice is the Department Manager of IT');
+        self::assertSame([], $team->managedDepartments(2), 'Bob manages nothing');
         self::assertSame([[10, 0], [11, 1]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(10)), 'IT and HR below it');
         self::assertSame([[11, 0]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(11)), 'HR alone');
         self::assertSame(['E2', 'E1'], array_column($team->employees([10, 11], '2026-11-18'), 'emp_code'), 'by department name: Human Resources, then Information Technology');

@@ -92,7 +92,7 @@ $cards = [
         <?php else : ?>
             <span></span>
         <?php endif; ?>
-        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'attendance', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f, 'extra' => array_filter(['status' => $this->status])]); ?>
+        <?php echo LayoutHelper::render('biotime.monthnav', ['view' => 'attendance', 'year' => $this->year, 'month' => $this->month, 'today' => $this->period->today, 'f' => $f]); ?>
     </div>
 
     <?php echo LayoutHelper::render('biotime.toolbar', [
