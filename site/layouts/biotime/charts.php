@@ -153,7 +153,8 @@ $stacked .= $xLabels();
 $grouped = '';
 
 [$maxMin, $stepMin] = $nice(max(1, ...array_map(static fn (array $m): int => max($m['summary']->lateMinutes, $m['summary']->earlyMinutes), $months)));
-$gw      = min(18, $band * 0.3);
+// As wide as the check-in / check-out columns (1.0.1); the two bars of a month side by side.
+$gw      = min(30, $band * 0.42);
 $grouped = $grid($maxMin, $stepMin, $hm);
 
 foreach ($months as $i => $m) {
@@ -227,7 +228,8 @@ $rateTone = static fn (?int $r): string => $r === null ? 'muted' : ($r >= 90 ? '
 // 6. Devices used: every device the employee punches on (or is registered on), its punches split
 // by fingerprint and face.
 $ps      = $displayData['devices'] ?? null;
-$devices = $ps !== null ? $ps->devices : [];
+// Only devices with punches in the school year (1.0.1).
+$devices = $ps !== null ? array_values(array_filter($ps->devices, static fn (array $d): bool => (int) $d['total'] > 0)) : [];
 $devMax  = max(1, ...array_map(static fn (array $d): int => (int) $d['total'], $devices ?: [['total' => 1]]));
 
 $chart = static fn (string $title, string $summary, string $body, string $legendHtml = '', string $class = ''): string => '<figure class="bt-chart' . $class . '">'

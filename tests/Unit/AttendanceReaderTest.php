@@ -322,4 +322,62 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame(['Gym', 'Main Gate'], $r->devices('E1'), 'punched on, or registered on');
         self::assertSame([7, 0, 'IN07:30-OUT15:30', 'Annual Leave'], [$days['2026-11-03']['late'], $days['2026-11-03']['early'], $days['2026-11-03']['schedule'], $days['2026-11-24']['leave_name']], 'ZKBioTime 9.5 time card and pay codes');
     }
+
+    /**
+     * Manager Dashboard (1.0.0): preload() reads many employees in a few queries; what days(),
+     * punches() and employee() then return is exactly what they return one employee at a time.
+     */
+    public function testPreloadGivesTheSameAsOneEmployeeAtATime(): void
+    {
+        $env = getenv('BIOTIME_TEST_PG');
+
+        if (!\is_string($env) || $env === '' || !\extension_loaded('pdo_pgsql')) {
+            self::markTestSkipped('BIOTIME_TEST_PG not set');
+        }
+
+        [$host, $port, $db, $user, $password] = explode(':', $env, 5);
+        $config  = new DbConfig('pgsql', $host, (int) $port, $db, $user, $password, DbConfig::SSL_REQUIRE);
+        $queries = 0;
+        $connect = static function () use ($config, &$queries) {
+            $inner = (new DbConnector())->connect($config);
+
+            return new class ($inner, $queries) extends \BiotimePortal\Component\Biotime\Administrator\Database\Query {
+                public function __construct(private readonly \BiotimePortal\Component\Biotime\Administrator\Database\Query $inner, private int &$count)
+                {
+                    parent::__construct(null, 'pgsql');
+                }
+
+                public function rows(string $sql, array $params = []): array
+                {
+                    $this->count++;
+
+                    return $this->inner->rows($sql, $params);
+                }
+            };
+        };
+
+        $single = new AttendanceReader($connect, 'Asia/Riyadh');
+        $bulk   = new AttendanceReader($connect, 'Asia/Riyadh');
+        $from   = new \DateTimeImmutable('2026-11-01');
+        $to     = new \DateTimeImmutable('2026-11-30');
+
+        $bulk->preload(['E1', 'E2', 'NOBODY'], new \DateTimeImmutable('2026-11-03'), new \DateTimeImmutable('2026-11-20'));
+        $before = $queries;
+
+        foreach (['E1', 'E2'] as $code) {
+            self::assertSame($single->employee($code), $bulk->employee($code), $code . ': employee');
+            self::assertSame($single->days($single->employee($code), $from, $to), $bulk->days($bulk->employee($code), $from, $to), $code . ': days');
+            self::assertSame($single->punches($code, $from, $to), $bulk->punches($code, $from, $to), $code . ': punches');
+        }
+
+        self::assertNull($bulk->employee('NOBODY'));
+
+        // The single reader ran its own queries meanwhile; the bulk reader only shared ones
+        // (holidays, group/department shifts and shift details), each once.
+        $q = $queries;
+        $bulk->days($bulk->employee('E1'), $from, $to);
+        $bulk->punches('E1', $from, $to);
+        self::assertSame($q, $queries, 'read ahead: no query for an employee read again');
+        self::assertGreaterThan(0, $before);
+    }
 }

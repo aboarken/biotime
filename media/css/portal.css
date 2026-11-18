@@ -488,12 +488,14 @@
 }
 
 /* Weekend rows are greyed, today has a blue edge */
-.com-biotime .bt-table tr.bt-row-weekend > * {
+.com-biotime .bt-table tr.bt-row-weekend > *,
+.com-biotime .bt-table td.bt-row-weekend {
   background: #e6edf9;
 }
 
 /* A holiday's whole row in the holiday colour (purple), like weekend rows. */
-.com-biotime .bt-table tr.bt-row-holiday > * {
+.com-biotime .bt-table tr.bt-row-holiday > *,
+.com-biotime .bt-table td.bt-row-holiday {
   background: #efe9fe;
 }
 
@@ -1258,12 +1260,49 @@
   color: var(--bt-primary);
 }
 
-/* Manager Dashboard (1.0.0): check-in and check-out side by side in one column */
-.com-biotime .bt-manager-table .bt-inout {
+/* Manager Dashboard (1.0.0): one row per employee, a column per date (scrolls sideways), the
+   employee column stays in view */
+.com-biotime .bt-manager-table th.bt-mgr-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 11rem;
+  background: var(--bt-card-bg);
+  box-shadow: 1px 0 0 var(--bt-card-line);
+}
+
+.com-biotime .bt-manager-table thead th.bt-mgr-name {
+  z-index: 2;
+}
+
+.com-biotime .bt-manager-table .bt-mgr-date {
+  min-width: 5.75rem;
   white-space: nowrap;
 }
 
-.com-biotime .bt-manager-table .bt-inout-sep {
-  margin: 0 0.25rem;
-  color: var(--bt-text-muted);
+.com-biotime .bt-manager-table .bt-inout {
+  min-width: 5.75rem;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.com-biotime .bt-manager-table .bt-inout-line {
+  display: block;
+  line-height: 1.35;
+}
+
+.com-biotime .bt-manager-table .bt-inout .bt-badge {
+  font-size: 0.75rem;
+}
+
+.com-biotime .bt-manager-table td.bt-mgr-late {
+  background: #fffbeb;
+}
+
+.com-biotime .bt-mgr-mins {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #b45309;
 }

@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-11-18
+
+### Changed
+- **Manager Dashboard is much faster**: everyone shown is read from ZKBioTime's database in about ten queries for the whole page (punches, time cards, pay codes, worked hours, schedules), instead of about fifteen queries per employee and month; department and group shifts, shift details and holidays are read once per page. The figures are unchanged (a test compares both ways against the PostgreSQL fixture). No PostgreSQL setting needs changing for it.
+- **Manager Dashboard: the dates are columns**: one row per employee, a column per date of the period with that day's check-in and check-out (or Absent, Weekend, Holiday, Leave), amber with the minutes when the day has late-in or early-out; then Late In, Early Out and Total for the period. The table scrolls sideways; the employee column stays in view.
+- **My Dashboard → Late in and early out per month**: thicker bars, as wide as the check-in and check-out columns.
+- **My Dashboard → Your Devices**: devices without punches in the school year are not listed.
+- **My Dashboard → Period** shows 1 August to today (e.g. From 01/08/2026 to 18/11/2026); the school year still ends on 31 July.
+
 ## [1.0.0] - 2026-11-18
 
 The first stable version: everything is read from ZKBioTime's database, and managers get their own dashboard.

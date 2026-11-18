@@ -22,8 +22,9 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 /**
  * Manager Dashboard (1.0.0): the workforce of the manager's department and the departments below
  * it. Filters: department, employee, From – To (today by default). Cards: workforce and the same
- * figures as My Attendance, for everyone shown. Below them one row per employee per day: check-in
- * and check-out in one column, then late in, early out and both together.
+ * figures as My Attendance, for everyone shown. Below them one row per employee: a column per
+ * date with that day's check-in and check-out, then late in, early out and both together over the
+ * period.
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -52,8 +53,16 @@ final class HtmlView extends BaseHtmlView
 
     public ?Summary $summary = null;
 
-    /** @var list<array{employee: array{emp_code: string, name: string, department: ?string}, day: Day}> rows shown (after the status filter), by employee then date */
+    /**
+     * One row per employee shown (with the status filter: those with at least one matching day):
+     * their days by date, and their Late In and Early Out over the period (minutes).
+     *
+     * @var list<array{employee: array{emp_code: string, name: string, department: ?string}, days: array<string, Day>, late: int, early: int}>
+     */
     public array $rows = [];
+
+    /** @var list<string> the period's dates up to today, the table's columns */
+    public array $dates = [];
 
     /** @var array<string, string> part => error kind */
     public array $errors = [];
@@ -87,13 +96,24 @@ final class HtmlView extends BaseHtmlView
                 $this->errors = $read['errors'];
                 $all          = [];
 
-                foreach ($this->employees as $e) {
-                    foreach ($read['days'][$e['emp_code']] ?? [] as $day) {
-                        $all[] = $day;
+                for ($d = new \DateTimeImmutable($this->from); $d->format('Y-m-d') <= min($this->to, $this->today); $d = $d->modify('+1 day')) {
+                    $this->dates[] = $d->format('Y-m-d');
+                }
 
-                        if (DayFilter::matches($day, $this->status)) {
-                            $this->rows[] = ['employee' => $e, 'day' => $day];
-                        }
+                foreach ($this->employees as $e) {
+                    $row     = ['employee' => $e, 'days' => [], 'late' => 0, 'early' => 0];
+                    $matches = $this->status === '';
+
+                    foreach ($read['days'][$e['emp_code']] ?? [] as $day) {
+                        $all[]                   = $day;
+                        $row['days'][$day->date] = $day;
+                        $row['late']            += $day->late ?? 0;
+                        $row['early']           += $day->early ?? 0;
+                        $matches                 = $matches || DayFilter::matches($day, $this->status);
+                    }
+
+                    if ($matches) {
+                        $this->rows[] = $row;
                     }
                 }
 

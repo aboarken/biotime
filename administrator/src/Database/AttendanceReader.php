@@ -58,6 +58,20 @@ final class AttendanceReader
     private ?Query $query = null;
 
     /**
+     * Rows read ahead for many employees at once (preload(), Manager Dashboard): kind => key
+     * (employee id or code) => rows, for the dates in $bulkRange.
+     *
+     * @var array<string, array<string, list<array<string, mixed>>>>
+     */
+    private array $bulk = [];
+
+    /** @var array{0: string, 1: string}|null */
+    private ?array $bulkRange = null;
+
+    /** @var array<string, list<array<string, mixed>>> results of optional() queries this request */
+    private array $memo = [];
+
+    /**
      * @param \Closure(): Query $connect opens the connection when first needed
      */
     public function __construct(
@@ -128,22 +142,9 @@ final class AttendanceReader
      */
     public function punches(string $empCode, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        $rows = $this->q()->rows(
-            "SELECT to_char(t.punch_time AT TIME ZONE :tz1, 'YYYY-MM-DD HH24:MI:SS') AS punch_time,
-                    t.emp_code, t.punch_state, t.verify_type, t.terminal_alias, t.area_alias
-               FROM iclock_transaction t
-              WHERE t.emp_code = :code
-                AND t.punch_time >= (CAST(:from AS timestamp) AT TIME ZONE :tz2)
-                AND t.punch_time < (CAST(:to AS timestamp) AT TIME ZONE :tz3)
-              ORDER BY t.punch_time",
-            [
-                ':tz1'  => $this->timezone,
-                ':code' => $empCode,
-                ':from' => $from->format('Y-m-d') . ' 00:00:00',
-                ':tz2'  => $this->timezone,
-                ':to'   => $to->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
-                ':tz3'  => $this->timezone,
-            ]
+        $rows = $this->fromBulk('punches', $empCode, $from, $to) ?? $this->q()->rows(
+            self::sql('punches', '= :code'),
+            [':code' => $empCode] + $this->punchRange($from, $to)
         );
 
         return array_map(static function (array $r): array {
@@ -219,26 +220,9 @@ final class AttendanceReader
      */
     public function days(array $employee, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        $rows = $this->q()->rows(
-            "SELECT to_char(b.att_date, 'YYYY-MM-DD') AS att_date,
-                    to_char(b.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS sched_in,
-                    to_char(b.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS sched_out,
-                    CAST(EXTRACT(EPOCH FROM (b.check_out - b.check_in)) AS integer) AS sched_seconds,
-                    b.duration, b.late, b.early_leave, b.total_worked, b.absent, b.leave, b.day_off,
-                    t.alias AS timetable, t.in_above_margin, t.duration AS tt_duration, o.total_ot
-               FROM att_payloadbase b
-               LEFT JOIN att_timeinterval t ON t.id = b.timetable_id
-               LEFT JOIN att_payloadovertime o ON o.uuid = b.overtime_id
-              WHERE b.emp_id = :emp
-                AND b.att_date >= CAST(:from AS date) AND b.att_date <= CAST(:to AS date)
-              ORDER BY b.att_date, b.check_in",
-            [
-                ':tz1'  => $this->timezone,
-                ':tz2'  => $this->timezone,
-                ':emp'  => $employee['id'],
-                ':from' => $from->format('Y-m-d'),
-                ':to'   => $to->format('Y-m-d'),
-            ]
+        $rows = $this->fromBulk('base', $employee['id'], $from, $to) ?? $this->q()->rows(
+            self::sql('base', '= :emp'),
+            [':emp' => $employee['id']] + $this->tzRange($from, $to)
         );
 
         $divisor = $this->divisor($rows);
@@ -325,17 +309,7 @@ final class AttendanceReader
             $days[$date] ??= ['date' => $date, 'entries' => [], 'off' => false];
         };
 
-        foreach ($this->optional(
-            "SELECT to_char(c.att_date, 'YYYY-MM-DD') AS d, c.time_table_alias,
-                    to_char(c.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
-                    to_char(c.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
-                    t.in_above_margin, t.duration
-               FROM att_payloadtimecard c
-               LEFT JOIN att_timeinterval t ON t.id = c.time_table_id
-              WHERE c.emp_id = :emp AND c.att_date >= CAST(:from AS date) AND c.att_date <= CAST(:to AS date)
-              ORDER BY c.att_date, c.check_in",
-            [':tz1' => $this->timezone, ':tz2' => $this->timezone] + $range
-        ) as $r) {
+        foreach ($this->fromBulk('timecard', $employee['id'], $from, $to) ?? $this->optional(self::sql('timecard', '= :emp'), $this->tzRange($from, $to) + [':emp' => $employee['id']]) as $r) {
             $date = (string) $r['d'];
             $day($days, $date);
 
@@ -348,12 +322,7 @@ final class AttendanceReader
             return strcasecmp(trim((string) $symbol), $code[0]) === 0 || strcasecmp(trim((string) $name), $code[1]) === 0;
         };
 
-        foreach ($this->optional(
-            "SELECT to_char(att_date, 'YYYY-MM-DD') AS d, pay_code_alias AS name, pay_code_symbol AS symbol, minutes
-               FROM att_payloadpaycode
-              WHERE emp_id = :emp AND att_date >= CAST(:from AS date) AND att_date <= CAST(:to AS date)",
-            $range
-        ) as $r) {
+        foreach ($this->fromBulk('paycode', $employee['id'], $from, $to) ?? $this->optional(self::sql('paycode', '= :emp'), $range) as $r) {
             $date    = (string) $r['d'];
             $minutes = max(0, (int) round((float) $r['minutes']));
             $day($days, $date);
@@ -375,14 +344,7 @@ final class AttendanceReader
             unset($d);
         }
 
-        foreach ($this->optional(
-            "SELECT to_char(att_date, 'YYYY-MM-DD') AS d, SUM(minutes) AS minutes
-               FROM att_payloadattcode
-              WHERE emp_id = :emp AND att_date >= CAST(:from AS date) AND att_date <= CAST(:to AS date)
-                AND LOWER(att_code_alias) = '" . self::WORKED_CODE . "'
-              GROUP BY att_date",
-            $range
-        ) as $r) {
+        foreach ($this->fromBulk('attcode', $employee['id'], $from, $to) ?? $this->optional(self::sql('attcode', '= :emp'), $range) as $r) {
             $date = (string) $r['d'];
             $day($days, $date);
             $days[$date]['worked'] = max(0, (int) round((float) $r['minutes']));
@@ -413,31 +375,14 @@ final class AttendanceReader
         $days  = [];
 
         // 1. Temporary schedules with their own start and end.
-        foreach ($this->optional(
-            "SELECT to_char(x.att_date, 'YYYY-MM-DD') AS d,
-                    to_char(x.start_time AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
-                    to_char(x.end_time AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
-                    t.alias, t.in_above_margin
-               FROM att_tempschedule x
-               LEFT JOIN att_timeinterval t ON t.id = x.time_interval_id
-              WHERE x.employee_id = :emp AND x.att_date >= CAST(:from AS date) AND x.att_date <= CAST(:to AS date)
-              ORDER BY x.att_date, x.start_time",
-            [':tz1' => $this->timezone, ':tz2' => $this->timezone, ':emp' => $employee['id']] + $range
-        ) as $r) {
+        foreach ($this->fromBulk('tempschedule', $employee['id'], $from, $to) ?? $this->optional(self::sql('tempschedule', '= :emp'), $this->tzRange($from, $to) + [':emp' => $employee['id']]) as $r) {
             $days[(string) $r['d']][] = self::entry($r['alias'], $r['s'], $r['e'], null, $r['in_above_margin']);
         }
 
         // 2. Temporary timetables.
         $temporary = [];
 
-        foreach ($this->optional(
-            "SELECT to_char(x.att_date, 'YYYY-MM-DD') AS d, t.alias, to_char(t.in_time, 'HH24:MI:SS') AS s, t.duration, t.in_above_margin
-               FROM att_temporaryschedule x
-               JOIN att_timeinterval t ON t.id = x.time_interval_id
-              WHERE x.employee_id = :emp AND x.att_date >= CAST(:from AS date) AND x.att_date <= CAST(:to AS date)
-              ORDER BY x.att_date, t.in_time",
-            [':emp' => $employee['id']] + $range
-        ) as $r) {
+        foreach ($this->fromBulk('temporary', $employee['id'], $from, $to) ?? $this->optional(self::sql('temporary', '= :emp'), [':emp' => $employee['id']] + $range) as $r) {
             $temporary[(string) $r['d']][] = self::entry($r['alias'], $r['s'], null, $r['duration'], $r['in_above_margin']);
         }
 
@@ -455,9 +400,13 @@ final class AttendanceReader
                 continue;
             }
 
-            // Table and column names are constants above, never input.
-            foreach ($this->optional(
-                "SELECT to_char(s.start_date, 'YYYY-MM-DD') AS sd, to_char(s.end_date, 'YYYY-MM-DD') AS ed, s.shift_id, sh.cycle_unit, sh.shift_cycle
+            // Table and column names are constants above, never input. The employee's own shifts
+            // come from preload() when read ahead; group and department shifts are shared, and
+            // optional() reads each of them once per request.
+            $own = $i === 0 ? $this->fromBulk('attschedule', (int) $id, $from, $to) : null;
+
+            foreach ($own ?? $this->optional(
+                "SELECT s.{$column} AS k, to_char(s.start_date, 'YYYY-MM-DD') AS sd, to_char(s.end_date, 'YYYY-MM-DD') AS ed, s.shift_id, sh.cycle_unit, sh.shift_cycle
                    FROM {$table} s
                    JOIN att_attshift sh ON sh.id = s.shift_id
                   WHERE s.{$column} = :id AND s.start_date <= CAST(:to AS date) AND s.end_date >= CAST(:from AS date)
@@ -603,7 +552,7 @@ final class AttendanceReader
     private function optional(string $sql, array $params): array
     {
         try {
-            return $this->q()->rows($sql, $params);
+            return $this->memoRows($sql, $params);
         } catch (DbException $e) {
             if ($e->getKind() !== DbException::QUERY) {
                 throw $e;
@@ -622,7 +571,7 @@ final class AttendanceReader
     private function holidays(array $employee, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
         try {
-            $rows = $this->q()->rows(
+            $rows = $this->memoRows(
                 "SELECT alias, to_char(start_date, 'YYYY-MM-DD') AS first_day,
                         to_char(COALESCE(end_date, start_date + (GREATEST(duration_day, 1) - 1)), 'YYYY-MM-DD') AS last_day,
                         department_id, att_group_id
@@ -688,6 +637,235 @@ final class AttendanceReader
 
         // Without a scheduled day to compare: minutes, the unit ZKBioTime's timetables use.
         return $votes['seconds'] > $votes['minutes'] ? 60 : 1;
+    }
+
+    /**
+     * The same query with the same values is read once per request (shared department and group
+     * shifts, shift details and holidays when many employees are read).
+     *
+     * @param array<string, scalar|null> $params
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws DbException
+     */
+    private function memoRows(string $sql, array $params): array
+    {
+        $key = $sql . "\0" . json_encode($params);
+
+        return $this->memo[$key] ??= $this->q()->rows($sql, $params);
+    }
+
+    /**
+     * Manager Dashboard: reads ahead, in a few queries, what days() and punches() need for every
+     * one of these employees from the first day of $from's month to the last day of $to's month,
+     * instead of about fifteen queries per employee and month. Later calls for these employees
+     * and dates are answered from memory with exactly the rows the single queries would return.
+     *
+     * @param list<string> $codes employee codes
+     *
+     * @throws DbException
+     */
+    public function preload(array $codes, \DateTimeImmutable $from, \DateTimeImmutable $to): void
+    {
+        $codes = array_values(array_unique(array_filter(array_map('strval', $codes), static fn (string $c): bool => $c !== '')));
+        $from  = $from->modify('first day of this month');
+        $to    = $to->modify('last day of this month');
+
+        if ($codes === []) {
+            return;
+        }
+
+        // Employees (as employee()): exactly one per code, else none.
+        $bind = [];
+
+        foreach ($codes as $n => $code) {
+            $bind[':c' . $n] = $code;
+        }
+
+        $in   = implode(', ', array_keys($bind));
+        $rows = $this->q()->rows(
+            "SELECT e.id, e.emp_code, e.department_id, e.first_name, e.last_name, d.dept_name, p.position_name, to_char(e.hire_date, 'YYYY-MM-DD') AS hire_date
+               FROM personnel_employee e
+               LEFT JOIN personnel_department d ON d.id = e.department_id
+               LEFT JOIN personnel_position p ON p.id = e.position_id
+              WHERE e.emp_code IN ({$in})
+              ORDER BY e.id",
+            $bind
+        );
+        $byCode = [];
+
+        foreach ($rows as $r) {
+            $byCode[(string) $r['emp_code']][] = $r;
+        }
+
+        $ids    = [];
+        $groups = [];
+
+        foreach ($byCode as $list) {
+            if (\count($list) === 1) {
+                $ids[] = (int) $list[0]['id'];
+            }
+        }
+
+        if ($ids !== []) {
+            foreach ($this->optional('SELECT emp_id, group_id FROM att_attemployee WHERE emp_id IN (' . implode(',', $ids) . ')', []) as $g) {
+                $groups[(int) $g['emp_id']] ??= $g['group_id'] !== null ? (int) $g['group_id'] : null;
+            }
+        }
+
+        foreach ($codes as $code) {
+            $list = $byCode[$code] ?? [];
+            $r    = $list[0] ?? null;
+
+            $this->employees[$code] = \count($list) !== 1 ? null : [
+                'id'            => (int) $r['id'],
+                'department_id' => $r['department_id'] !== null ? (int) $r['department_id'] : null,
+                'group_id'      => $groups[(int) $r['id']] ?? null,
+                'department'    => self::text($r['dept_name']),
+                'position'      => self::text($r['position_name']),
+                'hire_date'     => self::text($r['hire_date']),
+                'name'          => self::text(trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''))),
+            ];
+        }
+
+        // Per-employee tables, one query each (ids are integers, written into the statement).
+        $this->bulk = ['punches' => array_fill_keys($codes, [])];
+        $this->bulk['punches'] = array_fill_keys($codes, []);
+
+        foreach ($this->q()->rows(self::sql('punches', "IN ({$in})"), $bind + $this->punchRange($from, $to)) as $r) {
+            $this->bulk['punches'][(string) $r['emp_code']][] = $r;
+        }
+
+        $who   = $ids === [] ? 'IN (NULL)' : 'IN (' . implode(',', $ids) . ')';
+        $range = [':from' => $from->format('Y-m-d'), ':to' => $to->format('Y-m-d')];
+        $reads = [
+            'base'         => [fn (): array => $this->q()->rows(self::sql('base', $who), $this->tzRange($from, $to))],
+            'timecard'     => [fn (): array => $this->optional(self::sql('timecard', $who), $this->tzRange($from, $to))],
+            'paycode'      => [fn (): array => $this->optional(self::sql('paycode', $who), $range)],
+            'attcode'      => [fn (): array => $this->optional(self::sql('attcode', $who), $range)],
+            'tempschedule' => [fn (): array => $this->optional(self::sql('tempschedule', $who), $this->tzRange($from, $to))],
+            'temporary'    => [fn (): array => $this->optional(self::sql('temporary', $who), $range)],
+            'attschedule'  => [fn (): array => $this->optional(
+                "SELECT s.employee_id AS k, to_char(s.start_date, 'YYYY-MM-DD') AS sd, to_char(s.end_date, 'YYYY-MM-DD') AS ed, s.shift_id, sh.cycle_unit, sh.shift_cycle
+                   FROM att_attschedule s
+                   JOIN att_attshift sh ON sh.id = s.shift_id
+                  WHERE s.employee_id {$who} AND s.start_date <= CAST(:to AS date) AND s.end_date >= CAST(:from AS date)
+                  ORDER BY s.start_date",
+                $range
+            )],
+        ];
+
+        foreach ($reads as $kind => [$read]) {
+            $this->bulk[$kind] = array_fill_keys(array_map('strval', $ids), []);
+
+            foreach ($read() as $r) {
+                $this->bulk[$kind][(string) $r['k']][] = $r;
+            }
+        }
+
+        $this->bulkRange = [$from->format('Y-m-d'), $to->format('Y-m-d')];
+    }
+
+    /**
+     * Rows read ahead by preload() for this employee and these dates; null when they were not
+     * read ahead (then the single query runs).
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function fromBulk(string $kind, int|string $key, \DateTimeImmutable $from, \DateTimeImmutable $to): ?array
+    {
+        $first = $from->format('Y-m-d');
+        $last  = $to->format('Y-m-d');
+
+        if ($this->bulkRange === null || $first < $this->bulkRange[0] || $last > $this->bulkRange[1] || !isset($this->bulk[$kind]) || !\array_key_exists((string) $key, $this->bulk[$kind])) {
+            return null;
+        }
+
+        return array_values(array_filter($this->bulk[$kind][(string) $key], static function (array $r) use ($kind, $first, $last): bool {
+            return match ($kind) {
+                'punches'     => substr((string) $r['punch_time'], 0, 10) >= $first && substr((string) $r['punch_time'], 0, 10) <= $last,
+                'base'        => $r['att_date'] >= $first && $r['att_date'] <= $last,
+                'attschedule' => $r['sd'] <= $last && $r['ed'] >= $first,
+                default       => $r['d'] >= $first && $r['d'] <= $last,
+            };
+        }));
+    }
+
+    /** :tz1, :tz2 and the date range. @return array<string, string> */
+    private function tzRange(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return [':tz1' => $this->timezone, ':tz2' => $this->timezone, ':from' => $from->format('Y-m-d'), ':to' => $to->format('Y-m-d')];
+    }
+
+    /** The punch window, from $from 00:00 to the day after $to, in the server's time zone. @return array<string, string> */
+    private function punchRange(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return [
+            ':tz1'  => $this->timezone,
+            ':from' => $from->format('Y-m-d') . ' 00:00:00',
+            ':tz2'  => $this->timezone,
+            ':to'   => $to->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
+            ':tz3'  => $this->timezone,
+        ];
+    }
+
+    /**
+     * The per-employee queries, for one employee ($who = "= :emp" or "= :code") or many
+     * ($who = "IN (...)"); each also returns its employee as k (or emp_code for punches).
+     */
+    private static function sql(string $kind, string $who): string
+    {
+        return match ($kind) {
+            'punches' => "SELECT to_char(t.punch_time AT TIME ZONE :tz1, 'YYYY-MM-DD HH24:MI:SS') AS punch_time,
+                    t.emp_code, t.punch_state, t.verify_type, t.terminal_alias, t.area_alias
+               FROM iclock_transaction t
+              WHERE t.emp_code {$who}
+                AND t.punch_time >= (CAST(:from AS timestamp) AT TIME ZONE :tz2)
+                AND t.punch_time < (CAST(:to AS timestamp) AT TIME ZONE :tz3)
+              ORDER BY t.punch_time",
+            'base' => "SELECT b.emp_id AS k, to_char(b.att_date, 'YYYY-MM-DD') AS att_date,
+                    to_char(b.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS sched_in,
+                    to_char(b.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS sched_out,
+                    CAST(EXTRACT(EPOCH FROM (b.check_out - b.check_in)) AS integer) AS sched_seconds,
+                    b.duration, b.late, b.early_leave, b.total_worked, b.absent, b.leave, b.day_off,
+                    t.alias AS timetable, t.in_above_margin, t.duration AS tt_duration, o.total_ot
+               FROM att_payloadbase b
+               LEFT JOIN att_timeinterval t ON t.id = b.timetable_id
+               LEFT JOIN att_payloadovertime o ON o.uuid = b.overtime_id
+              WHERE b.emp_id {$who}
+                AND b.att_date >= CAST(:from AS date) AND b.att_date <= CAST(:to AS date)
+              ORDER BY b.att_date, b.check_in",
+            'timecard' => "SELECT c.emp_id AS k, to_char(c.att_date, 'YYYY-MM-DD') AS d, c.time_table_alias,
+                    to_char(c.check_in AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
+                    to_char(c.check_out AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
+                    t.in_above_margin, t.duration
+               FROM att_payloadtimecard c
+               LEFT JOIN att_timeinterval t ON t.id = c.time_table_id
+              WHERE c.emp_id {$who} AND c.att_date >= CAST(:from AS date) AND c.att_date <= CAST(:to AS date)
+              ORDER BY c.att_date, c.check_in",
+            'paycode' => "SELECT emp_id AS k, to_char(att_date, 'YYYY-MM-DD') AS d, pay_code_alias AS name, pay_code_symbol AS symbol, minutes
+               FROM att_payloadpaycode
+              WHERE emp_id {$who} AND att_date >= CAST(:from AS date) AND att_date <= CAST(:to AS date)",
+            'attcode' => "SELECT emp_id AS k, to_char(att_date, 'YYYY-MM-DD') AS d, SUM(minutes) AS minutes
+               FROM att_payloadattcode
+              WHERE emp_id {$who} AND att_date >= CAST(:from AS date) AND att_date <= CAST(:to AS date)
+                AND LOWER(att_code_alias) = '" . self::WORKED_CODE . "'
+              GROUP BY emp_id, att_date",
+            'tempschedule' => "SELECT x.employee_id AS k, to_char(x.att_date, 'YYYY-MM-DD') AS d,
+                    to_char(x.start_time AT TIME ZONE :tz1, 'HH24:MI:SS') AS s,
+                    to_char(x.end_time AT TIME ZONE :tz2, 'HH24:MI:SS') AS e,
+                    t.alias, t.in_above_margin
+               FROM att_tempschedule x
+               LEFT JOIN att_timeinterval t ON t.id = x.time_interval_id
+              WHERE x.employee_id {$who} AND x.att_date >= CAST(:from AS date) AND x.att_date <= CAST(:to AS date)
+              ORDER BY x.att_date, x.start_time",
+            'temporary' => "SELECT x.employee_id AS k, to_char(x.att_date, 'YYYY-MM-DD') AS d, t.alias, to_char(t.in_time, 'HH24:MI:SS') AS s, t.duration, t.in_above_margin
+               FROM att_temporaryschedule x
+               JOIN att_timeinterval t ON t.id = x.time_interval_id
+              WHERE x.employee_id {$who} AND x.att_date >= CAST(:from AS date) AND x.att_date <= CAST(:to AS date)
+              ORDER BY x.att_date, t.in_time",
+        };
     }
 
     private function q(): Query

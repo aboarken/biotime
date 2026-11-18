@@ -52,6 +52,11 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.1 – Faster Manager Dashboard, dates as columns
+- [ ] Manager Dashboard with a whole department and a month: opens within a few seconds (it was much slower in 1.0.0).
+- [ ] One row per employee; a column per date with check-in and check-out (or the day's status); a day with late-in or early-out is amber with its minutes; Late In, Early Out and Total for the period at the end. The table scrolls sideways and the employee column stays.
+- [ ] My Dashboard: the late/early bars are as wide as the check-in/check-out columns; Your Devices lists no device with 0; Period reads "From 01/08/2026 to <today>".
+
 ### 1.0.0 – Manager Dashboard, dashboard changes
 - [ ] Give a managers' group *View Manager Dashboard* (Options → Permissions) and add a **Manager Dashboard** menu item for it. A manager sees their own department and the departments below it in the Department list (indented); the Employee list holds only their employees; a resigned employee is not listed.
 - [ ] Default period is today; From/To shows up to 31 days. Cards: Workforce plus the My Attendance figures; clicking Days Absent shows only absent rows and jumps to the table; Workforce shows every row again.

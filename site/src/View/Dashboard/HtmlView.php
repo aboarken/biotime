@@ -46,7 +46,7 @@ final class HtmlView extends BaseHtmlView
     /** Every device the employee uses, with this school year's punches (1.0.0). */
     public ?\BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats $devices = null;
 
-    /** The school year shown: 1 August to 31 July (1.0.0); figures count up to today ($to). */
+    /** The school year: 1 August to 31 July (1.0.0), kept for reference; the page shows 1 August to today ($to, 1.0.1). */
     public string $yearEnd = '';
 
     /** @var array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null from the database */
@@ -85,7 +85,7 @@ final class HtmlView extends BaseHtmlView
             ['COM_BIOTIME_PROFILE_POSITION', $this->profile['position'] ?? null],
             ['COM_BIOTIME_PROFILE_EMPLOYEE_ID', $model->identity()->empCode()],
             ['COM_BIOTIME_PROFILE_NAME', $this->profile['name'] ?? (string) \Joomla\CMS\Factory::getApplication()->getIdentity()?->name],
-            ['COM_BIOTIME_PROFILE_PERIOD', \Joomla\CMS\Language\Text::sprintf('COM_BIOTIME_DASHBOARD_RANGE', $f->date($this->from), $f->date($this->yearEnd))],
+            ['COM_BIOTIME_PROFILE_PERIOD', \Joomla\CMS\Language\Text::sprintf('COM_BIOTIME_DASHBOARD_RANGE', $f->date($this->from), $f->date($this->to))],
         ], static fn (array $c): bool => $c[1] !== null && trim($c[1]) !== ''));
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
