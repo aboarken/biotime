@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.8] - 2026-11-18
+
+### Changed
+- **Manager Dashboard**: Workforce is the first card, then All Days (still selected by default); the Employee ID field's example reads "e.g. EXXXX, then Enter".
+
 ## [1.0.7] - 2026-11-18
 
 ### Added

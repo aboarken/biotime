@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.8 – Manager card order
+- [ ] Manager Dashboard: Workforce, then All Days (highlighted); the Employee ID field shows "e.g. EXXXX, then Enter".
+
 ### 1.0.7 – All Days on My Dashboard
 - [ ] My Dashboard starts with All Days; it equals Present + Absent + Leaves + Holidays + Weekends and opens My Attendance with every day of the school year.
 - [ ] On My Dashboard, My Attendance and the Manager Dashboard, All Days is highlighted when no other card is chosen; on the Manager Dashboard it clears the chosen card, and Workforce is a plain count.
