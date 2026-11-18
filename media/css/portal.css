@@ -691,7 +691,7 @@
 }
 
 /* My Dashboard: the employee and the range shown (1.0.15), in the same panel as Today: each label
-   above its value; the values smaller than Today's times, as names and dates are longer */
+   above its value, in the portal's blue; smaller than Today's times, as names and dates are longer */
 .com-biotime .bt-profile-panel {
   margin-bottom: 1.25rem;
 }
@@ -699,6 +699,7 @@
 .com-biotime .bt-today--info dd {
   font-size: 1.0625rem;
   font-weight: 600;
+  color: var(--bt-primary);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
