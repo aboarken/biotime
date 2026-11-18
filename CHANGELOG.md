@@ -11,7 +11,6 @@ Attendance from ZKBioTime's database, completed (0.5.0–0.6.3): schedules from 
 - **Past months showed no Late In and Early Out after updating to 0.6.3.** Past months are kept in the cache for a day, and the copies saved by 0.6.2 (before Late In and Early Out were read from the pay codes) were still shown. Database cache keys now carry a version, so an update always reads the months again.
 
 ### Changed
-- **My Dashboard no longer shows Recent Activity** (the days are in My Attendance and the calendar).
 - **Device names without "Biometric - "**: e.g. "Biometric - Main Gate" is shown as "Main Gate" (punch details, Devices You Used, My Punches, day details).
 
 ## [0.6.3] - 2026-11-18

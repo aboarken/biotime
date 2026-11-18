@@ -20,7 +20,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
  * My Dashboard: today's check-in and check-out, summary cards counted from the punches, the
- * monthly overview (chart + the same figures as text) and the devices used.
+ * monthly overview (chart + the same figures as text) and recent activity.
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -30,6 +30,8 @@ final class HtmlView extends BaseHtmlView
 
     public Summary $summary;
 
+    /** @var list<Day> newest first */
+    public array $recent = [];
 
     public bool $showChart = false;
 
@@ -61,6 +63,10 @@ final class HtmlView extends BaseHtmlView
         $this->canCalendar   = $model->can('zkb.calendar.view');
         $this->today         = $model->attendance()->today();
         $this->todayDay      = $this->period->day($this->today);
+
+        // The last 7 days up to today that have something to say (punches or absent).
+        $days = array_filter($this->period->days, fn (Day $d): bool => $d->date <= $this->today && ($d->hasData() || $d->status !== null));
+        $this->recent = \array_slice(array_reverse(array_values($days)), 0, 7);
 
         // Every device used in the selected month (most used first), by fingerprint and face.
         $this->punchStats = PunchStats::of($this->period->days);

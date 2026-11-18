@@ -113,7 +113,6 @@ passwords, tokens or personal data) with the pull request.
 
 ### 0.7.0 – Past months after an update, device names
 - [ ] Right after updating, a past month (e.g. October) shows Late In and Early Out (not the copy cached by the previous version).
-- [ ] My Dashboard has no Recent Activity panel.
 - [ ] Device names show without "Biometric - " everywhere (My Attendance punch details, day details, Devices You Used, My Punches).
 
 ### 0.6.2 – Schedules from shifts, cut-off from the timetable
