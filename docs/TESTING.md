@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.6 – Card order
+- [ ] My Dashboard, My Attendance and the Manager Dashboard list the cards in the same order: days, punches, times, lateness, work.
+
 ### 1.0.5 – Card colours, Total Late
 - [ ] No two cards on a page share a colour; a card with 0 keeps its colour.
 - [ ] My Attendance: columns Late In, Early Out, Total Late (their sum), no Worked column.
