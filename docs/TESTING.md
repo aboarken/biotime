@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.7 – All Days on My Dashboard
+- [ ] My Dashboard starts with All Days; it equals Present + Absent + Leaves + Holidays + Weekends and opens My Attendance with every day of the school year.
+
 ### 1.0.6 – Card order
 - [ ] My Dashboard, My Attendance and the Manager Dashboard list the cards in the same order: days, punches, times, lateness, work.
 
