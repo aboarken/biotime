@@ -53,7 +53,7 @@ those releases.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
 ### 1.0.15 – Missing Punches per Month
-- [ ] My Dashboard: the card *Missing Punches per Month* is next to *Total Late In and Early Out per Month*: two columns per month (missing morning, missing afternoon); hovering a column shows the month and the days; the legend totals equal the Missing Morning Punch and Missing Afternoon Punch cards.
+- [ ] My Dashboard: *Status per Month* is gone; *Missing Punches per Month* is the second card, next to Total Attendance: two columns per month (missing morning, missing afternoon); hovering a column shows the month and the days; the legend totals equal the Missing Morning Punch and Missing Afternoon Punch cards.
 
 ### 1.0.14 – PDF always landscape, site name; cards
 - [ ] Export PDF for 1 day and for 20 days: both A4 landscape; the site name (Global Configuration) at the top, then the "Attendance Report" band.
