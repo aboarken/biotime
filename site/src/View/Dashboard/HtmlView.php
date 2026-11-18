@@ -69,7 +69,8 @@ final class HtmlView extends BaseHtmlView
         $this->recent = \array_slice(array_reverse(array_values($days)), 0, 7);
 
         // Every device used in the selected month (most used first), by fingerprint and face.
-        $this->punchStats = PunchStats::of($this->period->days);
+        // With the database: every device the employee uses, those not used this month with 0.
+        $this->punchStats = PunchStats::withDevices($this->period->days, $model->attendance()->devices($model->identity()));
         $this->profile    = $model->attendance()->profile($model->identity());
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');

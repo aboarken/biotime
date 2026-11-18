@@ -34,6 +34,28 @@ final class PunchStats
     /**
      * @param list<Day> $days
      */
+    /**
+     * The same, with every device of $all listed too: those not used in these days with 0 punches,
+     * after the used ones (My Dashboard: every device the employee uses).
+     *
+     * @param list<Day>    $days
+     * @param list<string> $all device names
+     */
+    public static function withDevices(array $days, array $all): self
+    {
+        $stats = self::of($days);
+        $used  = array_column($stats->devices, 'device');
+        $rest  = [];
+
+        foreach ($all as $name) {
+            if (!\in_array($name, $used, true)) {
+                $rest[] = ['device' => $name, 'area' => null, 'fingerprint' => 0, 'face' => 0, 'other' => 0, 'total' => 0, 'last' => ''];
+            }
+        }
+
+        return new self($stats->months, [...$stats->devices, ...$rest], $stats->total);
+    }
+
     public static function of(array $days): self
     {
         $empty  = ['fingerprint' => 0, 'face' => 0, 'other' => 0, 'total' => 0, 'days' => 0];

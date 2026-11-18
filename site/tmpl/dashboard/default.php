@@ -47,15 +47,12 @@ $panelHead = static fn (string $title, string $url = '', string $linkText = ''):
     . '</div>';
 
 // Monthly overview: days per status up to today. [filter, label, count, tone]. A present day with
-// a missing check-in or check-out counts as Present and as Missing Morning Punch (no check-in) or
-// Missing Afternoon Punch (no check-out). Order: Present, Absent, Weekend, the two missing punches
-// (then Weekend Worked), the same as the bar, so amber never sits by red.
+// a missing check-in or check-out counts as Present (the missing punches have their own cards
+// above). Order: Present, Absent, Weekend, Holiday (then Weekend Worked), the same as the bar.
 $overview = [
     ['attended', Text::_('COM_BIOTIME_STATUS_PRESENT'), $s->presentDays, 'green'],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT'), $s->absentDays, 'red'],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND'), $s->weekendDays, 'weekend'],
-    ['missingmorning', Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays, 'orange'],
-    ['missingafternoon', Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays, 'pink'],
     ['weekendworked', Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, 'sky'],
 ];
 
@@ -64,15 +61,13 @@ if ($calc) {
     array_splice($overview, 3, 0, [['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY'), $s->holidayDays, 'purple']]);
 }
 
-// The bar splits the days so far in the tiles' own colours and order: present (complete), absent,
-// weekend, holiday, present with a missing morning punch, with a missing afternoon punch.
+// The bar splits the days so far in the tiles' own colours and order: present, absent, weekend,
+// holiday.
 $bar  = [
-    ['green', max(0, $s->presentDays - $s->missingPunchDays)],
+    ['green', $s->presentDays],
     ['red', $s->absentDays],
     ['weekend', $s->weekendDays],
     ['purple', $calc ? $s->holidayDays : 0],
-    ['orange', $s->missingMorningDays],
-    ['pink', $s->missingAfternoonDays],
 ];
 $days = array_sum(array_column($bar, 1));
 ?>

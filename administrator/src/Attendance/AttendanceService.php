@@ -144,6 +144,38 @@ final class AttendanceService
         return $profile;
     }
 
+    /**
+     * Every device the employee uses (punched on at any time, or registered on), from the database;
+     * [] with the API or when it cannot be read. Kept a day in the cache.
+     *
+     * @return list<string>
+     */
+    public function devices(Identity $identity): array
+    {
+        if ($this->database === null || !$identity->isMatched()) {
+            return [];
+        }
+
+        $key    = 'db' . self::CACHE_VERSION . ':devices';
+        $cached = $this->cache->get($identity, $key);
+
+        if ($cached !== null && isset($cached['d'])) {
+            return $cached['d'];
+        }
+
+        try {
+            $devices = ($this->database)()->devices($identity->empCode());
+        } catch (DbException $e) {
+            $this->logger->warning('ZKBioTime database: the employee\'s devices could not be read (' . $e->getKind() . ')');
+
+            return [];
+        }
+
+        $this->cache->set($identity, $key, ['d' => $devices], self::PAST_MONTH_TTL);
+
+        return $devices;
+    }
+
     /** @return list<int> ISO weekdays that are weekend days */
     public function weekendDays(): array
     {

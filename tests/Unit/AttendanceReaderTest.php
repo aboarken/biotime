@@ -200,6 +200,26 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame([12, 25], [$period->summary()->lateMinutes, $period->summary()->earlyMinutes]);
     }
 
+    public function testEveryDeviceTheEmployeeUsesIsListed(): void
+    {
+        $q = new CatalogueQuery('pgsql', [
+            'SELECT DISTINCT terminal_alias'  => [['name' => 'Biometric - Main Gate'], ['name' => 'Side Door']],
+            'FROM iclock_terminalemployee'    => [['name' => 'Gym'], ['name' => 'Biometric - Main Gate']],
+        ]);
+
+        self::assertSame(['Gym', 'Main Gate', 'Side Door'], $this->reader($q)->devices('E1'), 'punched on or registered on, without "Biometric - ", once each');
+
+        foreach ($q->sent as $sql) {
+            self::assertStringContainsString('emp_code = :code', $sql);
+        }
+
+        // My Dashboard: devices not used in the month are listed after the used ones, with 0.
+        $period = $this->service(new CatalogueQuery('pgsql', $this->answers()))->month(Identity::matched(5, '11', 'E1'), 2026, 11);
+        $stats  = \BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats::withDevices($period->days, ['Gym', 'Main Gate']);
+        self::assertSame(['Main Gate', 'Gym'], array_column($stats->devices, 'device'));
+        self::assertSame(0, $stats->devices[1]['total']);
+    }
+
     public function testNoOrTwoEmployeesWithTheCodeShowNothing(): void
     {
         self::assertNull($this->reader(new CatalogueQuery('pgsql', ['FROM personnel_employee' => []]))->employee('E1'));
@@ -308,6 +328,7 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame(['Exam duty', '09:00:00', '13:00:00', '10:00:00'], [$days['2026-11-23']['schedule'], $days['2026-11-23']['sched_start'], $days['2026-11-23']['sched_end'], $days['2026-11-23']['cutoff']], 'temporary schedule, in local time');
         self::assertSame(['National Day', 'National Day', 'Group Day'], [$days['2026-11-08']['holiday'], $days['2026-11-09']['holiday'], $days['2026-11-15']['holiday']]);
         self::assertArrayNotHasKey('holiday', $days['2026-11-12'], 'HR Day is for another department');
+        self::assertSame(['Gym', 'Main Gate'], $r->devices('E1'), 'punched on, or registered on');
         self::assertSame([7, 0, 'IN07:30-OUT15:30', 'Annual Leave'], [$days['2026-11-03']['late'], $days['2026-11-03']['early'], $days['2026-11-03']['schedule'], $days['2026-11-24']['leave_name']], 'ZKBioTime 9.5 time card and pay codes');
     }
 }

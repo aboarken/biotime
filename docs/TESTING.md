@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.8.0 – Your Devices, Monthly Overview
+- [ ] My Dashboard → Your Devices lists every device you have punched on or are registered on; devices not used this month show 0.
+- [ ] Monthly Overview shows Present, Absent, Weekend, Holiday and Weekend Days Worked only; the bar has no orange or pink part.
+
 ### 0.7.0 – Past months after an update, device names
 - [ ] Right after updating, a past month (e.g. October) shows Late In and Early Out (not the copy cached by the previous version).
 - [ ] Device names show without "Biometric - " everywhere (My Attendance punch details, day details, Devices You Used, My Punches).

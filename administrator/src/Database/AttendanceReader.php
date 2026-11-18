@@ -163,6 +163,42 @@ final class AttendanceReader
     }
 
     /**
+     * Every device the employee uses: those they have punched on (iclock_transaction, any time) and
+     * those they are registered on (iclock_terminalemployee with the device's name from
+     * iclock_terminal). Names only, as the devices show them, sorted.
+     *
+     * @return list<string>
+     *
+     * @throws DbException
+     */
+    public function devices(string $empCode): array
+    {
+        $names = array_column($this->q()->rows(
+            "SELECT DISTINCT terminal_alias AS name FROM iclock_transaction
+              WHERE emp_code = :code AND COALESCE(terminal_alias, '') <> ''",
+            [':code' => $empCode]
+        ), 'name');
+
+        foreach ($this->optional(
+            "SELECT COALESCE(NULLIF(t.alias, ''), NULLIF(t.terminal_name, ''), te.terminal_sn) AS name
+               FROM iclock_terminalemployee te
+               LEFT JOIN iclock_terminal t ON t.sn = te.terminal_sn
+              WHERE te.emp_code = :code",
+            [':code' => $empCode]
+        ) as $r) {
+            $names[] = $r['name'];
+        }
+
+        $names = array_values(array_unique(array_filter(array_map(
+            static fn (mixed $n): ?string => \BiotimePortal\Component\Biotime\Administrator\Attendance\Punch::deviceName(self::text($n)),
+            $names
+        ))));
+        sort($names, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $names;
+    }
+
+    /**
      * One row per date of the range that has something to say for this employee:
      *  - schedule: the timetable names, sched_start and sched_end ("HH:MM:SS") and cutoff, the
      *    time from which a punch is a check-out (the end of the check-in window). From

@@ -4,7 +4,7 @@
 DROP TABLE IF EXISTS personnel_employee, personnel_department, personnel_position, att_attemployee,
   iclock_transaction, att_payloadbase, att_timeinterval, att_payloadovertime, att_holiday, att_attshift, att_shiftdetail,
   att_attschedule, att_groupschedule, att_departmentschedule, att_temporaryschedule, att_tempschedule,
-  att_payloadtimecard, att_payloadpaycode, att_payloadattcode CASCADE;
+  att_payloadtimecard, att_payloadpaycode, att_payloadattcode, iclock_terminal, iclock_terminalemployee CASCADE;
 
 CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200));
 CREATE TABLE personnel_position (id integer PRIMARY KEY, position_code varchar(50), position_name varchar(100));
@@ -37,6 +37,8 @@ CREATE TABLE att_payloadpaycode (id uuid PRIMARY KEY, att_date date, pay_code_al
   duration integer, minutes numeric(8,1), emp_id integer, pay_code_id integer);
 CREATE TABLE att_payloadattcode (id uuid PRIMARY KEY, att_date date, att_code_alias varchar(50), att_code_symbol varchar(20),
   duration integer, minutes numeric(8,1), emp_id integer, att_code_id integer);
+CREATE TABLE iclock_terminal (id integer PRIMARY KEY, sn varchar(50), alias varchar(50), terminal_name varchar(30));
+CREATE TABLE iclock_terminalemployee (id integer PRIMARY KEY, terminal_sn varchar(50), emp_code varchar(20), privilege smallint);
 CREATE TABLE att_holiday (id integer PRIMARY KEY, alias varchar(50), start_date date, duration_day smallint, end_date date,
   att_group_id integer, department_id integer);
 
@@ -83,3 +85,7 @@ INSERT INTO att_payloadpaycode VALUES
   ('00000000-0000-0000-0000-000000000039', '2026-11-03', 'Late In', 'L', 3600, 60.0, 2, 1);
 INSERT INTO att_payloadattcode VALUES
   ('00000000-0000-0000-0000-000000000034', '2026-11-03', 'Worked Hours', NULL, 26400, 440.0, 1, 1);
+
+-- Devices: Alice punches on Main Gate and is registered on the gym's device as well.
+INSERT INTO iclock_terminal VALUES (1, 'SN-MAIN', 'Main Gate', 'SpeedFace'), (2, 'SN-GYM', 'Biometric - Gym', 'ProFace');
+INSERT INTO iclock_terminalemployee VALUES (1, 'SN-MAIN', 'E1', 0), (2, 'SN-GYM', 'E1', 0), (3, 'SN-GYM', 'E2', 0);
