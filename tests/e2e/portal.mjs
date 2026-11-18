@@ -176,8 +176,7 @@ check((await sara.locator('.bt-bar').count()) === 1 && (await sara.locator('.bt-
 check((await sara.locator('.bt-stat').count()) >= 8 && (await sara.locator('.bt-panel').count()) >= 3, 'dashboard: cards and panels in the portal design');
 check(await sara.locator('form[data-bt-filters] .bt-toolbar-submit').isHidden(), 'filter bar: applied on change (no Show button with JavaScript)');
 check(/Today:/.test(text), 'dashboard: today card');
-check(/NOTE/i.test(await sara.locator('.bt-panel:has-text("Recent Activity") thead').innerText()), 'dashboard: Recent Activity has a Note column');
-check(/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard: recent activity and updated time');
+check(!/Recent Activity/.test(text) && /Updated \d\d:\d\d/.test(text), 'dashboard: no recent activity (0.7.0), updated time');
 
 // A day with only a check-out punch: the time is under Check-Out, never Check-In.
 await sara.goto(pageUrl(`view=day&date=${ym}-09`), { waitUntil: 'networkidle' });

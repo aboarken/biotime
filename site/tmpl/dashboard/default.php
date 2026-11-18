@@ -14,8 +14,7 @@ use Joomla\CMS\Layout\LayoutHelper;
 
 /*
  * Layout (same design as the ServiceDesk Plus portal): heading with month navigation, filter bar,
- * Today panel, summary cards, then Monthly Overview and Devices You Used side by side, then Recent
- * Activity. Styles are in media/com_biotime/css/portal.css (.bt-*). Tones: green present, amber
+ * Today panel, summary cards, then Monthly Overview and Devices You Used side by side. Styles are in media/com_biotime/css/portal.css (.bt-*). Tones: green present, amber
  * missing punch, red absent, blue weekend, purple holiday, teal checked in, sky weekend worked, muted for zero.
  */
 
@@ -222,54 +221,4 @@ $days = array_sum(array_column($bar, 1));
         </section>
     </div>
 
-    <section class="bt-panel">
-        <?php echo $panelHead(Text::_('COM_BIOTIME_RECENT_ACTIVITY'), $this->canAttendance ? $this->attendanceUrl() : '', Text::_('COM_BIOTIME_VIEW_ALL')); ?>
-        <?php if ($this->period->error('punches') !== null) : ?>
-            <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NOTHING_TO_SHOW'); ?></p>
-        <?php elseif ($this->recent === []) : ?>
-            <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NO_RECENT'); ?></p>
-        <?php else : ?>
-            <div class="bt-table-wrap">
-                <table class="bt-table">
-                    <caption class="visually-hidden"><?php echo Text::_('COM_BIOTIME_RECENT_ACTIVITY'); ?></caption>
-                    <thead>
-                        <tr>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DATE'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DAY'); ?></th>
-                            <?php if ($calc) : ?><th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></th><?php endif; ?>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
-                            <?php if ($calc) : ?>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                            <?php else : ?>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
-                            <?php endif; ?>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_NOTE'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($this->recent as $day) : ?>
-                        <tr class="<?php echo $day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ''); ?><?php echo $day->date === $this->today ? ' bt-row-today' : ''; ?>">
-                            <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a></th>
-                            <td><?php echo $e($f->weekday($day->weekday())); ?></td>
-                            <?php if ($calc) : ?><td><?php echo LayoutHelper::render('biotime.schedule', ['day' => $day, 'f' => $f]); ?></td><?php endif; ?>
-                            <td><?php echo $check($day, 'in'); ?></td>
-                            <td><?php echo $check($day, 'out'); ?></td>
-                            <?php if ($calc) : ?>
-                                <td><?php echo $min($day->late); ?></td>
-                                <td><?php echo $min($day->early); ?></td>
-                            <?php else : ?>
-                                <td><?php echo $e($f->duration($day->span())); ?></td>
-                            <?php endif; ?>
-                            <td><?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f, 'tag' => false]); ?></td>
-                            <td><?php if ($day->missingPunch()) : ?><span class="bt-badge bt-tone-amber"><span aria-hidden="true">!</span><?php echo Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span><?php else : ?><span class="bt-check-none">—</span><?php endif; ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
-    </section>
 </div>
