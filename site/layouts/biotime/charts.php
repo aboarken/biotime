@@ -8,7 +8,7 @@
  *  1. Days so far (donut): present, absent, holiday, weekend, leave; the attendance rate inside.
  *  2. Days per month (stacked columns): present, absent, holiday, leave.
  *  3. Late in and early out per month (grouped columns, minutes; database only).
- *  4. Average check-in and check-out per month (lines).
+ *  4. Average check-in and check-out per month (a floating column from check-in to check-out).
  *  5. Missing punches and other days (horizontal bars).
  *
  * Colours: the portal's tones (validated together for colour-blind separation): green present,
@@ -181,7 +181,7 @@ $lines = '';
 
 if ($known !== []) {
     // Whole hours around the times, never before 00:00 or after 24:00.
-    $lo   = max(0, (int) (floor((min($known) - 30) / 60) * 60));
+    $lo   = max(0, (int) (floor((min($known) - 75) / 60) * 60));
     $hi   = min(1440, (int) (ceil((max($known) + 30) / 60) * 60));
     $span = max(60, $hi - $lo);
     $step = $span <= 240 ? 60 : ($span <= 720 ? 120 : 240);
@@ -194,24 +194,27 @@ if ($known !== []) {
             . '<text class="bt-chart-axis" x="' . ($L - 6) . '" y="' . ($ly($v) + 4) . '" text-anchor="end">' . $clock($v) . '</text>';
     }
 
-    foreach (['in' => 'COM_BIOTIME_CARD_AVG_CHECK_IN', 'out' => 'COM_BIOTIME_CARD_AVG_CHECK_OUT'] as $k => $key) {
-        $points = [];
+    // One floating column per month, from the average check-in (teal cap, bottom) to the average
+    // check-out (indigo cap, top): the usual working window. A month with only one of the two
+    // shows that cap alone. Times are written beside the caps.
+    $fw = min(30, $band * 0.45);
 
-        foreach ($series[$k] as $i => $v) {
-            if ($v !== null) {
-                $points[] = $cx($i) . ',' . $ly($v);
-            }
+    foreach ($months as $i => $m) {
+        [$in, $out] = [$series['in'][$i], $series['out'][$i]];
+        $x = round($cx($i) - $fw / 2, 1);
+        $tip = $e($long($m) . ' · ' . Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN') . ': ' . ($in !== null ? $clock($in) : '—') . ' · ' . Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT') . ': ' . ($out !== null ? $clock($out) : '—'));
+
+        if ($in !== null && $out !== null && $out > $in) {
+            $lines .= '<rect class="bt-chart-mark" x="' . $x . '" y="' . $ly($out) . '" width="' . round($fw, 1) . '" height="' . max(1, round($ly($in) - $ly($out), 1)) . '" rx="4" fill="#e0e7ff"><title>' . $tip . '</title></rect>';
         }
 
-        if (\count($points) > 1) {
-            $lines .= '<polyline class="bt-chart-line" fill="none" stroke="' . $color[$k] . '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' . implode(' ', $points) . '"/>';
-        }
-
-        foreach ($series[$k] as $i => $v) {
-            if ($v !== null) {
-                $lines .= '<circle class="bt-chart-mark" cx="' . $cx($i) . '" cy="' . $ly($v) . '" r="4.5" fill="' . $color[$k] . '" stroke="#fff" stroke-width="2">'
-                    . '<title>' . $e($long($months[$i]) . ' · ' . Text::_($key) . ': ' . $clock($v)) . '</title></circle>';
+        foreach (['in' => $in, 'out' => $out] as $k => $v) {
+            if ($v === null) {
+                continue;
             }
+
+            $lines .= '<rect class="bt-chart-mark" x="' . $x . '" y="' . round($ly($v) - 3, 1) . '" width="' . round($fw, 1) . '" height="6" rx="3" fill="' . $color[$k] . '"><title>' . $tip . '</title></rect>'
+                . '<text class="bt-chart-value" x="' . $cx($i) . '" y="' . ($k === 'out' ? round($ly($v) - 8, 1) : round($ly($v) + 16, 1)) . '" text-anchor="middle">' . $clock($v) . '</text>';
         }
     }
 
