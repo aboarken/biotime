@@ -38,7 +38,7 @@ trait IdentityGuardTrait
     }
 
     /**
-     * @throws \BiotimePortal\Component\Biotime\Administrator\Api\ZkbException when ZKBioTime is needed and unavailable
+     * @throws \BiotimePortal\Component\Biotime\Administrator\Support\SourceException when ZKBioTime is needed and unavailable
      */
     protected function currentIdentity(): Identity
     {

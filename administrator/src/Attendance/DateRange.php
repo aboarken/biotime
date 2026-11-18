@@ -28,6 +28,14 @@ final class DateRange
         return max(\sprintf('%04d-08-01', $year), AttendanceService::FIRST_YEAR . '-01-01');
     }
 
+    /** 31 July that ends the school year $today is in (1 August to 31 July). */
+    public static function schoolYearEnd(string $today): string
+    {
+        $year = (int) substr($today, 0, 4) - ((int) substr($today, 5, 2) < 8 ? 1 : 0);
+
+        return \sprintf('%04d-07-31', $year + 1);
+    }
+
     /** A date typed as DD/MM/YYYY (or D/M/YYYY, with / . or -) or YYYY-MM-DD; null when not a date. */
     public static function parse(string $value): ?string
     {

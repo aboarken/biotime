@@ -7,11 +7,12 @@ day was Present, Absent or a Weekend,
 and how many times they punched by fingerprint and face, per month and per device.
 
 ZKBioTime is the single source of truth. Joomla only reads and displays: it never creates,
-edits or corrects attendance data. The pages show only what the ZKBioTime 9.5 API provides
-(punches, with the device and verification of each); the day statuses follow a simple, documented rule on those punches.
+edits or corrects attendance data. Everything is read from **ZKBioTime's own PostgreSQL
+database, read only**: the punches (with the device and verification of each), the employees,
+each day's schedule and ZKBioTime's own calculation (late-in, early-out, worked time, overtime,
+holidays, leave, days off). Since 1.0.0 the ZKBioTime REST API is no longer used.
 
-Which ZKBioTime endpoint supplies each value, and whether it has been verified on a real server,
-is in [docs/API-MAPPING.md](docs/API-MAPPING.md).
+Which table supplies each value is in [docs/DATABASE.md](docs/DATABASE.md).
 
 ## Features
 
@@ -24,10 +25,11 @@ are respected.
 
 | Menu item type | What the user sees |
 |---|---|
-| **My Dashboard** | The school year so far: **from 1 August** (this year's, or last year's before August) **to today**, with no month selection. Under the heading, one table row: department, position, employee ID, name and the period shown. **Today**: check-in, check-out, late in, early out and the status. Cards, 5 per row: days present (of the working days so far), days absent, missing morning punch, missing afternoon punch, holidays, weekend days worked, attendance rate, average check-in (and the earliest), average check-out (and the latest), punches, total late in, total early out, late in + early out, worked time, overtime (from the API: no holidays or ZKBioTime calculation; average time between check-in and check-out instead). **Statistics** (charts of the same figures): days so far (donut), days per month, late in and early out per month, average check-in and check-out per month (a column from check-in to check-out), and circles for missing punches, weekend work and late or early days. Every card with a filter opens My Attendance for the same range. |
-| **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, and the status; the day's punches are on its details page. Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, exceptions, with or without punches) or From – To dates below the month (a date alone: From that date to today). Dashboard figures open it for the same range. |
+| **My Dashboard** | The school year so far: **from 1 August** (this year's, or last year's before August) **to today**, with no month selection. Under the heading, one table row: department, position, employee ID, name and the period shown. **Today**: check-in, check-out, late in, early out and the status. Cards, 5 per row: days present (of the working days so far), days absent, missing morning punch, missing afternoon punch, holidays, weekend days worked, attendance rate, average check-in (and the earliest), average check-out (and the latest), punches, total late in, total early out, late in + early out, worked time, overtime. **Statistics** (charts of the same figures): days so far (donut), days per month, late in and early out per month, average check-in and check-out per month (a column from check-in to check-out), and circles for missing punches, weekend work and late or early days. Every card with a filter opens My Attendance for the same range. |
+| **My Attendance** | One row per day: date (link to the day's details), day, the schedule, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), late in, early out, worked time and the status; the day's punches are on its details page. Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, late in, early out, holiday, exceptions, with or without punches) or From – To dates below the month (a date alone: From that date to today). Dashboard figures open it for the same range. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
+| **Manager Dashboard** | For managers (permission *View Manager Dashboard*): every employee of the manager's own ZKBioTime department and of the departments below it (not those who have resigned). Filters: department, employee, status, From – To (today by default, up to 31 days). Cards: **Workforce** and the My Attendance figures for everyone shown. Below, one row per employee per day: check-in and check-out in one column, then Late In, Early Out and Total. |
 
 Day details (one day: check-in, check-out, time between, status, every punch with how it was
 counted, exceptions) open from the Dashboard, Attendance and Calendar pages; they are not a
@@ -38,17 +40,21 @@ tables and coloured status pills, month navigation in the heading, and filters t
 as an option is chosen. The component styles everything itself
 (`media/com_biotime/css/portal.css`), so the pages look the same on any site template.
 
-**Day statuses** (from the punches, see [docs/API-MAPPING.md](docs/API-MAPPING.md#day-statuses-from-the-punches--portal-rule)):
+**Day statuses** (holidays, leave and days off from ZKBioTime's calculation; otherwise from the punches):
 
 | Status | When |
 |---|---|
 | Present | any punch was recorded. When the check-in or the check-out is missing, the missing time shows *Missing*; it counts as Present and as a missing morning or afternoon punch. |
 | Checked In / Checked Out | today, after the check-in (↘) / after the check-out (↗) |
 | Absent | a past working day without any punch |
+| Holiday | a holiday of ZKBioTime (for everyone, the department or the attendance group), without punches |
+| Leave | leave as ZKBioTime calculated it (e.g. *Annual Leave*, shown by its name), without punches |
+| Rest Day | a day off in the employee's schedule, without punches |
 | Weekend | a weekend day without punches (Friday and Saturday by default, *Integration Settings → System → Weekend days*). A weekend day **with** a check-in or check-out loses the weekend tag and is shown like any other day. |
 
-**Check-in** is the first punch **before 12:00** and **check-out** the last punch **from 12:00 on**,
-whatever state the device recorded (a morning "Check Out" punch is a check-in, an afternoon
+**Check-in** is the first punch **before the cut-off** and **check-out** the last punch **from the
+cut-off on**: the end of the check-in window of the day's timetable, or 12:00 on a day without
+one, whatever state the device recorded (a morning "Check Out" punch is a check-in, an afternoon
 "Check In" punch a check-out). A day with punches only in the morning has no check-out, one with
 punches only in the afternoon has no check-in: both show *Missing*.
 Today shows **Checked In** (↘) after the check-in and **Checked Out** (↗) after the check-out.
@@ -64,13 +70,8 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 
 ### Administrator pages
 
-- **Integration Settings**: connection, credentials (encrypted), employee mapping, modules,
-  the data source for calculated attendance, system settings; **Test Connection**,
-  **Read Certificate Pin**, **Close**, **Options**.
-- **Find Endpoints**: reads the API list from ZKBioTime, checks an endpoint (field names, kinds of
-  values and status texts only) and saves it as the Daily Attendance Source.
-  **Run Diagnostics** runs every check in one click and gives a report to copy (paths, results,
-  field names and kinds only).
+- **Integration Settings**: the connection to ZKBioTime's database (password encrypted), employee
+  mapping, modules, system settings; **Test Database**, **Close**, **Options**.
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
   source filters, and pages. **New** (map by employee code), **Confirm**, **Suspend**,
   **Re-match**. The status filter *No mapping yet* lists Joomla users that are not matched.
@@ -80,9 +81,9 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 | Requirement | Version |
 |---|---|
 | Joomla | 6.2 or later |
-| PHP | 8.3 or later, with OpenSSL (AES-256-GCM) and cURL |
+| PHP | 8.3 or later, with OpenSSL (AES-256-GCM) and pdo_pgsql |
 | Database | MySQL / MariaDB or PostgreSQL |
-| ZKBioTime | 9.5, REST API reachable from the Joomla web server |
+| ZKBioTime | 9.5 on PostgreSQL, its database reachable from the Joomla web server (docs/DATABASE.md) |
 
 The installer refuses to install with a clear message when PHP, Joomla or OpenSSL is too old.
 
@@ -98,65 +99,40 @@ newer package over the existing one also works; settings and mappings are kept.
 
 ## Configuration
 
-### 1. ZKBioTime API user
+### 1. Read-only database user
 
-Create a ZKBioTime user for the portal with **read-only** permission for personnel and
-attendance. The portal reads through this one user and enforces on the Joomla server that each
-employee only ever sees their own records.
+Create a PostgreSQL user for the portal that may only read ZKBioTime's tables (step by step in
+[docs/DATABASE.md](docs/DATABASE.md)). The portal reads through this one user and enforces on
+the Joomla server that each employee only ever sees their own records.
 
 ### 2. Integration Settings
 
 | Section | Setting | Notes |
 |---|---|---|
-| Connection | **Server URL** | Including the port when it is not the standard one, e.g. `https://zkb.example.com:5555`. A warning is shown for plain `http`. |
-| | Connect via | Optional; see *Server with an internal name* below. |
-| | Connection timeout, Total timeout | Seconds; connection ≤ total. |
-| Credentials | Authentication method | **JWT** (username + password exchanged for a short-lived token, renewed automatically) or **General Auth Token** (a token entered here, or obtained with username + password). |
-| | API username, API password, General Auth Token | Encrypted (AES-256-GCM) before they are stored and never shown again: the page only says *Stored (encrypted)* or *Not set*. |
-| TLS | Verify TLS certificate, CA bundle file, Certificate pin | Verification is on by default. |
+| ZKBioTime Database | Database, Server, Connect via, Database name, User, Password, Encryption (SSL), CA file | See [docs/DATABASE.md](docs/DATABASE.md). The password is encrypted (AES-256-GCM) before it is stored and never shown again: the page only says *Stored (encrypted)* or *Not set*. The portal pages need PostgreSQL. |
+| | Duration unit | Automatic by default. |
+| | Connection timeout, Query timeout | Seconds; connection ≤ query. |
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. |
 | Modules | Charts | No longer used since 0.9.0 (My Dashboard has no Monthly Overview). |
-| Daily Attendance Source | API path, parameters, field names, status names | Where ZKBioTime's calculated attendance is read (its check-in, check-out and status are used); see *Calculated attendance* below. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
 | | Date format, Time format | How the portal shows dates and times. |
 | | ZKBioTime server time zone | Default: Joomla's server time zone. |
 | | Weekend days | Default Friday and Saturday. A weekend day without punches is *Weekend*, not *Absent*; with a punch it is shown like any other day. |
-| | API page size, Safety maximum (pages) | Default 100 rows × 50 pages; pages say when results were cut off. |
 
 Settings are stored in the component's own table `#__biotime_settings`, not in Joomla's
-component options, because Joomla's Options page replaces every option on save and the secrets
-must be encrypted first. *Options* holds only the permissions.
+component options, because Joomla's Options page replaces every option on save and the database
+password must be encrypted first. *Options* holds only the permissions.
 
-**Encryption secret.** Secrets are encrypted with a key derived from the environment variable
-`BIOTIME_PORTAL_SECRET` (recommended, at least 32 random characters) or, when that is not set,
-from the `secret` in Joomla's `configuration.php`. The page shows which one is in use. If it
-changes, enter the API password (or token) again.
+**Encryption secret.** The database password is encrypted with a key derived from the
+environment variable `BIOTIME_PORTAL_SECRET` (recommended, at least 32 random characters) or,
+when that is not set, from the `secret` in Joomla's `configuration.php`. The page shows which one
+is in use. If it changes, enter the database password again.
 
-**Server with an internal name (Connect via).** When ZKBioTime's own name is only known inside
-the company network and Joomla reaches it through a public address, enter the internal name as
-*Server URL* and the public address as *Connect via*:
-
-| Server URL | Connect via |
-|---|---|
-| `https://zkb.mysite.com` | `api.zkb.mysite.com` (or `host:port`, or `IP:port`) |
-
-Joomla opens the connection to `api.zkb.mysite.com` but still checks the certificate against
-`zkb.mysite.com` and sends `Host: zkb.mysite.com`, so the server's existing certificate stays
-valid and no DNS change is needed on the Joomla server. *Read Certificate Pin* reads the
-certificate through the same address. If the certificate is not signed by a public CA, add a
-CA bundle or a certificate pin:
-
-```bash
-openssl x509 -in server.crt -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64
-```
-
-The pin is `sha256//` followed by that output.
-
-**Test Connection** logs in and reads one row of the employee list; it reports the method, how
-many employees the API user can read and when the token is renewed, or names the problem and
-what to check. At most 20 tests per administrator and hour.
+**Test Database** connects with the saved settings and reports the server version, whether the
+connection is encrypted, whether the user can only read, and which tables it may read (names
+only, never data). At most 20 tests per administrator and hour.
 
 ### 3. Employee mapping
 
@@ -183,66 +159,16 @@ Unmatched users see "Your account could not be matched to a ZKBioTime employee �
 the System Administrator", not an error. In **User Mappings** an administrator can map them by
 employee code, **Confirm** a suspended mapping, **Suspend** one, or **Re-match** (delete it so
 matching runs again). One employee can never be mapped to two Joomla users. Mappings are
-re-verified against ZKBioTime once a day. Every administrative change is recorded in
+re-verified against ZKBioTime's database once a day. Every administrative change is recorded in
 `#__biotime_audit`.
 
-### 4. Calculated attendance (schedules, statuses, late-in, ...)
+### 4. Calculated attendance (schedules, late-in, early-out, ...)
 
-> **Since 0.5.0:** the component can also connect to ZKBioTime's own database, read only, where
-> these values are kept. 0.5.0 adds the connection and *Test Database*; the pages follow in the
-> next versions. Setup: [docs/DATABASE.md](docs/DATABASE.md).
-
-**ZKBioTime 9.5 has no API for these.** Its API manual (BioTime 9.5 API User Manual, ZKTeco
-Middle East, 16 Aug 2024) documents login, devices, personnel and transactions (punches) only,
-and a real 9.5 server confirmed it. On 9.5, leave this source empty: the portal shows punches,
-check-in and check-out and the punch-based day status, and no schedule, late-in, early-out,
-worked hours or overtime. Joomla never calculates those itself.
-
-If your ZKBioTime does offer such an endpoint (BioTime Cloud or a later build; **Run
-Diagnostics** in Find Endpoints tells you), the portal can read ZKBioTime's own check-in,
-check-out and day status from an endpoint **you choose** from your server's `/api/docs/` page (or a saved ZKBioTime
-report endpoint), under **Integration Settings → Daily Attendance Source**:
-
-- **API path**, e.g. the path listed on `/api/docs/`;
-- the names of the **employee**, **start date** and **end date** parameters (the portal fills in
-  the logged-in employee's code and the month's dates itself), optional **fixed parameters**
-  (e.g. a saved report's id: `name = value`, letters/digits only — never queries or SQL);
-- **field names**, one per line `portal field = ZKBioTime field` (dots for nested fields), e.g.
-
-  ```
-  emp_code = emp_code
-  date = att_date
-  schedule = timetable_name
-  sched_start = check_in
-  sched_end = check_out
-  check_in = clock_in
-  check_out = clock_out
-  late = late
-  early = early_leave
-  worked = actual_worked
-  overtime = overtime
-  status = attendance_status
-  ```
-
-  (The ZKBioTime names above are an example only: use the names your `/api/docs/` shows.)
-- **status names**, one per line `ZKBioTime text = present | late | early | absent |
-  holiday | rest | incomplete | other`, which decide colour and label.
-
-**Easiest way: Find Endpoints** (*Components → ZKBioTime → Find Endpoints*, or the button on
-Integration Settings). It reads the list of endpoints from your ZKBioTime, checks the one you
-select with an employee code and dates, shows its field names, kinds of values and status texts
-(never personal values), suggests all the lines above, and saves them as the Daily Attendance
-Source after you review them. If your ZKBioTime publishes no readable API list, type the
-path from `/api/docs/` there.
-
-**Not sure which endpoint?** Click **Run Diagnostics** at the top of Find Endpoints, then
-**Copy report** and send the text to whoever supports the portal. It checks the connection, the
-API list, the punch endpoint and the known calculated-attendance endpoints from your Joomla
-server, and contains no passwords, tokens, names, employee codes or times.
-
-When a daily source is set, its check-in, check-out and calculated status are used instead of
-the punch-based ones (a status mapped to late or early is shown as such). The pages still show
-only check-in, check-out, the time between them and the status.
+Each day's schedule, late-in, early-out, worked time, overtime, holidays, leave and days off are
+ZKBioTime's own calculation, read from its database; Joomla never calculates them. A day shows
+late-in and early-out once ZKBioTime has calculated it (Auto Calculate, e.g. nightly); today and
+later days show their schedule from the employee's shift. Details:
+[docs/DATABASE.md](docs/DATABASE.md).
 
 ### 5. Permissions
 
@@ -259,6 +185,7 @@ group (or the group your employees are in). Without them users get "You are not 
 | `zkb.attendance.view` | My Attendance (and day details) |
 | `zkb.calendar.view` | Attendance Calendar (and day details) |
 | `zkb.punches.view` | My Punches |
+| `zkb.manager.view` | Manager Dashboard (give it only to the managers' group) |
 
 My Dashboard also opens day details. Updating from 0.3.x moves menu items of the removed My
 Schedules, Attendance Reports and My Profile pages to the trash; updating from 0.4.0 or 0.4.1 turns
@@ -276,62 +203,60 @@ it, and it survives logging out. Each entry belongs to one Joomla user and one e
   is on; *Cache time* 0 turns everything off.)
 - Expired entries are deleted automatically; the table holds only what was read recently (a few KB
   per employee and month, a few MB for a whole school).
-- **One connection per page load**: all requests of a page reuse the same HTTPS connection to
-  ZKBioTime instead of a new handshake each time.
+- **One connection per page load**: all queries of a page share one read-only connection to
+  ZKBioTime's database, opened when first needed.
 - **Daily employee check**: once a day each user's mapping is checked against ZKBioTime. If
   ZKBioTime does not answer, the check is tried again after an hour, not on every page.
 
 Pages show "Updated hh:mm" (when ZKBioTime was read).
 
-API calls per page load, for one month (cold cache; a warm cache makes **0** calls):
+Database reads per page load, for one month (cold cache; a warm cache reads **nothing**):
 
-| Page | Calls |
+| Page | Reads |
 |---|---|
-| Any page, first visit of a user | Employee code field: 1 (employee list filtered by code). E-mail: one per page of the employee list. Then 0 while the mapping is active (1 per day to re-verify). |
-| Login | 1 per token lifetime (the token is cached on the server, encrypted). |
-| Dashboard, My Attendance, Calendar, day details | punches (+ daily source when set) = **1** on 9.5 for the current month, at most 2 (more only when a month has more rows than the page size). Past months: 0 for a day after the first read. |
-| My Punches | 1 per month of the year up to today on the first load of the day; then only the current month. |
+| Any page, first visit of a user | Employee code field: 1 query by code. E-mail: 1 query of the employees with an e-mail address. Then none while the mapping is active (1 per day to re-verify). |
+| Dashboard, My Attendance, Calendar, day details | the punches and the day rows of each month shown. Past months: none for a day after the first read. |
+| My Punches | each month of the year up to today on the first load of the day; then only the current month. |
 
 ## Security
 
 - The administrator pages (settings, user mappings, diagnostics) need **Super User** rights
   (`core.admin` on the component), for every task, not only the page itself (0.4.7).
-- When the server URL or *Connect via* changes, the stored password or token must be typed
-  again, so saved credentials are never sent to a new address (0.4.7).
+- When the database server, *Connect via*, database or user changes, the stored password must be
+  typed again, so it is never sent to a new address.
 - Every page needs a logged-in Joomla user and its own permission; every read takes the
   server-side mapping. Employee ids, codes or dates in a URL never choose whose data is shown;
   a record that is not the user's gives the same "not found" as a missing one.
-- If ZKBioTime ignores an employee filter and returns other people's rows, they are dropped
-  and a warning is logged.
-- Credentials and tokens never reach the browser (no JavaScript, HTML, session or cookie).
-- Every state-changing action is a POST with a CSRF token and a permission check; connection
+- Every query filters by the one employee; punches of anyone else would still be dropped and a
+  warning logged.
+- The database password never reaches the browser (no JavaScript, HTML, session or cookie).
+- Every state-changing action is a POST with a CSRF token and a permission check; database
   tests are limited per administrator and hour.
 - Portal pages are `noindex, nofollow` and sent with `Cache-Control: no-store`.
 - Input is checked against strict patterns and whitelists; all output is escaped.
-- The integration is read-only: the only POST sent to ZKBioTime is the login.
+- The integration is read-only: the database connection is opened read only, and the user should only be allowed to read (Test Database checks it).
 
 ## Troubleshooting
 
-`administrator/logs/com_biotime.php` records each API call (method, path, query parameter
-names, HTTP status, time), one line per page load saying what was read, hidden or skipped and
-why, and every problem in plain words. Passwords, tokens, headers and personal data are never
-written to it. With *Detailed logging* off, only warnings and errors are written.
+`administrator/logs/com_biotime.php` records one line per page load saying what was read, hidden
+or skipped and why, and every problem in plain words (with the database server's message).
+Passwords and personal data are never written to it. With *Detailed logging* off, only warnings and errors are written.
 
 | Message | Check |
 |---|---|
-| could not be reached | Server URL (with port), *Connect via*, firewall/VPN, timeouts, TLS settings; the log has the cURL reason |
-| did not accept the portal's credentials | Username, password or token, authentication method |
-| did not allow the portal to read this information | The API user's permissions in ZKBioTime |
-| could not find what was asked for | Server URL must not contain an extra path; check the source paths against `/api/docs/` |
-| sent an answer the portal could not read | The URL may point to a proxy or login page; the log lists the keys received |
+| is not set up yet | Integration Settings → ZKBioTime Database: PostgreSQL, server, user and password saved; the encryption secret unchanged |
+| could not be reached | Server and *Connect via*, firewall, SSL settings, timeouts; **Test Database** names the problem and the log has the database server's message |
+| did not accept the portal's credentials | The database user and password (and `pg_hba.conf`) |
+| is not available right now | The database name, and that the read-only user may read the tables (**Test Database**) |
+| could not find what was asked for | No (or more than one) employee in ZKBioTime has the user's mapped employee code |
 | Your account could not be matched | **User Mappings**: the user's status (Not found / Ambiguous / Suspended) and employee code field |
-| a working day shows Absent although the person was there | No punch was recorded that day (check the device in ZKBioTime), or the day should be a weekend day (*Weekend days*). Public holidays are not known to the portal. |
+| a working day shows Absent although the person was there | No punch was recorded that day (check the device in ZKBioTime), or the day should be a weekend day (*Weekend days*). A holiday shows as Holiday only when it is set up in ZKBioTime. |
 
 ## Development
 
 - Every change goes through a pull request; the maintainer merges.
-- Tests: `composer install`, then `vendor/bin/phpunit` (no ZKBioTime server needed). Browser
-  checks and the live checklist for the real server: [docs/TESTING.md](docs/TESTING.md).
+- Tests: `composer install`, then `vendor/bin/phpunit` (no ZKBioTime server needed). The live
+  checklist for the real server: [docs/TESTING.md](docs/TESTING.md).
 - Each version: bump `<version>` in `biotime.xml` and `media/joomla.asset.json`, add
   `administrator/sql/updates/{mysql,postgresql}/<version>.sql` (a comment when nothing changes),
   add a `CHANGELOG.md` entry and `docs/release-notes/<version>.md`.

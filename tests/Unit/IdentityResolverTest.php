@@ -6,25 +6,30 @@
 
 namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
+use BiotimePortal\Component\Biotime\Administrator\Database\DbEmployeeDirectory;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingException;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping;
 use BiotimePortal\Component\Biotime\Tests\Support\ArrayLogger;
-use BiotimePortal\Component\Biotime\Tests\Support\Fakes;
+use BiotimePortal\Component\Biotime\Tests\Support\CatalogueQuery;
 use BiotimePortal\Component\Biotime\Tests\Support\FixedFieldReader;
 use BiotimePortal\Component\Biotime\Tests\Support\MemoryAudit;
 use BiotimePortal\Component\Biotime\Tests\Support\MemoryUserMapRepository;
-use BiotimePortal\Component\Biotime\Tests\Support\RoutingTransport;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Employee matching: by the Joomla "employeeid" field first, then e-mail; single, ambiguous, none;
- * duplicates; suspension when the field or e-mail changes; daily re-verification.
+ * duplicates; suspension when the field or e-mail changes; daily re-verification. Employees come
+ * from ZKBioTime's database (DbEmployeeDirectory over CatalogueQuery).
  */
 final class IdentityResolverTest extends TestCase
 {
-    private RoutingTransport $zkb;
+    private CatalogueQuery $db;
+
+    /** The database cannot be reached (DbException UNREACHABLE on every query). */
+    private bool $down = false;
 
     private MemoryUserMapRepository $repo;
 
@@ -45,20 +50,45 @@ final class IdentityResolverTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->zkb    = new RoutingTransport();
         $this->repo   = new MemoryUserMapRepository();
         $this->audit  = new MemoryAudit();
         $this->fields = new FixedFieldReader();
         $this->now    = new \DateTimeImmutable('2026-11-15 10:00:00', new \DateTimeZone('UTC'));
 
-        // The employee filter answers partial matches, like many search APIs: E1 also finds E10.
-        $this->zkb->list('/personnel/api/employees/', $this->employees, static fn (array $e, array $q): bool => !isset($q['emp_code']) || str_starts_with($e['emp_code'], $q['emp_code']));
-        $this->zkb->on('/personnel/api/employees/11/', fn () => [200, $this->employees[0]]);
+        $rows = function (\Closure $filter): array {
+            if ($this->down) {
+                throw new DbException(DbException::UNREACHABLE, 'down');
+            }
+
+            return array_values(array_map(
+                static fn (array $e): array => $e + ['last_name' => null],
+                array_filter($this->employees, $filter)
+            ));
+        };
+
+        // The code lookup is not trusted to be exact: here it also answers partial matches (E1
+        // also finds E10), and the resolver must still compare emp_code exactly.
+        $this->db = new CatalogueQuery('pgsql', [
+            'WHERE emp_code = :code'  => static fn (array $p): array => $rows(static fn (array $e): bool => str_starts_with($e['emp_code'], $p[':code'])),
+            'WHERE id = :id'          => static fn (array $p): array => $rows(static fn (array $e): bool => $e['id'] === $p[':id']),
+            'FROM personnel_employee' => static fn (): array => $rows(static fn (array $e): bool => $e['email'] !== ''),
+        ]);
+    }
+
+    private function directory(): DbEmployeeDirectory
+    {
+        return new DbEmployeeDirectory(fn () => $this->db);
+    }
+
+    /** Queries sent so far, all or those containing $fragment. */
+    private function queries(string $fragment = ''): int
+    {
+        return \count(array_filter($this->db->sent, static fn (string $sql): bool => str_contains($sql, $fragment)));
     }
 
     private function resolver(bool $autoMatch = true): IdentityResolver
     {
-        return new IdentityResolver($this->repo, fn () => Fakes::client($this->zkb), $this->audit, new ArrayLogger(), $autoMatch, fn () => $this->now, $this->fields);
+        return new IdentityResolver($this->repo, fn () => $this->directory(), $this->audit, new ArrayLogger(), $autoMatch, fn () => $this->now, $this->fields);
     }
 
     public function testFieldCodeMapsExactlyOneEmployeeEvenWhenTheFilterReturnsPartialMatches(): void
@@ -70,7 +100,7 @@ final class IdentityResolverTest extends TestCase
         self::assertTrue($identity->isMatched());
         self::assertSame('11', $identity->employeeId());
         self::assertSame('E1', $identity->empCode());
-        self::assertEquals(['emp_code' => 'E1', 'page' => '1', 'page_size' => '100'], $this->zkb->queries('/personnel/api/employees/')[0]);
+        self::assertSame(1, $this->queries('WHERE emp_code = :code'));
         self::assertStringContainsString('by_field', $this->audit->records[0]['detail']);
     }
 
@@ -112,7 +142,7 @@ final class IdentityResolverTest extends TestCase
         $identity = $this->resolver(false)->resolve(5, 'alice@example.com');
 
         self::assertFalse($identity->isMatched());
-        self::assertSame([], $this->zkb->calls, 'no API call');
+        self::assertSame(0, $this->queries(), 'ZKBioTime is not asked');
     }
 
     public function testOneEmployeeIsNeverMappedToTwoUsers(): void
@@ -127,16 +157,16 @@ final class IdentityResolverTest extends TestCase
         self::assertSame(5, $this->repo->findByEmployeeId('11')?->joomlaUserId);
     }
 
-    public function testActiveMappingNeedsNoApiCall(): void
+    public function testActiveMappingNeedsNoLookup(): void
     {
         $this->fields->values[5] = 'E1';
         $this->resolver()->resolve(5, 'a@x.com');
-        $calls = \count($this->zkb->calls);
+        $calls = $this->queries();
 
         $identity = $this->resolver()->resolve(5, 'a@x.com');
 
         self::assertTrue($identity->isMatched());
-        self::assertCount($calls, $this->zkb->calls);
+        self::assertSame($calls, $this->queries());
     }
 
     public function testChangedFieldSuspendsTheMapping(): void
@@ -166,10 +196,10 @@ final class IdentityResolverTest extends TestCase
     {
         $this->fields->values[5] = 'E99';
         $this->resolver()->resolve(5, 'a@x.com');
-        $calls = \count($this->zkb->calls);
+        $calls = $this->queries();
 
         $this->resolver()->resolve(5, 'a@x.com');
-        self::assertCount($calls, $this->zkb->calls, 'reused within the recheck time');
+        self::assertSame($calls, $this->queries(), 'reused within the recheck time');
 
         $this->fields->values[5] = 'E1';
         self::assertTrue($this->resolver()->resolve(5, 'a@x.com')->isMatched(), 'a corrected field is used at once');
@@ -195,7 +225,7 @@ final class IdentityResolverTest extends TestCase
 
         self::assertFalse($identity->isMatched());
         self::assertSame(UserMapping::STATUS_NOT_FOUND, $identity->status);
-        self::assertSame([], $this->zkb->queries('/personnel/api/employees/'), 'ZKBioTime is not even asked');
+        self::assertSame(0, $this->queries(), 'ZKBioTime is not even asked');
     }
 
     public function testAMatchFoundOnlyAfterAnEmailChangeWaitsForAnAdministrator(): void
@@ -216,15 +246,15 @@ final class IdentityResolverTest extends TestCase
         self::assertTrue($this->resolver()->resolve(8, 'alice.b@example.com')->isMatched());
     }
 
-    /** A failed daily re-verification is not retried on every page load (each try waits for ZKBioTime). */
+    /** A failed daily re-verification is not retried on every page load (each try waits for ZKBioTime's database). */
     public function testFailedReverificationIsRetriedAfterAnHourNotOnEveryPage(): void
     {
         $this->fields->values[5] = 'E1';
         $this->resolver()->resolve(5, 'a@x.com');
 
-        $this->zkb->on('/personnel/api/employees/11/', static fn () => [503, ['detail' => 'down']]);
-        $this->now = $this->now->modify('+25 hours');
-        $tries     = fn (): int => \count($this->zkb->queries('/personnel/api/employees/11/'));
+        $this->down = true;
+        $this->now  = $this->now->modify('+25 hours');
+        $tries      = fn (): int => $this->queries('WHERE id = :id');
 
         self::assertTrue($this->resolver()->resolve(5, 'a@x.com')->isMatched(), 'the verified mapping is kept');
         $after = $tries();
@@ -239,8 +269,8 @@ final class IdentityResolverTest extends TestCase
 
         self::assertSame($after, $tries(), 'no new attempt within the hour');
 
-        $this->zkb->on('/personnel/api/employees/11/', fn () => [200, $this->employees[0]]);
-        $this->now = $failedAt->modify('+61 minutes');
+        $this->down = false;
+        $this->now  = $failedAt->modify('+61 minutes');
         self::assertTrue($this->resolver()->resolve(5, 'a@x.com')->isMatched());
         self::assertGreaterThan($after, $tries(), 'tried again after an hour');
 
@@ -252,7 +282,7 @@ final class IdentityResolverTest extends TestCase
 
     public function testAdministratorMapsByExactCodeAndDuplicatesAreRefused(): void
     {
-        $manager = new MappingManager($this->repo, fn () => Fakes::client($this->zkb), $this->audit, fn () => $this->now);
+        $manager = new MappingManager($this->repo, fn () => $this->directory(), $this->audit, fn () => $this->now);
 
         $employee = $manager->assign(5, 'a@x.com', 'E1', 99);
         self::assertSame('Alice', $employee['first_name']);
@@ -279,7 +309,7 @@ final class IdentityResolverTest extends TestCase
 
     public function testAdministratorMappingIsNotSuspendedByEmailOrField(): void
     {
-        (new MappingManager($this->repo, fn () => Fakes::client($this->zkb), $this->audit, fn () => $this->now))->assign(5, 'a@x.com', 'E4', 1);
+        (new MappingManager($this->repo, fn () => $this->directory(), $this->audit, fn () => $this->now))->assign(5, 'a@x.com', 'E4', 1);
         $this->fields->values[5] = 'E1';
 
         self::assertSame('E4', $this->resolver()->resolve(5, 'other@x.com')->empCode());

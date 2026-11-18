@@ -7,7 +7,7 @@
 namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 
 /**
  * Every COM_BIOTIME_ language key used in code, templates and XML exists in a language file,
@@ -51,7 +51,7 @@ final class LanguageTest extends TestCase
         $sys   = self::file('administrator/language/en-GB/com_biotime.sys.ini');
 
         // Shared classes that render text on the site.
-        $siteShared = ['administrator/src/Support/', 'administrator/src/Api/ZkbException.php'];
+        $siteShared = ['administrator/src/Support/'];
         $missing    = [];
         $root       = str_replace('\\', '/', (string) realpath(self::ROOT));
         $files      = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
@@ -115,12 +115,11 @@ final class LanguageTest extends TestCase
             $need[] = ['COM_BIOTIME_PART_' . $part, $site];
         }
 
-        foreach (['DAILY'] as $kind) {
-            foreach (['ERR_PATH', 'ERR_BUILTIN', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP', 'ERR_LINE'] as $err) {
-                $need[] = ['COM_BIOTIME_SETTINGS_' . $kind . '_' . $err, $admin];
-            }
+        $need[] = ['COM_BIOTIME_SETTINGS_FIELDSET_DATABASE_HELP', $admin];
 
-            $need[] = ['COM_BIOTIME_SETTINGS_FIELDSET_' . $kind . '_HELP', $admin];
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Database\DbException::KINDS as $kind) {
+            $need[] = ['COM_BIOTIME_DB_ERR_' . strtoupper($kind), $admin];
+            $need[] = ['COM_BIOTIME_DB_HINT_' . strtoupper($kind), $admin];
         }
 
         foreach (\BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::STATUSES as $st) {
@@ -131,16 +130,23 @@ final class LanguageTest extends TestCase
         self::assertSame([], $missing);
     }
 
-    public function testEveryErrorKindHasAMessageAndAHint(): void
+    public function testEveryErrorKindHasAPortalMessage(): void
     {
         $strings = self::strings();
 
-        foreach (ZkbException::KINDS as $kind) {
-            $error = (new ZkbException($kind, 'x'))->getLanguageKey();
-            self::assertArrayHasKey($error, $strings);
-            self::assertStringContainsString('ZKBioTime', $strings[$error], $error . ' must name ZKBioTime');
-            self::assertArrayHasKey($error, self::file('site/language/en-GB/com_biotime.ini'), 'portal needs ' . $error);
-            self::assertArrayHasKey('COM_BIOTIME_TEST_HINT_' . strtoupper($kind), $strings);
+        $admin = self::file('administrator/language/en-GB/com_biotime.ini');
+        $site  = self::file('site/language/en-GB/com_biotime.ini');
+
+        foreach (SourceException::KINDS as $kind) {
+            $error = (new SourceException($kind, 'x'))->getLanguageKey();
+            self::assertArrayHasKey($error, $admin, 'User Mappings needs ' . $error);
+            self::assertStringContainsString('ZKBioTime', $admin[$error], $error . ' must name ZKBioTime');
+            self::assertArrayHasKey($error, $site, 'portal needs ' . $error);
+        }
+
+        // Every database error is shown as one of these kinds on the portal pages.
+        foreach (\BiotimePortal\Component\Biotime\Administrator\Database\DbException::KINDS as $kind) {
+            self::assertContains(SourceException::kindOf(new \BiotimePortal\Component\Biotime\Administrator\Database\DbException($kind, 'x')), SourceException::KINDS);
         }
     }
 }

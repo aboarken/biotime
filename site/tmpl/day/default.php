@@ -16,7 +16,6 @@ $d     = $this->day;
 $e     = fn (string $text): string => $this->escape($text);
 $check = fn (string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $d, 'f' => $f, 'type' => $type, 'device' => true]);
 $min   = fn (?int $minutes): string => LayoutHelper::render('biotime.minutes', ['minutes' => $minutes, 'f' => $f]);
-$calc  = $this->period->calculated;
 ?>
 <div class="com-biotime biotime-day" data-bt-root="day">
     <?php if ($this->canAttendance) : ?><a class="bt-back" href="<?php echo $this->monthUrl('attendance', $this->year, $this->month); ?>">&larr; <?php echo Text::_('COM_BIOTIME_BACK_ATTENDANCE'); ?></a><?php endif; ?>
@@ -28,38 +27,34 @@ $calc  = $this->period->calculated;
             <div class="bt-head-meta">
                 <?php echo LayoutHelper::render('biotime.status', ['day' => $d, 'f' => $f]); ?>
                 <?php if ($d->workedOnWeekend()) : ?><span class="bt-badge bt-tone-sky"><?php echo Text::_('COM_BIOTIME_WORKED_ON_WEEKEND'); ?></span><?php endif; ?>
-                <?php if ($calc && $d->status === 'holiday' && $d->statusRaw !== null) : ?><span><?php echo $e($d->statusRaw); ?></span><?php endif; ?>
+                <?php if ($d->status === 'holiday' && $d->statusRaw !== null) : ?><span><?php echo $e($d->statusRaw); ?></span><?php endif; ?>
                 <span><?php echo $e(Text::plural('COM_BIOTIME_N_PUNCHES', count($d->punches))); ?></span>
             </div>
         </div>
     </div>
 
-    <?php echo $this->notices($this->period, false); ?>
+    <?php echo $this->notices($this->period); ?>
 
     <section class="bt-panel">
         <div class="bt-panel-head"><h2 class="bt-panel-title"><?php echo Text::_('COM_BIOTIME_CHECK_IN_OUT'); ?></h2></div>
         <dl class="bt-today">
-            <?php if ($calc) : ?>
-                <div><dt><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></dt><dd><?php echo LayoutHelper::render('biotime.schedule', ['day' => $d, 'f' => $f]); ?></dd></div>
-            <?php endif; ?>
+            <div><dt><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></dt><dd><?php echo LayoutHelper::render('biotime.schedule', ['day' => $d, 'f' => $f]); ?></dd></div>
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></dt><dd><?php echo $check('in'); ?></dd></div>
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></dt><dd><?php echo $check('out'); ?></dd></div>
-            <?php if ($calc) : ?>
-                <div><dt><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></dt><dd><?php echo $min($d->late); ?></dd></div>
-                <div><dt><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></dt><dd><?php echo $min($d->early); ?></dd></div>
-                <div><dt><?php echo Text::_('COM_BIOTIME_COL_LATE_EARLY'); ?></dt><dd><?php echo $min(($d->late ?? 0) + ($d->early ?? 0)); ?></dd></div>
-                <div><dt><?php echo Text::_('COM_BIOTIME_COL_WORKED'); ?></dt><dd><?php echo $e($f->duration($d->worked !== null && $d->worked > 0 ? $d->worked : null)); ?></dd></div>
-                <?php if (($d->overtime ?? 0) > 0) : ?>
-                    <div><dt><?php echo Text::_('COM_BIOTIME_COL_OVERTIME'); ?></dt><dd><?php echo $e($f->duration($d->overtime)); ?></dd></div>
-                <?php endif; ?>
+            <div><dt><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></dt><dd><?php echo $min($d->late); ?></dd></div>
+            <div><dt><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></dt><dd><?php echo $min($d->early); ?></dd></div>
+            <div><dt><?php echo Text::_('COM_BIOTIME_COL_LATE_EARLY'); ?></dt><dd><?php echo $min(($d->late ?? 0) + ($d->early ?? 0)); ?></dd></div>
+            <div><dt><?php echo Text::_('COM_BIOTIME_COL_WORKED'); ?></dt><dd><?php echo $e($f->duration($d->worked !== null && $d->worked > 0 ? $d->worked : null)); ?></dd></div>
+            <?php if (($d->overtime ?? 0) > 0) : ?>
+                <div><dt><?php echo Text::_('COM_BIOTIME_COL_OVERTIME'); ?></dt><dd><?php echo $e($f->duration($d->overtime)); ?></dd></div>
             <?php endif; ?>
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></dt><dd><?php echo $e($f->duration($d->span())); ?></dd></div>
             <div><dt><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></dt><dd><?php echo LayoutHelper::render('biotime.status', ['day' => $d, 'f' => $f]); ?></dd></div>
         </dl>
     </section>
 
-    <?php // Late and early have their own fields when read from the database. ?>
-    <?php $exceptions = $calc ? array_values(array_diff($d->exceptions, ['late', 'early'])) : $d->exceptions; ?>
+    <?php // Late and early have their own fields. ?>
+    <?php $exceptions = array_values(array_diff($d->exceptions, ['late', 'early'])); ?>
     <?php if ($exceptions !== []) : ?>
         <div class="bt-alert bt-tone-amber" role="note">
             <strong><?php echo Text::_('COM_BIOTIME_EXCEPTIONS'); ?>:</strong>

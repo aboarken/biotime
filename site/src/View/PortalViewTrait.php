@@ -13,7 +13,6 @@ namespace BiotimePortal\Component\Biotime\Site\View;
 use BiotimePortal\Component\Biotime\Administrator\Support\Formatter;
 use BiotimePortal\Component\Biotime\Site\Model\PortalModel;
 use Joomla\CMS\Factory;
-use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Router\Route;
 
@@ -22,7 +21,7 @@ use Joomla\CMS\Router\Route;
  *  - heading and browser title from the menu item (title, Page Heading, Browser Page Title,
  *    Show Page Heading), as in Joomla core;
  *  - noindex/nofollow, the portal stylesheet and the filter bar script;
- *  - formatter, time zone label, month navigation, "Updated" time and error texts.
+ *  - formatter, time zone label, month navigation and error texts.
  */
 trait PortalViewTrait
 {
@@ -37,9 +36,6 @@ trait PortalViewTrait
     public int $year = 0;
 
     public int $month = 0;
-
-    /** Weekend day names, e.g. "Friday, Saturday" (for the notes under the pages). */
-    public string $weekendText = '';
 
     protected function preparePage(PortalModel $model, string $view, string $titleKey): void
     {
@@ -65,7 +61,6 @@ trait PortalViewTrait
         $this->showPageHeading = $show;
         $this->f               = $model->formatter();
         $this->zone            = $model->zoneLabel();
-        $this->weekendText     = implode(', ', array_map(fn (int $d): string => $this->f->weekday($d), $model->attendance()->weekendDays()));
 
         $this->setPortalTitle($title);
 
@@ -113,21 +108,12 @@ trait PortalViewTrait
         return $this->f->monthName($this->month) . ' ' . $this->year;
     }
 
-    /** Notices shown above attendance data (errors, cut-off lists, how times are read). */
-    public function notices(\BiotimePortal\Component\Biotime\Administrator\Attendance\Period $period, bool $rules = true): string
+    /** Notices shown above attendance data (errors, cut-off lists, the time zone). */
+    public function notices(\BiotimePortal\Component\Biotime\Administrator\Attendance\Period $period): string
     {
         return \Joomla\CMS\Layout\LayoutHelper::render('biotime.notices', [
-            'rules'   => $rules,
-            'period'  => $period,
-            'zone'    => $this->zone,
-            'updated' => $this->updatedText($period->fetchedAt),
-            'weekend' => $this->weekendText,
+            'period' => $period,
+            'zone'   => $this->zone,
         ]);
-    }
-
-    /** "Updated 14:05" in the user's own time zone (this is when the portal read ZKBioTime). */
-    public function updatedText(?int $timestamp): string
-    {
-        return $timestamp === null ? '' : Text::sprintf('COM_BIOTIME_UPDATED_AT', HTMLHelper::_('date', gmdate('Y-m-d H:i:s', $timestamp), 'H:i'));
     }
 }

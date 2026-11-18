@@ -119,8 +119,8 @@ final class AttendanceReader
     }
 
     /**
-     * Punches from $from 00:00 to $to 23:59:59 (server time), in the API's field names, so they
-     * are checked and stored exactly as punches read from the API.
+     * Punches from $from 00:00 to $to 23:59:59 (server time), in the field names the portal has
+     * always stored (those of ZKBioTime's transactions list), so cached punches keep their form.
      *
      * @return list<array<string, mixed>>
      *

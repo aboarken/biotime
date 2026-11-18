@@ -17,7 +17,7 @@ use Psr\Log\LogLevel;
 /**
  * PSR-3 logger writing to administrator/logs/com_biotime.php through the Joomla Log API.
  *
- * Callers must pass messages that are already free of secrets (ZkbClient scrubs them).
+ * Callers must pass messages that are already free of secrets (DbException::clean() scrubs driver messages).
  * Context arrays are deliberately ignored so request data is never dumped by accident.
  * With detailed logging off (Integration Settings → System), only warnings and errors are written.
  */

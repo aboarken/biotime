@@ -10,10 +10,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
-use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
-use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
+use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
@@ -22,15 +19,12 @@ use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
  * Turns the posted Integration Settings form into the values to store. Pure: no Joomla, no
  * database, so every rule is covered by unit tests.
  *
- * - A new password or token is encrypted; an empty field keeps the stored one.
- * - "Remove stored password / token" deletes it.
- * - Every save empties the cached API token, so new credentials are used at once.
+ * - A new database password is encrypted; an empty field keeps the stored one.
+ * - "Remove stored database password" deletes it.
  * - All errors are collected and returned as language keys.
  */
 final class SettingsValidator
 {
-    public const TOKEN_PATTERN = '/^[A-Za-z0-9._~+\/=-]{16,4096}$/';
-
     /** @var \Closure(string): bool */
     private \Closure $fileExists;
 
@@ -54,131 +48,8 @@ final class SettingsValidator
     {
         $errors = [];
         $values = [];
-        $text   = static fn (string $name, int $max = 255): string => mb_substr(trim(self::str($input[$name] ?? '')), 0, $max + 1);
 
-        // Server URL, including its port (https://zkb.example.com:5555).
-        $url = rtrim($text('server_url', 500), '/');
-
-        // Reading everything from the database (0.6.1): the API may be left empty. When a server
-        // URL is entered it is still checked in full.
-        $noApi = $url === '' && self::str($input['data_source'] ?? '') === 'database'
-            && self::str($input['db_engine'] ?? '') === DbConfig::ENGINE_PGSQL;
-
-        try {
-            $base                 = ClientConfig::buildBaseUrl($url);
-            $values['server_url'] = $url;
-        } catch (\InvalidArgumentException) {
-            if (!$noApi) {
-                $errors[] = $url === '' ? 'COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED' : 'COM_BIOTIME_SETTINGS_ERR_URL';
-            }
-
-            $values['server_url'] = $noApi ? '' : ($values['server_url'] ?? '');
-            $base     = '';
-        }
-
-        // The separate port field of 0.1.x is gone: the port is part of the URL.
-        $values['server_port'] = '';
-
-        // Connect via: another address for the TCP connection, same name for TLS and Host.
-        try {
-            $basePort              = (int) (parse_url($base, PHP_URL_PORT) ?: (str_starts_with(strtolower($url), 'https://') ? 443 : 80));
-            $values['connect_via'] = ClientConfig::normalizeConnectVia(self::str($input['connect_via'] ?? ''), $basePort);
-        } catch (\InvalidArgumentException) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_CONNECT_VIA';
-            $values['connect_via'] = '';
-        }
-
-        $https = str_starts_with(strtolower($url), 'https://');
-
-        // Authentication.
-        $method = self::str($input['auth_method'] ?? '');
-
-        if (!\in_array($method, Credentials::METHODS, true)) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_METHOD';
-            $method   = Credentials::METHOD_JWT;
-        }
-
-        $values['auth_method'] = $method;
-
-        $username = $text('api_username', 150);
-
-        if (mb_strlen($username) > 150 || preg_match('/[\x00-\x1F\x7F]/u', $username)) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_USERNAME';
-            $username = '';
-        }
-
-        $values['api_username'] = $username;
-
-        // Secrets are read raw (no trimming inside, no filters) and never echoed back.
-        $password    = self::str($input['api_password'] ?? '');
-        $token       = trim(self::str($input['api_token'] ?? ''));
-        $hasPassword = $current->hasPassword() && !self::flag($input['clear_password'] ?? '0');
-        $hasToken    = $current->hasStaticToken() && !self::flag($input['clear_token'] ?? '0');
-
-        if (!$hasPassword) {
-            $values['api_password_enc'] = '';
-        }
-
-        if (!$hasToken) {
-            $values['api_token_enc'] = '';
-        }
-
-        if ($password !== '') {
-            if (\strlen($password) > 256 || preg_match('/[\x00-\x1F\x7F]/', $password)) {
-                $errors[] = 'COM_BIOTIME_SETTINGS_ERR_PASSWORD';
-                // Entered but invalid: report that alone, not also "password required".
-                $hasPassword = true;
-            } else {
-                $encrypted = $this->encryptOrFail($password, KeyVault::CONTEXT_PASSWORD, $errors);
-
-                if ($encrypted !== null) {
-                    $values['api_password_enc'] = $encrypted;
-                    $hasPassword                = true;
-                }
-            }
-        }
-
-        if ($token !== '') {
-            if (!preg_match(self::TOKEN_PATTERN, $token)) {
-                $errors[] = 'COM_BIOTIME_SETTINGS_ERR_TOKEN';
-                $hasToken = true;
-            } else {
-                $encrypted = $this->encryptOrFail($token, KeyVault::CONTEXT_STATIC_TOKEN, $errors);
-
-                if ($encrypted !== null) {
-                    $values['api_token_enc'] = $encrypted;
-                    $hasToken                = true;
-                }
-            }
-        }
-
-        // A stored password or token is only kept for the address it was entered for: when the
-        // server URL or "connect via" changes, it must be typed again, so stored credentials can
-        // never be sent to a new host by someone who does not know them.
-        $moved = $current->serverUrl() !== ''
-            && (($values['server_url'] ?? '') !== $current->serverUrl() || ($values['connect_via'] ?? '') !== $current->connectVia());
-
-        if ($moved && $password === '' && $hasPassword && $current->hasPassword()) {
-            $errors[]                   = 'COM_BIOTIME_SETTINGS_ERR_REENTER_PASSWORD';
-            $values['api_password_enc'] = '';
-        }
-
-        if ($moved && $token === '' && $hasToken && $current->hasStaticToken()) {
-            $errors[]                = 'COM_BIOTIME_SETTINGS_ERR_REENTER_TOKEN';
-            $values['api_token_enc'] = '';
-        }
-
-        $login = $username !== '' && $hasPassword;
-
-        if ($method === Credentials::METHOD_JWT && !$login && !$noApi) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_JWT_CREDENTIALS';
-        }
-
-        if ($method === Credentials::METHOD_TOKEN && !$login && !$hasToken && !$noApi) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_TOKEN_CREDENTIALS';
-        }
-
-        // Timeouts.
+        // Timeouts of the database connection and of each query.
         $connect = self::int($input['connect_timeout'] ?? null);
         $total   = self::int($input['timeout'] ?? null);
 
@@ -191,40 +62,7 @@ final class SettingsValidator
         $values['connect_timeout'] = (string) ($connect ?? 5);
         $values['timeout']         = (string) ($total ?? 30);
 
-        // TLS.
-        $values['verify_tls'] = self::flag($input['verify_tls'] ?? '1') ? '1' : '0';
-        $caBundle             = $text('ca_bundle', 500);
-
-        if ($caBundle !== '' && (preg_match('/[\x00-\x1F\x7F]/', $caBundle) || !($this->fileExists)($caBundle))) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_CA_BUNDLE';
-        }
-
-        $values['ca_bundle'] = $caBundle;
-
-        try {
-            $values['tls_pin'] = SslPin::normalize(self::str($input['tls_pin'] ?? ''));
-
-            if ($values['tls_pin'] !== '' && !$https) {
-                $errors[] = 'COM_BIOTIME_SETTINGS_ERR_PIN_HTTPS';
-            }
-        } catch (\InvalidArgumentException) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_PIN';
-        }
-
         // System.
-        $pageSize = self::int($input['page_size'] ?? null);
-        $maxPages = self::int($input['max_pages'] ?? null);
-
-        if ($pageSize === null || $pageSize < 1 || $pageSize > 1000) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_PAGE_SIZE';
-        }
-
-        if ($maxPages === null || $maxPages < 1 || $maxPages > 1000) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_MAX_PAGES';
-        }
-
-        $values['page_size']    = (string) ($pageSize ?? Settings::DEFAULT_PAGE_SIZE);
-        $values['max_pages']    = (string) ($maxPages ?? Settings::DEFAULT_MAX_PAGES);
         $values['detailed_log'] = self::flag($input['detailed_log'] ?? '1') ? '1' : '0';
 
         $values['cache_minutes'] = (string) max(0, min(Settings::MAX_CACHE_MINUTES, self::int($input['cache_minutes'] ?? null) ?? Settings::DEFAULT_CACHE_MINUTES));
@@ -269,38 +107,7 @@ final class SettingsValidator
             $values[$flag] = self::flag($input[$flag] ?? '0') ? '1' : '0';
         }
 
-        // Data source for calculated attendance (paths, parameter and field names only).
-        foreach (['daily'] as $kind) {
-            $raw = [];
-
-            foreach (['path', 'param_emp', 'param_from', 'param_to', 'date_format', 'extra', 'fields', 'duration_unit', 'status_map'] as $name) {
-                $raw[$name] = mb_substr(self::str($input[$kind . '_' . $name] ?? ''), 0, 4000);
-            }
-
-            try {
-                $source = SourceConfig::parse($kind, $raw);
-            } catch (\InvalidArgumentException $e) {
-                $errors[] = 'COM_BIOTIME_SETTINGS_' . strtoupper($kind) . '_' . (\in_array($e->getMessage(), ['ERR_PATH', 'ERR_BUILTIN', 'ERR_PARAM', 'ERR_EXTRA', 'ERR_FIELDS', 'ERR_FIELDS_REQUIRED', 'ERR_STATUS_MAP'], true) ? $e->getMessage() : 'ERR_LINE');
-
-                continue;
-            }
-
-            $values[$kind . '_path']          = $source->path;
-            $values[$kind . '_param_emp']     = $source->paramEmp;
-            $values[$kind . '_param_from']    = $source->paramFrom;
-            $values[$kind . '_param_to']      = $source->paramTo;
-            $values[$kind . '_date_format']   = $source->dateFormat;
-            $values[$kind . '_duration_unit'] = $source->durationUnit;
-            $values[$kind . '_extra']         = trim(str_replace("\r", '', $raw['extra']));
-            $values[$kind . '_fields']        = trim(str_replace("\r", '', $raw['fields']));
-            $values[$kind . '_status_map']    = trim(str_replace("\r", '', $raw['status_map']));
-        }
-
         $this->database($input, $current, $values, $errors);
-
-        // New settings may mean new credentials or another server: log in afresh.
-        $values['token_cache_enc']      = '';
-        $values['token_cache_renew_at'] = '';
 
         if ($errors !== []) {
             throw new ValidationFailed(array_values(array_unique($errors)));
@@ -310,8 +117,8 @@ final class SettingsValidator
     }
 
     /**
-     * Direct read from ZKBioTime's database. Off ('' engine): the values are kept as typed, nothing
-     * is required. On: every value is checked as DbConfig checks it, the password is required, and
+     * ZKBioTime's database, which every portal page reads. Off ('' engine): the values are kept as
+     * typed, nothing is required. On: every value is checked as DbConfig checks it, the password is required, and
      * a stored password is only kept for the server and database it was entered for.
      *
      * @param  array<string, mixed>   $input
@@ -334,7 +141,7 @@ final class SettingsValidator
         $host    = '';
         $port    = $default;
 
-        // Host and port in one field ("db.example.com:7496"), as the server URL of the API.
+        // Host and port in one field ("db.example.com:7496").
         if ($server !== '') {
             try {
                 [$host, $port] = DbConfig::parseAddress($server, $default);
@@ -401,7 +208,7 @@ final class SettingsValidator
         $values['db_ssl']    = $ssl;
         $values['db_ca']     = $ca;
 
-        // Password: as for the API password.
+        // Password: encrypted; an empty field keeps the stored one.
         $password = self::str($input['db_password'] ?? '');
         $has      = $current->hasDbPassword() && !self::flag($input['clear_db_password'] ?? '0');
 
@@ -414,7 +221,7 @@ final class SettingsValidator
                 $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PASSWORD';
                 $has      = true;
             } else {
-                $encrypted = $this->encryptOrFail($password, \BiotimePortal\Component\Biotime\Administrator\Security\KeyVault::CONTEXT_DB_PASSWORD, $errors);
+                $encrypted = $this->encryptOrFail($password, KeyVault::CONTEXT_DB_PASSWORD, $errors);
 
                 if ($encrypted !== null) {
                     $values['db_password_enc'] = $encrypted;
@@ -440,22 +247,9 @@ final class SettingsValidator
             $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DB_PASSWORD_REQUIRED';
         }
 
-        // Where the pages read attendance. The database needs PostgreSQL (the queries are written
-        // for it; SQL Server is only checked by Test Database).
-        $source = self::str($input['data_source'] ?? 'api');
-
-        if (!\in_array($source, ['api', 'database'], true)) {
-            $source = 'api';
-        }
-
-        if ($source === 'database' && $engine !== DbConfig::ENGINE_PGSQL) {
-            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_DATA_SOURCE';
-        }
-
         $unit = self::str($input['db_duration_unit'] ?? 'auto');
 
-        $values['data_source']      = $source;
-        $values['db_duration_unit'] = \in_array($unit, \BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader::UNITS, true) ? $unit : 'auto';
+        $values['db_duration_unit'] = \in_array($unit, AttendanceReader::UNITS, true) ? $unit : 'auto';
     }
 
     /**

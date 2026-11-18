@@ -2,8 +2,8 @@
 
 ## 1. Automated tests (no ZKBioTime server needed)
 
-ZKBioTime is replaced by a fake transport (`tests/Support/FakeTransport.php`), so the tests run
-anywhere, including CI.
+ZKBioTime's database is replaced by `tests/Support/CatalogueQuery.php` (answers per SQL
+fragment), so the tests run anywhere, including CI.
 
 ```bash
 composer install
@@ -13,75 +13,68 @@ composer install
 vendor/bin/phpunit
 ```
 
+With a PostgreSQL loaded with `tests/Support/sql/zkbiotime-pgsql.sql` and its read-only user, the
+`testRealPostgres` tests also run against it:
+
+```bash
+BIOTIME_TEST_PG='host:port:database:user:password' vendor/bin/phpunit
+```
+
 | Area | Test file |
 |---|---|
-| JWT and General Auth Token login, header format, token caching, renewal before expiry, one renewal after "unauthorised", static token, wrong credentials, no secrets in logs or dumps, connection test | `tests/Unit/ZkbClientAuthTest.php` |
-| Error mapping for every kind, GET retry on network and server errors, no retry for login, paging (`next`, `count`, safety maximum, max items, `results` and bare-list fallbacks), path/query/id/emp_code validation, log lines without personal data | `tests/Unit/ZkbClientRequestTest.php` |
-| Server URL with port, Connect via, timeouts, certificate pin, redaction | `tests/Unit/ConnectionConfigTest.php` |
 | AES-256-GCM encryption (round trip, context binding, tampering, wrong secret), secret source, rate limiter | `tests/Unit/SecurityTest.php` |
-| Settings validation (every rule, secrets kept/removed/encrypted, no secrets in the form, data sources, no free-form queries, 0.1.x port merged into the URL) | `tests/Unit/SettingsValidatorTest.php` |
-| Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification, administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php` |
-| Ownership and IDOR: only the mapped employee's code and the month are requested, rows of other employees hidden and logged; day statuses from the punches (present with or without a missing punch, checked in, absent, weekend; check-in before 12:00 and check-out from 12:00; punches outside the month asked for are skipped; My Punches counts by fingerprint / face, month and device; a weekend day with punches loses the weekend tag; configurable weekend days); month summaries (present / absent / missing-punch days, rate, average check-in and check-out, time in–out); punch details (verify type, device, serial, area); calculated values when a daily source is set; exceptions; cache per user and employee; one failing part does not hide the others; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
-| Find Endpoints: OpenAPI and CoreJSON descriptions, list endpoints only, attendance first, the order the description forms are tried, parameter suggestions, field inspection without personal values, field and status suggestions that form a valid source, login paths refused | `tests/Unit/DiscoveryTest.php` |
-| Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
+| Settings validation (every rule, the database password kept/removed/encrypted and never kept for another server, no secrets in the form, no API settings left) | `tests/Unit/SettingsValidatorTest.php` |
+| Database connection settings, read-only connection, Test Database report (names only) | `tests/Unit/DatabaseTest.php` |
+| Matching by the `employeeid` field (exact, never falls back to e-mail), by e-mail (single, ambiguous, none), matching off, one employee never mapped twice, suspension when the field or e-mail changes, recheck time, daily re-verification (an unreachable database keeps the mapping and retries after an hour), administrator mapping by code, confirm / suspend / re-match | `tests/Unit/IdentityResolverTest.php`, `tests/Unit/DbEmployeeDirectoryTest.php` |
+| Ownership and IDOR: only the mapped employee and the month are queried, punches of other employees hidden and logged; ZKBioTime's schedule and calculation per day (late-in, early-out, worked time, overtime, holidays, days off); day statuses from the punches (present with or without a missing punch, checked in, checked out, absent, weekend; check-in before the timetable's cut-off or 12:00); My Punches counts by fingerprint / face, month and device; configurable weekend days; month summaries; punch details; exceptions; cache per user and employee, past months kept a day; one failing part does not hide the others; database errors shown as portal messages; ranges over two months | `tests/Unit/AttendanceServiceTest.php` |
+| The reader's queries (one employee, read only), units, time cards and pay codes of ZKBioTime 9.5, schedules from shifts and temporary schedules, holidays, devices | `tests/Unit/AttendanceReaderTest.php` |
+| Every `COM_BIOTIME_` string used exists in the right language file (site, administrator, menu items); run-time keys; every error kind has a portal message naming ZKBioTime | `tests/Unit/LanguageTest.php` |
 
 The GitHub workflow runs PHP lint and these tests on every pull request before building the package.
 
 ## 2. Browser checks on a real Joomla site
 
-Two Playwright scripts drive a real Joomla 6 site. A small stand-in server,
-`tests/e2e/fake-zkbiotime.php` (test fixture only, never deploy it), answers like the documented
-API with invented fixture data.
-
-```bash
-php -S 127.0.0.1:18081 tests/e2e/fake-zkbiotime.php
-```
-
-- `tests/e2e/admin-settings.mjs`: Integration Settings (toolbar, validation, no password or
-  ciphertext in the browser, Test Connection success / wrong password / unreachable, Connect via
-  with the Host header kept, 390 px, the four permissions, CSRF).
-
-  ```bash
-  BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' FAKE_LOG=/path/to/fake.log OUT=tests/output node tests/e2e/admin-settings.mjs
-  ```
-
-- `tests/e2e/portal.mjs`: needs Registered users `sara` (custom field `employeeid` = `FIXTURE1`),
-  `omar` (`omar@example.test`), `shared` (`shared@example.test`) and `nobody`, and the four
-  permissions allowed for Registered. Checks the data sources in the settings form, the four menu
-  item types (and that My Schedules, Attendance Reports and My Profile are gone), all four pages
-  and day details (status 200, translated, noindex, no other employee's data, check-in and
-  check-out with the device, present / missing punch / absent / weekend, no fields the 9.5 API does
-  not provide, exceptions, chart, today card), My Punches (fingerprint, face, per month and per device;
-  year lists from 2025), the date filter typed as DD/MM/YYYY, the removed pages answering 404, IDOR attempts,
-  390 px without horizontal scrolling on every page, e-mail matching, the "could not be matched"
-  page, the User Mappings list, duplicate refusal, manual mapping and Re-match.
-
-  ```bash
-  BASE_URL=http://127.0.0.1:8090 ADMIN_PASS='…' USER_PASS='…' OUT=tests/output node tests/e2e/portal.mjs
-  ```
-
-The stand-in server answers the API description like the real one (no OpenAPI; CoreJSON only
-with `application/coreapi+json`, else 406; unknown paths a web page with HTTP 200).
-
-0.3.0 also checks Find Endpoints (read the list, select, check, no employee codes shown, save
-as Daily Attendance Source) and a day with only a check-out punch (shown under Check-Out, with
-*Missing check-in*): 88 portal checks passed on PostgreSQL, and the update from the published
-0.2.0 on MariaDB.
-
-0.2.0 passed both on Joomla 6.2.0 / PHP 8.3 with PostgreSQL 16 (fresh install; 74 portal checks)
-and the install, update and uninstall checks on MariaDB 10.11 (update from the published 0.1.1:
-schema 0.2.0, the separate port merged into the server URL, mapping table created).
+The Playwright scripts of earlier versions drove the portal against a stand-in for the REST API;
+they were removed with the API in 1.0.0. Until scripts against the PostgreSQL fixture exist, use
+the checklist below on a test site whose Integration Settings point to a PostgreSQL loaded with
+`tests/Support/sql/zkbiotime-pgsql.sql`.
 
 ## 3. Live checklist on the real ZKBioTime 9.5 server (administrator)
 
 Run the items for the version being released, note the result, and send the notes (no
 passwords, tokens or personal data) with the pull request.
 
+Items of versions before 1.0.0 that mention the API, Test Connection, Find Endpoints or the
+Daily Attendance Source describe features removed in 1.0.0; they are kept as the record of
+those releases.
+
 ### Before the first test
-- [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/API-MAPPING.md`.
-- [ ] Export `/api/docs/` and `/api/personnel_docs/` (save the pages as HTML or PDF).
-- [ ] Create a ZKBioTime user for the portal with **read-only** permission for personnel and
-      attendance.
+- [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
+- [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
+
+### 1.0.0 – Manager Dashboard, dashboard changes
+- [ ] Give a managers' group *View Manager Dashboard* (Options → Permissions) and add a **Manager Dashboard** menu item for it. A manager sees their own department and the departments below it in the Department list (indented); the Employee list holds only their employees; a resigned employee is not listed.
+- [ ] Default period is today; From/To shows up to 31 days. Cards: Workforce plus the My Attendance figures; clicking Days Absent shows only absent rows and jumps to the table; Workforce shows every row again.
+- [ ] The table has Employee, Date, Check-In / Check-Out (one column; Absent, Weekend, Holiday or Leave when there are no punches), Late In, Early Out, Total (late + early).
+- [ ] A user without the permission gets 403 on `index.php?option=com_biotime&view=manager`; a manager mapped to an employee without a department sees the "no department" message.
+- [ ] My Dashboard Period reads "From 01/08/2026 to 31/07/2027"; the circles chart is gone; *Attendance rate per month* and *Your Devices* show instead.
+- [ ] No explanatory note or "Updated" time under any portal page.
+- [ ] My Attendance: All Days is the first card; after choosing Days Present, All Days shows every day again. Every card (also on My Dashboard) lands on the records table.
+
+### 1.0.0 – Database only
+- [ ] After the update from 0.10.0: Integration Settings has no Connection, Credentials, TLS or
+      Daily Attendance Source sections, no Read attendance from, no Test Connection, Read
+      Certificate Pin or Find Endpoints buttons; the Find Endpoints submenu is gone and
+      `index.php?option=com_biotime&view=endpoints` answers 404.
+- [ ] The database settings, timeouts and the stored database password are kept; Test Database
+      still connects. `#__biotime_settings` has no `server_url`, `api_*`, `token_cache_*`,
+      `daily_*` or `data_source` rows any more.
+- [ ] The portal pages look as in 0.10.0 with the database (schedule, late-in, early-out, worked
+      time, holidays); existing mappings still show the same employee.
+- [ ] With the database engine set to Off, the portal pages say the connection is not set up yet.
+- [ ] Stop the database (or block its port): the pages say ZKBioTime could not be reached; mapped
+      users keep their mapping.
+
 
 ### 0.1.0 – Connection and authentication
 - [ ] Install `com_biotime.zip` on a Joomla 6.2 test site (*System → Install → Extensions*).
@@ -209,7 +202,7 @@ passwords, tokens or personal data) with the pull request.
 - [ ] *Find Endpoints → Read the API list*: the list appears (or the message says none is readable; note which).
 - [ ] Select the daily attendance (time card) endpoint, check it with a real employee code and one week: compare the field names and status texts with ZKBioTime, then save it.
 - [ ] A day with only a check-out punch shows the time under Check-Out and *Missing check-in*.
-- [ ] Record in `docs/API-MAPPING.md` which description form worked (from the log).
+- [ ] Record which description form worked (from the log).
 
 ### 0.2.0 – Employee mapping and portal
 

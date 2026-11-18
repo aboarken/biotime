@@ -6,7 +6,6 @@
 
 namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbEmployeeDirectory;
@@ -17,7 +16,7 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping;
 use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
-use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 use BiotimePortal\Component\Biotime\Tests\Support\ArrayLogger;
 use BiotimePortal\Component\Biotime\Tests\Support\CatalogueQuery;
 use BiotimePortal\Component\Biotime\Tests\Support\FixedFieldReader;
@@ -26,8 +25,8 @@ use BiotimePortal\Component\Biotime\Tests\Support\MemoryUserMapRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Employees from ZKBioTime's database (0.6.1): users are matched, re-checked and mapped without
- * the API, and the API settings may be left empty.
+ * Employees from ZKBioTime's database (0.6.1): users are matched, re-checked and mapped from it,
+ * and the portal pages read it once the PostgreSQL connection is set up.
  */
 final class DbEmployeeDirectoryTest extends TestCase
 {
@@ -56,7 +55,7 @@ final class DbEmployeeDirectoryTest extends TestCase
         $dir  = $this->directory([self::ALICE, self::BOB]);
 
         $byEmail = $this->resolver($repo, $dir)->resolve(5, 'alice@example.COM');
-        self::assertSame(['11', 'E1'], [$byEmail->employeeId(), $byEmail->empCode()], 'same ids as the API');
+        self::assertSame(['11', 'E1'], [$byEmail->employeeId(), $byEmail->empCode()], 'personnel_employee.id');
 
         $byCode = $this->resolver($repo, $dir, new FixedFieldReader([6 => 'E2']))->resolve(6, 'other@example.com');
         self::assertSame('12', $byCode->employeeId());
@@ -84,8 +83,13 @@ final class DbEmployeeDirectoryTest extends TestCase
         try {
             $down->employeesByCode('E1');
             self::fail('no exception');
-        } catch (ZkbException $e) {
-            self::assertSame(ZkbException::NETWORK, $e->getKind(), 'reported as the API\'s kinds');
+        } catch (SourceException $e) {
+            self::assertSame(SourceException::NETWORK, $e->getKind());
+            self::assertSame('COM_BIOTIME_ERROR_NETWORK', $e->getLanguageKey(), 'shown to the user as a portal message');
+        }
+
+        foreach ([DbException::NOT_CONFIGURED => 'not_configured', DbException::AUTH => 'auth', DbException::QUERY => 'server', DbException::DATABASE => 'server', DbException::SSL => 'network'] as $db => $kind) {
+            self::assertSame($kind, SourceException::kindOf(new DbException($db, 'x')));
         }
     }
 
@@ -98,27 +102,21 @@ final class DbEmployeeDirectoryTest extends TestCase
         self::assertSame('11', $repo->find(5)->employeeId);
     }
 
-    public function testTheApiMayBeLeftEmptyOnlyWhenEverythingIsReadFromTheDatabase(): void
+    public function testThePagesReadTheDatabaseOnceThePostgresqlConnectionIsSetUp(): void
     {
         $vault     = new KeyVault('a-joomla-configuration-secret-value');
         $validator = new SettingsValidator(static fn (string $p, string $c): string => $vault->encrypt($p, $c), static fn (): bool => true);
         $input     = [
-            'server_url' => '', 'api_username' => '', 'api_password' => '', 'auth_method' => 'jwt',
-            'connect_timeout' => '5', 'timeout' => '30', 'page_size' => '100', 'max_pages' => '50', 'cache_minutes' => '5',
+            'connect_timeout' => '5', 'timeout' => '30', 'cache_minutes' => '5',
             'db_engine' => 'pgsql', 'db_server' => 'zkb.example.com:7496', 'db_name' => 'biotime', 'db_user' => 'joomla_portal',
-            'db_password' => 'pw', 'db_ssl' => 'require', 'data_source' => 'database',
+            'db_password' => 'pw', 'db_ssl' => 'require',
         ];
 
         $values = $validator->validate($input, new Settings());
-        self::assertSame(['', 'database'], [$values['server_url'], $values['data_source']]);
         self::assertTrue((new Settings($values))->readsDatabase());
-
-        try {
-            $validator->validate(['data_source' => 'api'] + $input, new Settings());
-            self::fail('API without a server accepted');
-        } catch (ValidationFailed $e) {
-            self::assertContains('COM_BIOTIME_SETTINGS_ERR_URL_REQUIRED', $e->getKeys());
-        }
+        self::assertArrayNotHasKey('server_url', $values, 'no API settings any more');
+        self::assertFalse((new Settings())->readsDatabase(), 'not set up');
+        self::assertFalse((new Settings(['db_engine' => 'sqlsrv']))->readsDatabase(), 'SQL Server is only checked by Test Database');
     }
 
     /** Against the PostgreSQL fixture (tests/Support/sql/zkbiotime-pgsql.sql), when BIOTIME_TEST_PG is set. */
@@ -135,8 +133,8 @@ final class DbEmployeeDirectoryTest extends TestCase
         $dir    = new DbEmployeeDirectory(static fn () => (new DbConnector())->connect($config));
 
         self::assertSame(['1', 'E1', 'a@example.com'], [$dir->employeesByCode('E1')[0]['id'], $dir->employee(1)['emp_code'], $dir->employee('1')['email']]);
-        self::assertCount(2, $dir->allEmployees()->items);
-        $this->expectException(ZkbException::class);
+        self::assertCount(2, $dir->allEmployees());
+        $this->expectException(SourceException::class);
         $dir->employee(999);
     }
 }

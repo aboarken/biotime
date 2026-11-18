@@ -17,8 +17,8 @@ namespace BiotimePortal\Component\Biotime\Administrator\Security;
  *  1. Environment variable BIOTIME_PORTAL_SECRET (recommended; at least 32 characters).
  *  2. The "secret" value from Joomla's configuration.php (file on disk, not the database).
  *
- * Changing the secret makes stored secrets unreadable: the administrator must enter the API
- * password (or token) again.
+ * Changing the secret makes stored secrets unreadable: the administrator must enter the database
+ * password again.
  */
 final class SecretProvider
 {

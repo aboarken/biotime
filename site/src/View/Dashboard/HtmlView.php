@@ -43,6 +43,12 @@ final class HtmlView extends BaseHtmlView
 
     public string $to = '';
 
+    /** Every device the employee uses, with this school year's punches (1.0.0). */
+    public ?\BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats $devices = null;
+
+    /** The school year shown: 1 August to 31 July (1.0.0); figures count up to today ($to). */
+    public string $yearEnd = '';
+
     /** @var array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null from the database */
     public ?array $profile = null;
 
@@ -60,6 +66,7 @@ final class HtmlView extends BaseHtmlView
         $model = $this->getModel();
 
         [$this->from, $this->to] = $model->schoolYear();
+        $this->yearEnd       = \BiotimePortal\Component\Biotime\Administrator\Attendance\DateRange::schoolYearEnd($this->to);
         $this->year          = (int) substr($this->to, 0, 4);
         $this->month         = (int) substr($this->to, 5, 2);
         $this->period        = $model->rangePeriod($this->from, $this->to);
@@ -70,14 +77,15 @@ final class HtmlView extends BaseHtmlView
         $this->todayDay      = $this->period->day($this->today);
 
         $this->profile = $model->attendance()->profile($model->identity());
-        // The name from ZKBioTime; with the API, the Joomla user's name.
+        $this->devices = \BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats::withDevices($this->period->days, $model->attendance()->devices($model->identity()));
+        // The name from ZKBioTime; when it cannot be read, the Joomla user's name.
         $f = $model->formatter();
         $this->profileRow = array_values(array_filter([
             ['COM_BIOTIME_PROFILE_DEPARTMENT', $this->profile['department'] ?? null],
             ['COM_BIOTIME_PROFILE_POSITION', $this->profile['position'] ?? null],
             ['COM_BIOTIME_PROFILE_EMPLOYEE_ID', $model->identity()->empCode()],
             ['COM_BIOTIME_PROFILE_NAME', $this->profile['name'] ?? (string) \Joomla\CMS\Factory::getApplication()->getIdentity()?->name],
-            ['COM_BIOTIME_PROFILE_PERIOD', \Joomla\CMS\Language\Text::sprintf('COM_BIOTIME_DASHBOARD_RANGE', $f->date($this->from), $f->date($this->to))],
+            ['COM_BIOTIME_PROFILE_PERIOD', \Joomla\CMS\Language\Text::sprintf('COM_BIOTIME_DASHBOARD_RANGE', $f->date($this->from), $f->date($this->yearEnd))],
         ], static fn (array $c): bool => $c[1] !== null && trim($c[1]) !== ''));
 
         $this->preparePage($model, 'dashboard', 'COM_BIOTIME_DASHBOARD_TITLE');
@@ -89,6 +97,7 @@ final class HtmlView extends BaseHtmlView
     /** Link to My Attendance for the same range, optionally filtered by status. */
     public function attendanceUrl(string $status = ''): string
     {
-        return $this->url('view=attendance&' . http_build_query(array_filter(['from' => $this->from, 'to' => $this->to, 'status' => $status])));
+        // Lands on the matching days in My Attendance (#bt-records), not the top of the page.
+        return $this->url('view=attendance&' . http_build_query(array_filter(['from' => $this->from, 'to' => $this->to, 'status' => $status]))) . '#bt-records';
     }
 }

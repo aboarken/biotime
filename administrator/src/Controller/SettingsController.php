@@ -11,13 +11,9 @@ namespace BiotimePortal\Component\Biotime\Administrator\Controller;
 // phpcs:enable PSR1.Files.SideEffects
 
 use Joomla\CMS\Access\Exception\NotAllowed;
-use Joomla\CMS\HTML\HTMLHelper;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Router\Route;
-use BiotimePortal\Component\Biotime\Administrator\Api\ConnectionReport;
-use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
@@ -36,7 +32,7 @@ final class SettingsController extends BaseController
 
     private const URL = 'index.php?option=com_biotime&view=integrationsettings';
 
-    /** Connection tests and certificate reads per administrator and hour. */
+    /** Database tests per administrator and hour. */
     private const TESTS_PER_HOUR = 20;
 
     public function save(): void
@@ -51,38 +47,13 @@ final class SettingsController extends BaseController
             $this->component()->getAuditLog()->record($this->actorId(), 'settings.save', AuditLogInterface::RESULT_OK);
             $this->app->enqueueMessage(Text::_('COM_BIOTIME_SETTINGS_SAVED'), 'success');
         } catch (ValidationFailed $e) {
-            // Keep the entered values for the form, but never a password or token.
-            unset($data['api_password'], $data['api_token'], $data['db_password']);
+            // Keep the entered values for the form, but never the password.
+            unset($data['db_password']);
             $this->app->setUserState(self::STATE_KEY, $data);
 
             foreach ($e->getKeys() as $key) {
                 $this->app->enqueueMessage(Text::_($key), 'error');
             }
-        }
-
-        $this->setRedirect(Route::_(self::URL, false));
-    }
-
-    /**
-     * Log in with the saved settings and read one employee row (count only).
-     */
-    public function test(): void
-    {
-        $this->guard();
-
-        if (!$this->allowed('settings.test')) {
-            return;
-        }
-
-        $audit = $this->component()->getAuditLog();
-
-        try {
-            $report = $this->model()->testConnection();
-            $audit->record($this->actorId(), 'settings.test', AuditLogInterface::RESULT_OK, $report->method);
-            $this->app->enqueueMessage($this->describe($report), 'success');
-        } catch (ZkbException $e) {
-            $audit->record($this->actorId(), 'settings.test', $e->getKind() === ZkbException::NOT_CONFIGURED ? AuditLogInterface::RESULT_DENIED : AuditLogInterface::RESULT_ERROR, $e->getKind());
-            $this->app->enqueueMessage(Text::sprintf('COM_BIOTIME_TEST_FAILED', Text::_($e->getLanguageKey()), Text::_('COM_BIOTIME_TEST_HINT_' . strtoupper($e->getKind()))), 'error');
         }
 
         $this->setRedirect(Route::_(self::URL, false));
@@ -114,54 +85,6 @@ final class SettingsController extends BaseController
         }
 
         $this->setRedirect(Route::_(self::URL . '#biotime-db-report', false));
-    }
-
-    /**
-     * Show the pin of the certificate the saved server presents right now. The administrator must
-     * compare it with the value computed on the ZKBioTime server before pasting it into the pin field.
-     */
-    public function readPin(): void
-    {
-        $this->guard();
-
-        if (!$this->allowed('settings.readpin')) {
-            return;
-        }
-
-        try {
-            $cert = $this->model()->readServerPin();
-            $this->component()->getAuditLog()->record($this->actorId(), 'settings.readpin', AuditLogInterface::RESULT_OK);
-            $this->app->enqueueMessage(Text::sprintf(
-                'COM_BIOTIME_PIN_READ',
-                htmlspecialchars($cert['pin'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($cert['subject'] !== '' ? $cert['subject'] : '-', ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($cert['issuer'] !== '' ? $cert['issuer'] : '-', ENT_QUOTES, 'UTF-8'),
-                $cert['expires'] ? gmdate('Y-m-d', $cert['expires']) : '-'
-            ), 'info');
-        } catch (\RuntimeException | \InvalidArgumentException) {
-            $this->component()->getAuditLog()->record($this->actorId(), 'settings.readpin', AuditLogInterface::RESULT_ERROR);
-            $this->app->enqueueMessage(Text::_('COM_BIOTIME_PIN_READ_FAILED'), 'error');
-        }
-
-        $this->setRedirect(Route::_(self::URL, false));
-    }
-
-    private function describe(ConnectionReport $report): string
-    {
-        $method = Text::_($report->method === Credentials::METHOD_JWT ? 'COM_BIOTIME_SETTINGS_METHOD_JWT' : 'COM_BIOTIME_SETTINGS_METHOD_TOKEN');
-        $parts  = [Text::sprintf('COM_BIOTIME_TEST_OK', $method, $report->elapsedMs)];
-
-        $parts[] = $report->employeeCount !== null
-            ? Text::sprintf('COM_BIOTIME_TEST_EMPLOYEES', $report->employeeCount)
-            : Text::_('COM_BIOTIME_TEST_EMPLOYEES_UNKNOWN');
-
-        if ($report->staticToken) {
-            $parts[] = Text::_('COM_BIOTIME_TEST_STATIC_TOKEN');
-        } elseif ($report->tokenRenewAt !== null) {
-            $parts[] = Text::sprintf('COM_BIOTIME_TEST_TOKEN_RENEW', HTMLHelper::_('date', gmdate('Y-m-d H:i:s', $report->tokenRenewAt), Text::_('DATE_FORMAT_LC2')));
-        }
-
-        return implode(' ', $parts);
     }
 
     private function allowed(string $action): bool

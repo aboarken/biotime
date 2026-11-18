@@ -10,29 +10,26 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 use Psr\Log\LoggerInterface;
 
 /**
- * Reads one employee's attendance. Every method takes the resolved Identity: the employee is never
- * chosen by request input. Each data type is fetched once per month and cached per user, so
- * My Dashboard, My Attendance, the Attendance Calendar and day details share it.
+ * Reads one employee's attendance from ZKBioTime's database (Database\AttendanceReader): the
+ * punches, and each day's schedule and ZKBioTime's own calculation (late-in, early-out, worked
+ * time, overtime, holidays, leave, days off). Every method takes the resolved Identity: the
+ * employee is never chosen by request input. Each data type is read once per month and cached per
+ * user, so My Dashboard, My Attendance, the Attendance Calendar and day details share it.
  *
- * Ownership: rows whose employee code differs from the identity's (or is missing) are dropped and
- * a warning is logged, in case ZKBioTime ignored the employee filter.
+ * Ownership: punches whose employee code differs from the identity's (or is missing) are dropped
+ * and a warning is logged, although every query already filters by the employee.
  */
 final class AttendanceService
 {
-    /**
-     * Transaction fields read from the transaction list.
-     * VERIFIED: BioTime 9.5 API User Manual (16 Aug 2024), 9.1 (emp_code, punch_time, punch_state, terminal_alias, area_alias) and the
-     * real server (also punch_state_display); see docs/API-MAPPING.md.
-     */
+    /** Fields of a punch as AttendanceReader::punches() returns it (iclock_transaction). */
     public const TX_EMP_CODE = 'emp_code';
     public const TX_TIME     = 'punch_time';
     public const TX_STATE    = 'punch_state_display';
@@ -73,21 +70,18 @@ final class AttendanceService
     private array $stats = [];
 
     /**
-     * @param \Closure(): ZkbClient                 $clientFactory
+     * @param \Closure(): AttendanceReader           $database    ZKBioTime's database, opened when first needed
      * @param \DateTimeZone                         $serverZone  ZKBioTime server time zone; times are shown as recorded
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      * @param list<int>                             $weekendDays ISO weekdays without work (default Friday, Saturday)
-     * @param (\Closure(): AttendanceReader)|null    $database    read ZKBioTime's database instead of the API (0.6.0)
      */
     public function __construct(
-        private readonly \Closure $clientFactory,
-        private readonly SourceConfig $daily,
+        private readonly \Closure $database,
         private readonly UserCacheInterface $cache,
         private readonly LoggerInterface $logger,
         private readonly \DateTimeZone $serverZone,
         ?\Closure $clock = null,
-        private readonly array $weekendDays = self::DEFAULT_WEEKEND,
-        private readonly ?\Closure $database = null
+        private readonly array $weekendDays = self::DEFAULT_WEEKEND
     ) {
         $this->clock = $clock ?? static fn (): \DateTimeImmutable => new \DateTimeImmutable('now');
     }
@@ -104,23 +98,14 @@ final class AttendanceService
     }
 
     /**
-     * Whether attendance is read from ZKBioTime's database: then each day carries ZKBioTime's own
-     * calculation (schedule, late, early leave, worked time, holidays).
-     */
-    public function fromDatabase(): bool
-    {
-        return $this->database !== null;
-    }
-
-    /**
-     * The employee's department, position, hire date and name, from the database; null with the
-     * API or when it cannot be read. Kept a day in the cache.
+     * The employee's department, position, hire date and name, from the database; null when it
+     * cannot be read. Kept a day in the cache.
      *
      * @return array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null
      */
     public function profile(Identity $identity): ?array
     {
-        if ($this->database === null || !$identity->isMatched()) {
+        if (!$identity->isMatched()) {
             return null;
         }
 
@@ -146,13 +131,13 @@ final class AttendanceService
 
     /**
      * Every device the employee uses (punched on at any time, or registered on), from the database;
-     * [] with the API or when it cannot be read. Kept a day in the cache.
+     * [] when it cannot be read. Kept a day in the cache.
      *
      * @return list<string>
      */
     public function devices(Identity $identity): array
     {
-        if ($this->database === null || !$identity->isMatched()) {
+        if (!$identity->isMatched()) {
             return [];
         }
 
@@ -202,7 +187,7 @@ final class AttendanceService
         }
 
         $data = [self::TYPE_PUNCHES => [], self::TYPE_DAILY => []];
-        $errors = $truncated = [];
+        $errors  = [];
         $fetched = null;
 
         for ($m = $from->modify('first day of this month'); $m <= $to; $m = $m->modify('first day of next month')) {
@@ -216,7 +201,6 @@ final class AttendanceService
                 }
 
                 $data[$type] = array_merge($data[$type], $part['rows']);
-                $truncated[$type] = ($truncated[$type] ?? false) || $part['truncated'];
 
                 if ($part['at'] !== null) {
                     $fetched = $fetched === null ? $part['at'] : min($fetched, $part['at']);
@@ -224,7 +208,7 @@ final class AttendanceService
             }
         }
 
-        return $this->build($from, $to, $data, $errors, $truncated, $fetched);
+        return $this->build($from, $to, $data, $errors, $fetched);
     }
 
     /**
@@ -248,9 +232,8 @@ final class AttendanceService
     /**
      * @param array<string, list<array<string, mixed>>> $data
      * @param array<string, ?string>                    $errors
-     * @param array<string, bool>                       $truncated
      */
-    private function build(\DateTimeImmutable $from, \DateTimeImmutable $to, array $data, array $errors, array $truncated, ?int $fetched): Period
+    private function build(\DateTimeImmutable $from, \DateTimeImmutable $to, array $data, array $errors, ?int $fetched): Period
     {
         $punches = [];
 
@@ -278,35 +261,26 @@ final class AttendanceService
             $p    = $punches[$date] ?? [];
             $row  = $rows[$date] ?? null;
 
-            $checkIn  = $row['check_in'] ?? null;
-            $checkOut = $row['check_out'] ?? null;
-            $fromPunches = false;
-            $db          = isset($row['db']);
-
-            if ($checkIn === null && $checkOut === null && $p !== []) {
-                // Check-in and check-out from the punches, by the time of day: from the database,
-                // the cut-off of the day's timetable (the end of its check-in window); otherwise,
-                // and with the API, 12:00.
-                [$checkIn, $checkOut] = self::checkTimes($p, $row['cutoff'] ?? self::CHECK_OUT_FROM);
-                $fromPunches          = true;
-            }
+            // Check-in and check-out from the punches, by the time of day: the cut-off of the day's
+            // timetable (the end of its check-in window), else 12:00.
+            [$checkIn, $checkOut] = self::checkTimes($p, $row['cutoff'] ?? self::CHECK_OUT_FROM);
 
             $weekend = \in_array((int) $d->format('N'), $this->weekendDays, true);
-            $status  = !$db && isset($row['status']) ? $this->daily->status($row['status']) : null;
-            $derived = $status === null;
+            $status  = null;
+            $derived = true;
             $punched = $p !== [] || $checkIn !== null || $checkOut !== null;
-            $raw     = $db ? ($row['holiday'] ?? null) : ($row['status'] ?? null);
+            $raw     = $row['holiday'] ?? null;
 
-            if ($db && !$punched && isset($row['holiday'])) {
+            if (!$punched && isset($row['holiday'])) {
                 // A holiday of ZKBioTime (for everyone, the department or the group): not absent.
                 [$status, $derived] = ['holiday', false];
-            } elseif ($db && !$punched && isset($row['leave_name'])) {
+            } elseif (!$punched && isset($row['leave_name'])) {
                 // Leave as ZKBioTime calculated it (e.g. "Annual Leave"): shown by its name, not absent.
                 [$status, $derived, $raw] = ['other', false, (string) $row['leave_name']];
-            } elseif ($db && !$punched && !$weekend && !empty($row['off'])) {
+            } elseif (!$punched && !$weekend && !empty($row['off'])) {
                 // A day off in the employee's schedule.
                 [$status, $derived] = ['rest', false];
-            } elseif ($derived) {
+            } else {
                 $status = self::dayStatus($date, $today, $weekend, $checkIn, $checkOut, $p !== []);
             }
 
@@ -321,7 +295,7 @@ final class AttendanceService
                 $row['schedule_note'] ?? null,
                 $checkIn,
                 $checkOut,
-                $fromPunches,
+                $p !== [],
                 isset($row['late']) ? (int) $row['late'] : null,
                 isset($row['early']) ? (int) $row['early'] : null,
                 isset($row['worked']) ? (int) $row['worked'] : null,
@@ -332,16 +306,16 @@ final class AttendanceService
                 $derived
             );
 
-            // From the database, "no schedule" only for a day ZKBioTime has calculated.
-            $day->detectExceptions($this->database !== null ? $row !== null && !isset($row['holiday']) : $this->daily->isConfigured(), $date < $today);
+            // "No schedule" only for a day ZKBioTime has a row for (and not a holiday).
+            $day->detectExceptions($row !== null && !isset($row['holiday']), $date < $today);
             $days[] = $day;
         }
 
-        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $this->daily, $errors, $truncated, $fetched, $today, $this->database !== null);
+        return new Period($from->format('Y-m-d'), $to->format('Y-m-d'), $days, $errors, $fetched, $today);
     }
 
     /**
-     * The status of a day without ZKBioTime's calculated status, told from the punches only:
+     * The status of a day that is not a holiday, leave or day off, told from the punches only:
      *  - present:    any punch was recorded: the employee was there. When the check-in or the
      *                check-out is missing the day also carries the "Missing Punch" tag
      *                (Day::missingPunch());
@@ -378,96 +352,67 @@ final class AttendanceService
     }
 
     /**
-     * One month of one data type: from the cache, or read, normalised and ownership-checked.
+     * One month of one data type: from the cache, or read from the database (punches normalised and
+     * ownership-checked).
      *
-     * @return array{rows: list<array<string, mixed>>, truncated: bool, at: ?int, error: ?string}
+     * @return array{rows: list<array<string, mixed>>, at: ?int, error: ?string}
      */
     private function monthRows(Identity $identity, string $type, int $year, int $month): array
     {
         $stat = &$this->stats[$type];
         $stat ??= ['read' => 0, 'hidden' => 0, 'skipped' => 0, 'cached' => 0, 'error' => null, 'state' => 'ok'];
 
-        if ($type === self::TYPE_DAILY && $this->database === null && !$this->daily->isConfigured()) {
-            $stat['state'] = 'not configured';
-
-            return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => null];
-        }
-
-        // Database and API rows are never mixed in the cache, nor rows of older versions.
-        $key    = ($this->database !== null ? 'db' . self::CACHE_VERSION . ':' : '') . $type . ':' . \sprintf('%04d-%02d', $year, $month);
+        // Rows of older versions are never read from the cache (CACHE_VERSION).
+        $key    = 'db' . self::CACHE_VERSION . ':' . $type . ':' . \sprintf('%04d-%02d', $year, $month);
         $cached = $this->cache->get($identity, $key);
 
         if ($cached !== null && isset($cached['rows'], $cached['at'])) {
             $stat['cached']++;
             $stat['read'] += \count($cached['rows']);
 
-            return ['rows' => $cached['rows'], 'truncated' => (bool) ($cached['truncated'] ?? false), 'at' => (int) $cached['at'], 'error' => null];
+            return ['rows' => $cached['rows'], 'at' => (int) $cached['at'], 'error' => null];
         }
 
         $first = self::firstOfMonth($year, $month);
         $last  = $first->modify('last day of this month');
+        $ttl   = $last->format('Y-m-d') < $this->today() ? self::PAST_MONTH_TTL : null;
 
-        if ($this->database !== null) {
-            try {
-                $reader   = ($this->database)();
-                $employee = $reader->employee($identity->empCode());
+        try {
+            $reader   = ($this->database)();
+            $employee = $reader->employee($identity->empCode());
 
-                if ($employee === null) {
-                    // Not exactly one employee with this code in the database: nothing is shown.
-                    $this->logger->warning(\sprintf('ZKBioTime database: no single employee with the mapped code of Joomla user %d', $identity->joomlaUserId));
-                    $stat['error'] = ZkbException::NOT_FOUND;
+            if ($employee === null) {
+                // Not exactly one employee with this code in the database: nothing is shown.
+                $this->logger->warning(\sprintf('ZKBioTime database: no single employee with the mapped code of Joomla user %d', $identity->joomlaUserId));
+                $stat['error'] = SourceException::NOT_FOUND;
 
-                    return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => ZkbException::NOT_FOUND];
-                }
-
-                if ($type === self::TYPE_DAILY) {
-                    // Already one employee's (filtered by its id) and in the portal's form.
-                    $rows = array_map(static fn (array $r): array => $r + ['db' => true], $reader->days($employee, $first, $last));
-                    $at   = ($this->clock)()->getTimestamp();
-                    $stat['read'] += \count($rows);
-                    $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => false, 'at' => $at], $last->format('Y-m-d') < $this->today() ? self::PAST_MONTH_TTL : null);
-
-                    return ['rows' => $rows, 'truncated' => false, 'at' => $at, 'error' => null];
-                }
-
-                $items     = $reader->punches($identity->empCode(), $first, $last);
-                $truncated = false;
-            } catch (DbException $e) {
-                $kind = match ($e->getKind()) {
-                    DbException::NOT_CONFIGURED => ZkbException::NOT_CONFIGURED,
-                    DbException::AUTH           => ZkbException::AUTH,
-                    DbException::DATABASE, DbException::QUERY => ZkbException::SERVER,
-                    default                     => ZkbException::NETWORK,
-                };
-                $this->logger->warning('ZKBioTime database: ' . $type . ' could not be read (' . $e->getKind() . ($e->getDetail() !== '' ? ': ' . $e->getDetail() : '') . ')');
-                $stat['error'] = $kind;
-
-                return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => $kind];
-            }
-        } else {
-            try {
-                $client = ($this->clientFactory)();
-                $result = match ($type) {
-                    self::TYPE_PUNCHES => $client->transactions($identity->empCode(), $first->setTime(0, 0, 0), $last->setTime(23, 59, 59)),
-                    default            => $client->sourceRows($this->daily, $identity->empCode(), $first, $last),
-                };
-            } catch (ZkbException $e) {
-                $stat['error'] = $e->getKind();
-
-                return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => $e->getKind()];
+                return ['rows' => [], 'at' => null, 'error' => SourceException::NOT_FOUND];
             }
 
-            $items     = $result->items;
-            $truncated = $result->truncated;
+            if ($type === self::TYPE_DAILY) {
+                // Already one employee's (filtered by its id) and in the portal's form.
+                $rows = array_map(static fn (array $r): array => $r + ['db' => true], $reader->days($employee, $first, $last));
+                $at   = ($this->clock)()->getTimestamp();
+                $stat['read'] += \count($rows);
+                $this->cache->set($identity, $key, ['rows' => $rows, 'at' => $at], $ttl);
+
+                return ['rows' => $rows, 'at' => $at, 'error' => null];
+            }
+
+            $items = $reader->punches($identity->empCode(), $first, $last);
+        } catch (DbException $e) {
+            $kind = SourceException::kindOf($e);
+            $this->logger->warning('ZKBioTime database: ' . $type . ' could not be read (' . $e->getKind() . ($e->getDetail() !== '' ? ': ' . $e->getDetail() : '') . ')');
+            $stat['error'] = $kind;
+
+            return ['rows' => [], 'at' => null, 'error' => $kind];
         }
 
         $rows   = [];
         $hidden = 0;
 
         foreach ($items as $item) {
-            $code = $type === self::TYPE_PUNCHES
-                ? (isset($item[self::TX_EMP_CODE]) && is_scalar($item[self::TX_EMP_CODE]) ? (string) $item[self::TX_EMP_CODE] : null)
-                : $this->daily->value($item, 'emp_code');
+            $code = isset($item[self::TX_EMP_CODE]) && is_scalar($item[self::TX_EMP_CODE]) ? (string) $item[self::TX_EMP_CODE] : null;
 
             if ($code !== $identity->empCode()) {
                 $hidden++;
@@ -475,14 +420,11 @@ final class AttendanceService
                 continue;
             }
 
-            $row = match ($type) {
-                self::TYPE_PUNCHES => self::normalisePunch($item),
-                default            => $this->normaliseDaily($item, $first, $last),
-            };
+            $row = self::normalisePunch($item);
 
-            // A punch outside the month asked for (a server that ignored the time filter) would be
-            // counted twice when the next month is read: it is skipped.
-            if ($row === null || ($type === self::TYPE_PUNCHES && substr($row['t'], 0, 7) !== $first->format('Y-m'))) {
+            // A punch outside the month asked for would be counted twice when the next month is
+            // read: it is skipped.
+            if ($row === null || substr($row['t'], 0, 7) !== $first->format('Y-m')) {
                 $stat['skipped']++;
 
                 continue;
@@ -498,11 +440,10 @@ final class AttendanceService
         $stat['read']   += \count($rows);
         $stat['hidden'] += $hidden;
 
-        $at   = ($this->clock)()->getTimestamp();
-        $past = $last->format('Y-m-d') < $this->today();
-        $this->cache->set($identity, $key, ['rows' => $rows, 'truncated' => $truncated, 'at' => $at], $past ? self::PAST_MONTH_TTL : null);
+        $at = ($this->clock)()->getTimestamp();
+        $this->cache->set($identity, $key, ['rows' => $rows, 'at' => $at], $ttl);
 
-        return ['rows' => $rows, 'truncated' => $truncated, 'at' => $at, 'error' => null];
+        return ['rows' => $rows, 'at' => $at, 'error' => null];
     }
 
     /**
@@ -528,44 +469,14 @@ final class AttendanceService
     }
 
     /**
-     * @param array<mixed> $item
-     *
-     * @return array<string, mixed>|null
-     */
-    private function normaliseDaily(array $item, \DateTimeImmutable $first, \DateTimeImmutable $last): ?array
-    {
-        $date = self::date($this->daily->value($item, 'date'));
-
-        if ($date === null || $date < $first->format('Y-m-d') || $date > $last->format('Y-m-d')) {
-            return null;
-        }
-
-        $row = ['date' => $date];
-
-        foreach (['schedule', 'break', 'schedule_note', 'status'] as $field) {
-            $row[$field] = $this->daily->value($item, $field);
-        }
-
-        foreach (['sched_start', 'sched_end', 'check_in', 'check_out'] as $field) {
-            $row[$field] = self::time($this->daily->value($item, $field));
-        }
-
-        foreach (['late', 'early', 'worked', 'overtime'] as $field) {
-            $row[$field] = $this->daily->minutes($item, $field);
-        }
-
-        return array_filter($row, static fn ($v) => $v !== null);
-    }
-
-    /**
      * Check-in and check-out from one day's punches (in time order), exactly as recorded. The time
      * of day decides, whatever state the device recorded:
      *  - check-in:  the first punch before the cut-off;
      *  - check-out: the last punch at the cut-off or later;
      *  - a day with punches only before the cut-off has no check-out, a day with punches only from
      *    it has no check-in ("Missing Punch").
-     * The cut-off is 12:00 (CHECK_OUT_FROM), or, from the database, the end of the check-in window
-     * of the day's timetable.
+     * The cut-off is the end of the check-in window of the day's timetable, or 12:00
+     * (CHECK_OUT_FROM) on a day without one.
      *
      * @param list<Punch> $punches
      *
@@ -594,24 +505,5 @@ final class AttendanceService
         }
 
         return $m[1] . ' ' . $m[2] . ':' . $m[3] . ':' . ($m[4] ?? '00');
-    }
-
-    public static function date(?string $value): ?string
-    {
-        if ($value === null || !preg_match('/^(\d{4})-(\d{2})-(\d{2})/', trim($value), $m) || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
-            return null;
-        }
-
-        return $m[1] . '-' . $m[2] . '-' . $m[3];
-    }
-
-    /** The time part of "HH:MM", "HH:MM:SS" or a date-time, as "HH:MM:SS". */
-    public static function time(?string $value): ?string
-    {
-        if ($value === null || !preg_match('/(?:^|[ T])(\d{1,2}):([0-5]\d)(?::([0-5]\d))?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/', trim($value), $m) || (int) $m[1] > 23) {
-            return null;
-        }
-
-        return \sprintf('%02d:%s:%s', (int) $m[1], $m[2], $m[3] ?? '00');
     }
 }

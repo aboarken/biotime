@@ -23,7 +23,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Database;
  *
  * Connect via (PostgreSQL only): the IP address (and port) the connection is really opened to,
  * e.g. the firewall's public address, while the certificate is still checked against the host
- * name, e.g. the server's local name. As "connect via" for the API. libpq takes an IP address
+ * name, e.g. the server's local name. libpq takes an IP address
  * only here (hostaddr), never a name.
  */
 final class DbConfig

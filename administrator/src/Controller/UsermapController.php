@@ -18,7 +18,7 @@ use Joomla\CMS\Router\Route;
 use Joomla\CMS\User\User;
 use Joomla\CMS\User\UserFactoryInterface;
 use Joomla\Utilities\ArrayHelper;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\EmailNormalizer;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingException;
@@ -69,7 +69,7 @@ final class UsermapController extends BaseController
             $this->fail(Text::_($e->getMessage()), $data, $backUrl);
 
             return;
-        } catch (ZkbException $e) {
+        } catch (SourceException $e) {
             $this->fail(Text::_($e->getLanguageKey()), $data, $backUrl);
 
             return;
@@ -139,7 +139,7 @@ final class UsermapController extends BaseController
                 $done++;
             } catch (MappingException $e) {
                 $this->app->enqueueMessage(Text::sprintf('COM_BIOTIME_MAPPING_ERR_FOR_USER', $id, Text::_($e->getMessage())), 'error');
-            } catch (ZkbException $e) {
+            } catch (SourceException $e) {
                 $this->app->enqueueMessage(Text::sprintf('COM_BIOTIME_MAPPING_ERR_FOR_USER', $id, Text::_($e->getLanguageKey())), 'error');
             }
         }

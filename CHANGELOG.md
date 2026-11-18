@@ -3,6 +3,25 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-11-18
+
+The first stable version: everything is read from ZKBioTime's database, and managers get their own dashboard.
+
+### Added
+- **Manager Dashboard** (new menu item type and permission *View Manager Dashboard*, `zkb.manager.view`): a manager sees every employee of their own ZKBioTime department and of every department below it (`personnel_department.parent_dept_id`), except those who have resigned (`personnel_resign`). Filters: department, employee, status, From and To (today by default, at most 31 days). Cards: **Workforce** and the figures of My Attendance for everyone shown; a card with a filter shows only the matching days. Below them one row per employee per day: **check-in and check-out in one column**, then **Late In**, **Early Out** and **Total**. A manager without a department in ZKBioTime sees a message instead.
+- **My Dashboard → Attendance rate per month**: a small card per month with its rate (green from 90 %, amber from 75 %, red below) and "present of working days".
+- **My Dashboard → Your Devices** (back, as a chart): every device the employee punches on or is registered on, with the school year's punches split by fingerprint and face.
+- **My Attendance → All Days** card, first: shows every day again after choosing another card.
+
+### Changed
+- **The school year is always 1 August to 31 July** (e.g. 01/08/2026 to 31/07/2027; from 1 August 2027 automatically 01/08/2027 to 31/07/2028). My Dashboard counts its figures up to today.
+- **Clicking a card** (My Dashboard, My Attendance, Manager Dashboard) jumps down to the matching records instead of the top of the page.
+- **My Dashboard**: the circles chart (missing punches, weekend work, late and early days) is replaced by the two new blocks above.
+
+### Removed
+- **The ZKBioTime REST API integration.** The component reads only ZKBioTime's PostgreSQL database (read-only). Gone: the API connection, credentials, TLS pin and Daily Attendance Source settings, *Read attendance from*, **Test Connection**, **Read Certificate Pin**, **Find Endpoints** (page and submenu) and the API-only page variants. The update deletes the stored API settings, including the encrypted API password and cached token. **Test Database** and every database setting stay.
+- **The explanatory note** under the portal pages (where the figures come from, how check-in and check-out are chosen, the weekend days) and the "Updated" time. Error messages stay.
+
 ## [0.10.0] - 2026-11-18
 
 ### Changed

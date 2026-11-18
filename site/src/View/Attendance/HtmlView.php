@@ -12,6 +12,7 @@ namespace BiotimePortal\Component\Biotime\Site\View\Attendance;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\DateRange;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
+use BiotimePortal\Component\Biotime\Administrator\Attendance\DayFilter;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
 use BiotimePortal\Component\Biotime\Site\Model\AttendanceModel;
@@ -28,7 +29,7 @@ final class HtmlView extends BaseHtmlView
     use PortalViewTrait;
 
     /** Status filter values. */
-    public const FILTERS = ['attended', 'present', 'missingpunch', 'missingmorning', 'missingafternoon', 'absent', 'weekend', 'weekendworked', 'late', 'early', 'holiday', 'exceptions', 'punches', 'nopunches'];
+    public const FILTERS = DayFilter::FILTERS;
 
     public Period $period;
 
@@ -59,7 +60,7 @@ final class HtmlView extends BaseHtmlView
         }
 
         $status       = $input->getCmd('status', '');
-        $this->status = \in_array($status, self::FILTERS, true) ? $status : '';
+        $this->status = DayFilter::valid($status);
 
         // From date – to date (below the month): wins over the month and year lists.
         $range = $model->selectedRange();
@@ -76,7 +77,7 @@ final class HtmlView extends BaseHtmlView
 
         $this->summary = $this->period->summary();
 
-        $rows = array_values(array_filter($this->period->days, fn (Day $d): bool => $this->matches($d)));
+        $rows = array_values(array_filter($this->period->days, fn (Day $d): bool => DayFilter::matches($d, $this->status)));
 
         $this->total = \count($rows);
         // Every day of the month or of From – To on one page (0.9.1): no second page.
@@ -102,24 +103,5 @@ final class HtmlView extends BaseHtmlView
     public function rangeTitle(): string
     {
         return $this->from === '' ? $this->monthTitle() : $this->f->date($this->from) . ($this->to !== $this->from ? ' – ' . $this->f->date($this->to) : '');
-    }
-
-    private function matches(Day $d): bool
-    {
-        return match ($this->status) {
-            ''              => true,
-            'attended'      => \in_array($d->status, Day::ATTENDED, true),
-            'present'       => \in_array($d->status, ['present', 'late', 'early'], true),
-            'exceptions'    => $d->exceptions !== [],
-            'punches'       => $d->punches !== [],
-            'nopunches'     => $d->punches === [],
-            'weekendworked' => $d->workedOnWeekend(),
-            'missingpunch'  => $d->missingPunch(),
-            'missingmorning'   => $d->missingMorning(),
-            'missingafternoon' => $d->missingAfternoon(),
-            'late'          => ($d->late ?? 0) > 0,
-            'early'         => ($d->early ?? 0) > 0,
-            default         => $d->status === $this->status,
-        };
     }
 }

@@ -12,16 +12,13 @@ namespace BiotimePortal\Component\Biotime\Administrator\Model;
 
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\Model\FormModel;
-use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
-use BiotimePortal\Component\Biotime\Administrator\Api\ConnectionReport;
-use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
-use BiotimePortal\Component\Biotime\Administrator\Api\SslPin;
 use BiotimePortal\Component\Biotime\Administrator\Controller\SettingsController;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Database\SchemaInspector;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
 use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
 use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
@@ -41,10 +38,6 @@ final class IntegrationsettingsModel extends FormModel
         $data  = \is_array($state) && $state !== [] ? $state : $this->settings()->toFormData();
 
         // Secret fields are always empty: stored secrets are never sent back to the browser.
-        $data['api_password']   = '';
-        $data['api_token']      = '';
-        $data['clear_password'] = '0';
-        $data['clear_token']    = '0';
         $data['db_password']       = '';
         $data['clear_db_password'] = '0';
 
@@ -58,17 +51,17 @@ final class IntegrationsettingsModel extends FormModel
 
     public function secretSource(): string
     {
-        return $this->component()->getClientFactory()->secretSource();
+        return $this->component()->getSecretProvider()->getSource();
     }
 
     public function secretEnvTooShort(): bool
     {
-        return $this->component()->getClientFactory()->secretEnvTooShort();
+        return $this->component()->getSecretProvider()->envTooShort();
     }
 
     /**
-     * Validate, encrypt new secrets and store. The raw post is validated by SettingsValidator, so
-     * no form filter can alter a password or token.
+     * Validate, encrypt a new database password and store. The raw post is validated by
+     * SettingsValidator, so no form filter can alter the password.
      *
      * @param  array<string, mixed>  $data  Raw posted jform data
      *
@@ -76,23 +69,14 @@ final class IntegrationsettingsModel extends FormModel
      */
     public function save(array $data): void
     {
-        $factory   = $this->component()->getClientFactory();
+        $component = $this->component();
         $validator = new SettingsValidator(
-            static fn (string $plain, string $context): string => $factory->vault()->encrypt($plain, $context)
+            static fn (string $plain, string $context): string => $component->getKeyVault()->encrypt($plain, $context)
         );
 
         $values = $validator->validate($data, $this->settings());
 
         $this->component()->getSettingsRepository()->save($values);
-    }
-
-    /**
-     * @throws \BiotimePortal\Component\Biotime\Administrator\Api\ZkbException
-     */
-    public function testConnection(): ConnectionReport
-    {
-        // A token store of its own: the test always logs in afresh and leaves the shared cache alone.
-        return $this->component()->getClientFactory()->create(new MemoryTokenStore())->testConnection();
     }
 
     /**
@@ -105,7 +89,13 @@ final class IntegrationsettingsModel extends FormModel
      */
     public function testDatabase(): array
     {
-        $config  = $this->settings()->dbConfig($this->component()->getClientFactory()->vault());
+        try {
+            $vault = $this->component()->getKeyVault();
+        } catch (KeyVaultException $e) {
+            throw new DbException(DbException::NOT_CONFIGURED, 'No encryption secret for the database password', '', $e);
+        }
+
+        $config  = $this->settings()->dbConfig($vault);
         $started = hrtime(true);
         $report  = (new SchemaInspector())->inspect((new DbConnector())->connect($config));
 
@@ -120,26 +110,6 @@ final class IntegrationsettingsModel extends FormModel
             'elapsed_ms' => (int) ((hrtime(true) - $started) / 1_000_000),
             'at'         => time(),
         ];
-    }
-
-    /**
-     * @return array{pin: string, subject: string, issuer: string, expires: ?int}
-     *
-     * @throws \RuntimeException|\InvalidArgumentException
-     */
-    public function readServerPin(): array
-    {
-        $settings = $this->settings();
-
-        if ($settings->serverUrl() === '') {
-            throw new \RuntimeException('No server URL saved');
-        }
-
-        return SslPin::readFromServer(
-            ClientConfig::buildBaseUrl($settings->serverUrl()),
-            $settings->connectTimeout(),
-            $settings->connectVia()
-        );
     }
 
     private function component(): BiotimeComponent

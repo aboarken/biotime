@@ -38,7 +38,7 @@ $cards = [
     </div>
 
     <?php echo LayoutHelper::render('biotime.toolbar', ['view' => 'punches', 'year' => $this->yearNumber, 'month' => $this->monthOnly, 'allMonths' => true, 'f' => $f]); ?>
-    <?php echo $this->notices($this->period, false); ?>
+    <?php echo $this->notices($this->period); ?>
 
     <div class="bt-stats bt-stats--5">
         <?php foreach ($cards as [$label, $value, $tone]) : ?>

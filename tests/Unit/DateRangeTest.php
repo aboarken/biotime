@@ -20,6 +20,9 @@ final class DateRangeTest extends TestCase
         self::assertSame('2026-08-01', DateRange::schoolYearStart('2026-08-01'));
         self::assertSame('2026-08-01', DateRange::schoolYearStart('2027-07-31'), 'before August: last year\'s');
         self::assertSame('2025-01-01', DateRange::schoolYearStart('2025-03-10'), 'not before the first year');
+        self::assertSame('2027-07-31', DateRange::schoolYearEnd('2026-11-18'));
+        self::assertSame('2027-07-31', DateRange::schoolYearEnd('2027-07-31'));
+        self::assertSame('2028-07-31', DateRange::schoolYearEnd('2027-08-01'), 'from 1 August the next school year');
     }
 
     public function testDatesAreTypedAsDayMonthYear(): void
