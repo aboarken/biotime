@@ -53,7 +53,7 @@ those releases.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
 ### 1.0.17 – Export buttons
-- [ ] Manager Dashboard: *Export PDF (A4)* then *Export PDF (A3)*, both blue; the note beside them explains A4 and A3.
+- [ ] Manager Dashboard: *Export PDF (A4)* then *Export PDF (A3)*, A4 blue and A3 green; the note beside them explains A4 and A3.
 
 ### 1.0.16 – Export PDF in A3
 - [ ] Manager Dashboard, a whole month: **Export PDF (A3)**: the print dialog shows A3 landscape; every day of the month is in one table and each employee is one row; the text is readable when printed.

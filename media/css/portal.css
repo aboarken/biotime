@@ -1349,6 +1349,18 @@
   border-top: 1px solid var(--bt-card-line);
 }
 
+/* A4 keeps the portal's blue; A3 is the portal's green (white text 5:1) */
+.com-biotime .bt-btn--a3 {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.com-biotime .bt-btn--a3:hover,
+.com-biotime .bt-btn--a3:focus-visible {
+  background: #166534;
+  border-color: #166534;
+}
+
 .com-biotime .bt-export-hint {
   font-size: 0.8125rem;
   color: var(--bt-text-muted);
