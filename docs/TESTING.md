@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.9.1 – Attendance Management System
+- [ ] The note under My Dashboard and My Attendance reads "… come from the Attendance Management System; late-in and early-out appear once the system has calculated the day …". No portal page shows "ZKBioTime".
+- [ ] My Attendance with From 01/08 and To today lists every day on one page (no page links).
+
 ### 0.9.0 – School year dashboard, From – To
 - [ ] My Dashboard has no month arrows or month/year selection; under the heading: department · position · employee ID · name, then "From 01/08/2026 to <today>". Before August, the range starts on 1 August of last year.
 - [ ] No Monthly Overview and no Your Devices panel on My Dashboard.

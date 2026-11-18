@@ -3,6 +3,12 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] - 2026-11-18
+
+### Changed
+- **The portal pages name "the Attendance Management System" instead of "ZKBioTime"**: the note under the pages (schedule, late-in, early-out, worked time and holidays come from the Attendance Management System; late-in and early-out appear once the system has calculated the day), the error messages, the time zone note and the unmatched-account message. The administrator pages still name ZKBioTime.
+- **My Attendance shows every day on one page**: a From – To range (up to a year) is no longer split into pages of 31 days.
+
 ## [0.9.0] - 2026-11-18
 
 ### Changed

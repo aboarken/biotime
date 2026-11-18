@@ -878,50 +878,6 @@
   color: inherit;
 }
 
-/* Pagination */
-[data-bt-root] .pagination {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  align-items: center;
-  margin: 0 0 1.5rem;
-  padding: 0;
-  list-style: none;
-}
-
-[data-bt-root] .pagination .page-item {
-  margin: 0;
-}
-
-[data-bt-root] .pagination .page-link {
-  display: block;
-  margin: 0;
-  padding: 0.4rem 0.875rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--bt-primary);
-  text-decoration: none;
-  background: var(--bt-card-bg);
-  border: 1px solid var(--bt-card-border);
-  border-radius: 0.5rem;
-  box-shadow: var(--bt-card-shadow);
-}
-
-[data-bt-root] .pagination .page-link:hover {
-  background: var(--bt-card-hover);
-}
-
-[data-bt-root] .pagination .page-item.disabled .page-link {
-  color: var(--bt-text-muted);
-  pointer-events: none;
-  box-shadow: none;
-}
-
-[data-bt-root] .pagination .page-item.disabled:not(:first-child):not(:last-child) .page-link {
-  background: transparent;
-  border-color: transparent;
-}
-
 /*
  * Template independence
  * ---------------------
