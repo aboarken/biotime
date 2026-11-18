@@ -41,7 +41,22 @@ final class Punch
     {
         $text = static fn (string $key): ?string => self::known($row[$key] ?? null);
 
-        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $text('s'), $text('d'), $text('a'), $text('v'), $row['vc'] ?? null);
+        return new self(substr($row['t'], 0, 10), substr($row['t'], 11), $text('s'), self::deviceName($text('d')), $text('a'), $text('v'), $row['vc'] ?? null);
+    }
+
+    /**
+     * A device's name as shown: without the "Biometric - " prefix the devices are named with
+     * (e.g. "Biometric - Main Gate" → "Main Gate").
+     */
+    public static function deviceName(?string $name): ?string
+    {
+        if ($name === null) {
+            return null;
+        }
+
+        $short = trim((string) preg_replace('/^\s*biometric\s*[-–—:]\s*/iu', '', $name));
+
+        return $short === '' ? $name : $short;
     }
 
     /**

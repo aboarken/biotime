@@ -258,6 +258,17 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame(['department' => 'Information Technology', 'position' => 'Developer', 'hire_date' => '2024-09-01'], $this->service(new CatalogueQuery('pgsql', $this->answers()))->profile($alice));
     }
 
+    public function testMonthsCachedByAnOlderVersionAreReadAgain(): void
+    {
+        // A day as 0.6.2 cached it under the old key: no late-in (kept a day for past months).
+        $stale = ['rows' => [['date' => '2026-11-02', 'schedule' => 'Old', 'db' => true]], 'truncated' => false, 'at' => 1];
+        $this->cache['5|E1|db:daily:2026-11'] = ['e' => PHP_INT_MAX, 'v' => $stale];
+
+        $day = $this->service(new CatalogueQuery('pgsql', $this->answers()))->month(Identity::matched(5, '11', 'E1'), 2026, 11)->day('2026-11-02');
+
+        self::assertSame(['Day 07:30-15:30', 12], [$day->schedule, $day->late], 'read again, not the old cached copy');
+    }
+
     public function testADatabaseErrorShowsAMessageAndNoData(): void
     {
         $q      = new CatalogueQuery('pgsql', ['FROM personnel_employee' => static fn (): array => throw new DbException(DbException::UNREACHABLE, 'down')]);

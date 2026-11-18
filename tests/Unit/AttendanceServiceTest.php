@@ -294,6 +294,14 @@ final class AttendanceServiceTest extends TestCase
         self::assertSame(['07:45:00', '15:20:00'], [$day->checkIn, $day->checkOut], 'the punch still counts');
     }
 
+    public function testTheBiometricPrefixIsRemovedFromDeviceNames(): void
+    {
+        self::assertSame('Main Gate', Punch::deviceName('Biometric - Main Gate'));
+        self::assertSame('Gym', Punch::deviceName('biometric-Gym'));
+        self::assertSame('Biometric', Punch::deviceName('Biometric'), 'a name that is only the word stays');
+        self::assertSame('Side Door', Punch::fromCache(['t' => '2026-11-02 07:00:00', 'd' => 'Biometric – Side Door'])->device);
+    }
+
     public function testPunchDetailsIncludeHowAndWhere(): void
     {
         $this->zkb->list('/iclock/api/transactions/', [

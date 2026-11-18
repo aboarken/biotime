@@ -111,6 +111,10 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.7.0 – Past months after an update, device names
+- [ ] Right after updating, a past month (e.g. October) shows Late In and Early Out (not the copy cached by the previous version).
+- [ ] Device names show without "Biometric - " everywhere (My Attendance punch details, day details, Devices You Used, My Punches).
+
 ### 0.6.2 – Schedules from shifts, cut-off from the timetable
 - [ ] Today and the rest of the month show each day's schedule; it matches the employee's shift in ZKBioTime (Test Database → Shifts lists the day numbers). A temporary schedule for a date wins.
 - [ ] A morning punch after the timetable's End Check-In counts as a check-out; on a day without a timetable the cut-off is 12:00.

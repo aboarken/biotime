@@ -50,6 +50,13 @@ final class AttendanceService
      */
     public const PAST_MONTH_TTL = 86400;
 
+    /**
+     * Part of every database cache key. Raised whenever the rows read from the database change
+     * shape (0.6.3: late-in and early-out from ZKBioTime 9.5's pay codes), so an update never shows
+     * months cached by an older version (past months are kept a day).
+     */
+    public const CACHE_VERSION = 4;
+
     /** The first year the portal offers (year lists, month navigation). */
     public const FIRST_YEAR = 2025;
 
@@ -354,8 +361,8 @@ final class AttendanceService
             return ['rows' => [], 'truncated' => false, 'at' => null, 'error' => null];
         }
 
-        // Database and API rows are never mixed in the cache.
-        $key    = ($this->database !== null ? 'db:' : '') . $type . ':' . \sprintf('%04d-%02d', $year, $month);
+        // Database and API rows are never mixed in the cache, nor rows of older versions.
+        $key    = ($this->database !== null ? 'db' . self::CACHE_VERSION . ':' : '') . $type . ':' . \sprintf('%04d-%02d', $year, $month);
         $cached = $this->cache->get($identity, $key);
 
         if ($cached !== null && isset($cached['rows'], $cached['at'])) {
