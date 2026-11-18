@@ -3,6 +3,16 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.13] - 2026-11-18
+
+### Changed
+- **My Dashboard charts renamed**: Total Attendance (was Days so far), Status per Month (was Days per month), Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month (was Attendance rate per month), Punches per Device (was Your Devices). The *Statistics* heading above them is gone.
+- **My Dashboard cards without notes under the numbers** (no "earliest/latest", hints or day counts below the value), so they are the same size as on My Attendance; Total Late In and Total Early Out show their days next to the time, as on My Attendance.
+
+### Fixed
+- **Charts on phones**: the axis text was about 5 px tall. On screens narrower than 600 px it is now drawn larger (about 11 px), every other month is named when more than 6 are shown, the rate and device bars put the name above the bar, and the cards use less padding.
+- A chart axis no longer repeats the same value (e.g. 0:01, 0:01, 0:01) when the totals are very small: its steps are at least one minute or one day.
+
 ## [1.0.12] - 2026-11-18
 
 ### Changed

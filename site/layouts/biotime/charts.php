@@ -67,7 +67,7 @@ $nice = static function (float $max, int $steps = 4): array {
 };
 
 // The plot area shared by the column and line charts (viewBox 0 0 520 240).
-[$W, $H, $L, $R, $T, $B] = [520, 240, 44, 10, 14, 30];
+[$W, $H, $L, $R, $T, $B] = [520, 244, 52, 10, 14, 38];
 $pw  = $W - $L - $R;
 $ph  = $H - $T - $B;
 $y   = static fn (float $v, float $max): float => round($T + $ph - ($max > 0 ? $v / $max : 0) * $ph, 1);
@@ -89,7 +89,9 @@ $xLabels = static function () use ($months, $cx, $H, $short, $e): string {
     $out = '';
 
     foreach ($months as $i => $m) {
-        $out .= '<text class="bt-chart-axis" x="' . $cx($i) . '" y="' . ($H - 10) . '" text-anchor="middle">' . $e($short($m)) . '</text>';
+        // On a phone the text is drawn larger: with more than 6 months every other month is named (1.0.13).
+        $alt  = \count($months) > 6 && $i % 2 === 1 ? ' bt-chart-x--alt' : '';
+        $out .= '<text class="bt-chart-axis' . $alt . '" x="' . $cx($i) . '" y="' . ($H - 8) . '" text-anchor="middle">' . $e($short($m)) . '</text>';
     }
 
     return $out;
@@ -125,7 +127,8 @@ foreach ($shown as $kind => $n) {
 
 // 2. Stacked columns: days per month.
 $stackKinds = array_values(array_filter(['present', 'absent', 'holiday', 'leave'], static fn (string $k): bool => $kinds[$k] > 0 || $k === 'present' || $k === 'absent'));
-[$maxDays, $stepDays] = $nice(max(array_map(static fn (array $m): int => array_sum(array_intersect_key($m['kinds'], array_flip($stackKinds))), $months)));
+// At least 4 on the axis, so a step is never less than a whole day (1.0.13).
+[$maxDays, $stepDays] = $nice(max(4, ...array_map(static fn (array $m): int => array_sum(array_intersect_key($m['kinds'], array_flip($stackKinds))), $months)));
 $bw      = min(34, $band * 0.55);
 $stacked = $grid($maxDays, $stepDays, static fn (float $v): string => (string) (int) $v);
 
@@ -152,7 +155,8 @@ $stacked .= $xLabels();
 // 3. Grouped columns: late in and early out minutes per month.
 $grouped = '';
 
-[$maxMin, $stepMin] = $nice(max(1, ...array_map(static fn (array $m): int => max($m['summary']->lateMinutes, $m['summary']->earlyMinutes), $months)));
+// At least 4 minutes on the axis, so a step is never less than a minute (1.0.13).
+[$maxMin, $stepMin] = $nice(max(4, ...array_map(static fn (array $m): int => max($m['summary']->lateMinutes, $m['summary']->earlyMinutes), $months)));
 // As wide as the check-in / check-out columns (1.0.1); the two bars of a month side by side.
 $gw      = min(30, $band * 0.42);
 $grouped = $grid($maxMin, $stepMin, $hm);
@@ -239,8 +243,8 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
     . '<div class="bt-panel-body">' . $body . $legendHtml
     . '<p class="visually-hidden">' . $e($summary) . '</p></div></figure>';
 ?>
-<section class="bt-statistics" aria-labelledby="bt-stats-title">
-    <h2 class="bt-section-title" id="bt-stats-title"><?php echo Text::_('COM_BIOTIME_STATISTICS'); ?></h2>
+<?php // No heading above the charts (1.0.13): each card has its own title. ?>
+<section class="bt-statistics" aria-label="<?php echo htmlspecialchars(Text::_('COM_BIOTIME_STATISTICS'), ENT_QUOTES, 'UTF-8'); ?>">
     <div class="bt-charts">
         <?php
         echo $chart(
