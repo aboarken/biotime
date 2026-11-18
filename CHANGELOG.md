@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.6] - 2026-11-18
+
+### Changed
+- **Cards in the same order on My Dashboard, My Attendance and the Manager Dashboard, grouped by what they count**: days (All Days or Workforce, Days Present, Days Absent, Leaves, Holidays, Weekends, Weekend Days Worked, Attendance Rate), punches (Missing Morning, Missing Afternoon, Total Morning and Afternoon Punches, Punches), times (Average Check-In, Average Check-Out), lateness (Total Late In, Total Early Out, Late In + Early Out) and work (Worked Time, Overtime). A page without a card skips it.
+
 ## [1.0.5] - 2026-11-18
 
 ### Changed
