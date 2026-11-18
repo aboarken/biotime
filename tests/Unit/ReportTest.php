@@ -24,17 +24,16 @@ final class ReportTest extends TestCase
         return array_map(static fn (int $i): string => \sprintf('2026-10-%02d', $i), range(1, $n));
     }
 
-    public function testPortraitWhenTheDatesFitOtherwiseBalancedLandscapeTables(): void
+    public function testAlwaysLandscapeWithBalancedTablesOfAtMost12Dates(): void
     {
-        self::assertSame([false, [self::days(1)]], ReportColumns::of(self::days(1)));
-        self::assertSame([false, [self::days(6)]], ReportColumns::of(self::days(6)));
-        self::assertSame([true, [self::days(7)]], ReportColumns::of(self::days(7)));
-        self::assertSame([true, [self::days(12)]], ReportColumns::of(self::days(12)));
-        self::assertSame([7, 6], array_map('count', ReportColumns::of(self::days(13))[1]));
-        self::assertSame([8, 8], array_map('count', ReportColumns::of(self::days(16))[1]));
-        self::assertSame([11, 11, 9], array_map('count', ReportColumns::of(self::days(31))[1]), 'every date once, in order');
-        self::assertSame(self::days(31), array_merge(...ReportColumns::of(self::days(31))[1]));
-        self::assertSame([false, [[]]], ReportColumns::of([]));
+        self::assertSame([self::days(1)], ReportColumns::of(self::days(1)));
+        self::assertSame([self::days(6)], ReportColumns::of(self::days(6)));
+        self::assertSame([self::days(12)], ReportColumns::of(self::days(12)));
+        self::assertSame([7, 6], array_map('count', ReportColumns::of(self::days(13))));
+        self::assertSame([8, 8], array_map('count', ReportColumns::of(self::days(16))));
+        self::assertSame([11, 11, 9], array_map('count', ReportColumns::of(self::days(31))), 'every date once, in order');
+        self::assertSame(self::days(31), array_merge(...ReportColumns::of(self::days(31))));
+        self::assertSame([[]], ReportColumns::of([]));
     }
 
     private function validate(array $report): array

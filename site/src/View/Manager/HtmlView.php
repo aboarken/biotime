@@ -110,8 +110,6 @@ final class HtmlView extends BaseHtmlView
      */
     public array $dateChunks = [];
 
-    public bool $landscape = false;
-
     /** @var array{logo: string, left: string, right: string, footer: list<string>, color: string} */
     public array $letterhead = ['logo' => '', 'left' => '', 'right' => '', 'footer' => [], 'color' => '#1d3f74'];
 
@@ -184,7 +182,7 @@ final class HtmlView extends BaseHtmlView
 
                 if ($this->report) {
                     // The report has every row; its dates are cut into tables that fit the paper.
-                    [$this->landscape, $this->dateChunks] = ReportColumns::of($this->dates);
+                    $this->dateChunks = ReportColumns::of($this->dates);
                 } else {
                     $this->pages = max(1, (int) ceil($this->rowCount / self::PAGE_SIZE));
                     $this->page  = min(max(1, $input->getInt('page', 1)), $this->pages);
@@ -277,8 +275,8 @@ final class HtmlView extends BaseHtmlView
             [Text::_('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), (string) $this->afternoonPunches, Ui::cardTone('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), ''],
             [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $this->escape($f->time($s->avgCheckIn)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_IN'), ''],
             [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $this->escape($f->time($s->avgCheckOut)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_OUT'), ''],
-            [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $this->escape($f->duration($s->lateMinutes)) . ' <small>' . $this->escape(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_LATE_TOTAL'), 'late'],
-            [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $this->escape($f->duration($s->earlyMinutes)) . ' <small>' . $this->escape(Text::plural('COM_BIOTIME_N_DAYS', $s->earlyDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_EARLY_TOTAL'), 'early'],
+            [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $this->escape($f->duration($s->lateMinutes)), Ui::cardTone('COM_BIOTIME_CARD_LATE_TOTAL'), 'late'],
+            [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $this->escape($f->duration($s->earlyMinutes)), Ui::cardTone('COM_BIOTIME_CARD_EARLY_TOTAL'), 'early'],
             [Text::_('COM_BIOTIME_CARD_LATE_EARLY'), $this->escape($f->duration($s->lateEarlyMinutes())), Ui::cardTone('COM_BIOTIME_CARD_LATE_EARLY'), ''],
             [Text::_('COM_BIOTIME_CARD_WORKED'), $this->escape($f->duration($s->workedMinutes)), Ui::cardTone('COM_BIOTIME_CARD_WORKED'), ''],
             [Text::_('COM_BIOTIME_CARD_OVERTIME'), $this->escape($f->duration($s->overtimeMinutes)), Ui::cardTone('COM_BIOTIME_CARD_OVERTIME'), ''],

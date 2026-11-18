@@ -1439,13 +1439,15 @@
 }
 
 .com-biotime .bt-report-logo img {
-  display: inline-block;
+  display: block;
+  margin: 0 auto 1.5mm;
   max-width: 100%;
   max-height: 22mm;
   object-fit: contain;
 }
 
 .com-biotime .bt-report-sitename {
+  display: block;
   font-size: 16pt;
   font-weight: 700;
   color: var(--bt-report);
