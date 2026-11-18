@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.16] - 2026-11-18
+
+### Added
+- **Manager Dashboard: Export PDF (A3) and Export PDF (A4).** A3 landscape puts the whole period (up to 31 days) in **one table, so every employee is one row**; with more than 12 days its text is a little smaller. A4 landscape works as before (up to 12 days per table, a longer period in several parts). The two buttons replace the single *Export PDF*.
+
 ## [1.0.15] - 2026-11-18
 
 ### Added

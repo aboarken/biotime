@@ -36,6 +36,16 @@ final class ReportTest extends TestCase
         self::assertSame([[]], ReportColumns::of([]));
     }
 
+    public function testA3HasTheWholePeriodInOneTable(): void
+    {
+        self::assertSame([self::days(31)], ReportColumns::of(self::days(31), 'a3'), 'up to 31 days (the dashboard maximum): one table, every employee one row');
+        self::assertSame([self::days(13)], ReportColumns::of(self::days(13), 'a3'));
+        self::assertSame([7, 6], array_map('count', ReportColumns::of(self::days(13), 'a4')), 'A4 still splits');
+        self::assertSame('a3', ReportColumns::paper('a3'));
+        self::assertSame('a4', ReportColumns::paper('A3; x'), 'anything else: A4');
+        self::assertSame('a4', ReportColumns::paper(''));
+    }
+
     private function validate(array $report): array
     {
         $validator = new SettingsValidator(static fn (string $p, string $c): string => 'enc', static fn (): bool => true);
