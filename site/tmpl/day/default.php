@@ -34,7 +34,7 @@ $calc  = $this->period->calculated;
         </div>
     </div>
 
-    <?php echo $this->notices($this->period, false); ?>
+    <?php echo $this->notices($this->period); ?>
 
     <section class="bt-panel">
         <div class="bt-panel-head"><h2 class="bt-panel-title"><?php echo Text::_('COM_BIOTIME_CHECK_IN_OUT'); ?></h2></div>

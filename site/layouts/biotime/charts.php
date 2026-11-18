@@ -9,12 +9,13 @@
  *  2. Days per month (stacked columns): present, absent, holiday, leave.
  *  3. Late in and early out per month (grouped columns, minutes; database only).
  *  4. Average check-in and check-out per month (a floating column from check-in to check-out).
- *  5. Missing punches and other days (circles: a ring per figure, filled by its share of the days).
+ *  5. Attendance rate per month (a small card per month, 0.11.0).
+ *  6. Devices used, punches split by fingerprint and face (0.11.0).
  *
  * Colours: the portal's tones (validated together for colour-blind separation): green present,
  * red absent, purple holiday, blue weekend, amber leave and late in, rose early out, teal check-in,
- * indigo check-out; the circles teal (no check-in), indigo (no check-out), sky (weekend work),
- * amber (late in) and rose (early out).
+ * indigo check-out (and fingerprint / face on the devices); the monthly rates green, amber or red
+ * by their value, which is always written.
  *
  * @license GNU General Public License version 2 or later
  */
@@ -25,7 +26,7 @@ use BiotimePortal\Component\Biotime\Administrator\Attendance\ChartData;
 use Joomla\CMS\Language\Text;
 
 /**
- * @var array{days: list<\BiotimePortal\Component\Biotime\Administrator\Attendance\Day>, today: string, calc: bool, summary: \BiotimePortal\Component\Biotime\Administrator\Attendance\Summary, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter} $displayData
+ * @var array{days: list<\BiotimePortal\Component\Biotime\Administrator\Attendance\Day>, today: string, calc: bool, summary: \BiotimePortal\Component\Biotime\Administrator\Attendance\Summary, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, devices?: ?\BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats} $displayData
  */
 $f      = $displayData['f'];
 $s      = $displayData['summary'];
@@ -222,19 +223,15 @@ if ($known !== []) {
     $lines .= $xLabels();
 }
 
-// 5. Circles: missing punches, weekend work, late and early days. Each ring fills by its share
-// of the working days so far (weekend work: of the weekend days so far), the number inside.
-$weekendTotal = $kinds['weekend'] + $s->weekendWorked;
-$bars = [
-    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays, $s->workingDays, '#0d9488', 'COM_BIOTIME_CHART_OF_WORKING_DAYS'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays, $s->workingDays, '#4f46e5', 'COM_BIOTIME_CHART_OF_WORKING_DAYS'],
-    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, $weekendTotal, '#0284c7', 'COM_BIOTIME_CHART_OF_WEEKEND_DAYS'],
-];
+// 5. Attendance rate per month: one small card per month (present of working days), coloured
+// green from 90 %, amber from 75 %, red below; the percentage is always written.
+$rateTone = static fn (?int $r): string => $r === null ? 'muted' : ($r >= 90 ? 'green' : ($r >= 75 ? 'amber' : 'red'));
 
-if ($calc) {
-    $bars[] = [Text::_('COM_BIOTIME_CHART_LATE_DAYS'), $s->lateDays, $s->workingDays, $color['late'], 'COM_BIOTIME_CHART_OF_WORKING_DAYS'];
-    $bars[] = [Text::_('COM_BIOTIME_CHART_EARLY_DAYS'), $s->earlyDays, $s->workingDays, $color['early'], 'COM_BIOTIME_CHART_OF_WORKING_DAYS'];
-}
+// 6. Devices used: every device the employee punches on (or is registered on), its punches split
+// by fingerprint and face.
+$ps      = $displayData['devices'] ?? null;
+$devices = $ps !== null ? $ps->devices : [];
+$devMax  = max(1, ...array_map(static fn (array $d): int => (int) $d['total'], $devices ?: [['total' => 1]]));
 
 $chart = static fn (string $title, string $summary, string $body, string $legendHtml = '', string $class = ''): string => '<figure class="bt-chart' . $class . '">'
     . '<figcaption class="bt-chart-title">' . $e($title) . '</figcaption>' . $body . $legendHtml
@@ -281,26 +278,49 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
             );
         }
 
-        $rc    = 2 * M_PI * 38;
-        $rings = '<div class="bt-rings">';
+        $tiles = '<div class="bt-rate-months">';
 
-        foreach ($bars as [$name, $n, $of, $c, $ofKey]) {
-            $share = $of > 0 ? min(1, $n / $of) : 0;
-            $note  = Text::sprintf($ofKey, $of);
-            $rings .= '<div class="bt-ring" title="' . $e($name . ': ' . $n . ' ' . $note) . '">'
-                . '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="38" fill="none" stroke="#eef0f3" stroke-width="10"/>'
-                . ($n > 0 ? '<circle cx="50" cy="50" r="38" fill="none" stroke="' . $c . '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' . round(max(1, $rc * $share), 2) . ' ' . round($rc, 2) . '" transform="rotate(-90 50 50)"/>' : '')
-                . '<text class="bt-ring-value" x="50" y="58" text-anchor="middle">' . $n . '</text></svg>'
-                . '<span class="bt-ring-label">' . $e($name) . '</span><span class="bt-ring-note">' . $e($note) . '</span></div>';
+        foreach ($months as $m) {
+            $r      = $m['summary']->rate;
+            $tiles .= '<div class="bt-rate-month bt-tone-' . $rateTone($r) . '" title="' . $e($long($m) . ': ' . Text::_('COM_BIOTIME_CARD_RATE') . ' ' . ($r === null ? '—' : $r . '%')) . '">'
+                . '<span class="bt-rate-name">' . $e($short($m)) . '</span>'
+                . '<span class="bt-rate-value">' . ($r === null ? '—' : $r . '<small>%</small>') . '</span>'
+                . '<span class="bt-rate-track"><span style="width:' . (int) ($r ?? 0) . '%"></span></span>'
+                . '<span class="bt-rate-note">' . $e(Text::sprintf('COM_BIOTIME_CHART_PRESENT_OF', $m['summary']->presentDays, $m['summary']->workingDays)) . '</span></div>';
         }
 
         echo $chart(
-            Text::_('COM_BIOTIME_CHART_OTHER_DAYS'),
-            implode(', ', array_map(static fn (array $b): string => $b[0] . ' ' . $b[1] . ' ' . Text::sprintf($b[4], $b[2]), $bars)),
-            $rings . '</div>',
-            '',
-            // Full width after an even number of charts (database: 4); beside the times otherwise.
-            ($calc ? 1 : 0) + ($lines !== '' ? 1 : 0) + 2 === 4 ? ' bt-chart--wide' : ''
+            Text::_('COM_BIOTIME_CHART_RATE_PER_MONTH'),
+            implode('; ', array_map(static fn (array $m): string => $long($m) . ': ' . ($m['summary']->rate ?? '—') . '%', $months)),
+            $tiles . '</div>'
+        );
+
+        $rows = '<div class="bt-devices">';
+
+        foreach ($devices as $d) {
+            $tip   = $d['device'] . ': ' . Text::_('COM_BIOTIME_VERIFY_FINGERPRINT') . ' ' . (int) $d['fingerprint'] . ', ' . Text::_('COM_BIOTIME_VERIFY_FACE') . ' ' . (int) $d['face'] . ((int) $d['other'] > 0 ? ', ' . Text::_('COM_BIOTIME_VERIFY_OTHER') . ' ' . (int) $d['other'] : '');
+            $rows .= '<div class="bt-device" title="' . $e($tip) . '"><span class="bt-device-name">' . $e($d['device']) . '</span><span class="bt-device-track">';
+
+            foreach ([['fingerprint', $color['in']], ['face', $color['out']], ['other', '#64748b']] as [$k, $c]) {
+                if ((int) $d[$k] > 0) {
+                    $rows .= '<span style="width:' . round(100 * $d[$k] / $devMax, 1) . '%;background:' . $c . '"></span>';
+                }
+            }
+
+            $rows .= '</span><span class="bt-device-total">' . (int) $d['total'] . '</span></div>';
+        }
+
+        $rows .= $devices === [] ? '<p class="bt-empty">' . Text::_('COM_BIOTIME_DEVICES_USED_NONE') . '</p>' : '';
+        $other = $ps !== null && (int) $ps->total['other'] > 0;
+
+        echo $chart(
+            Text::_('COM_BIOTIME_DEVICES_USED'),
+            implode('; ', array_map(static fn (array $d): string => $d['device'] . ' ' . (int) $d['total'], $devices)),
+            $rows . '</div>',
+            $devices === [] ? '' : $legend(array_merge(
+                [[$color['in'], Text::_('COM_BIOTIME_VERIFY_FINGERPRINT'), (string) (int) ($ps->total['fingerprint'] ?? 0)], [$color['out'], Text::_('COM_BIOTIME_VERIFY_FACE'), (string) (int) ($ps->total['face'] ?? 0)]],
+                $other ? [['#64748b', Text::_('COM_BIOTIME_VERIFY_OTHER'), (string) (int) $ps->total['other']]] : []
+            ))
         );
         ?>
     </div>

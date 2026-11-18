@@ -134,5 +134,5 @@ $stat = function (string $label, string $value, string $tone, string $filter = '
         ?>
     </div>
 
-    <?php echo LayoutHelper::render('biotime.charts', ['days' => $this->period->days, 'today' => $this->today, 'calc' => $calc, 'summary' => $s, 'f' => $f]); ?>
+    <?php echo LayoutHelper::render('biotime.charts', ['days' => $this->period->days, 'today' => $this->today, 'calc' => $calc, 'summary' => $s, 'f' => $f, 'devices' => $this->devices]); ?>
 </div>

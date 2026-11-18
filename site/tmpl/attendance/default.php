@@ -67,9 +67,12 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
     . ' value="' . $e($value !== '' ? (new DateTimeImmutable($value))->format('d/m/Y') : '') . '">';
 
 // Summary cards: [label, value html, tone, filter]. Missing punches as two cards: morning (no
-// check-in) and afternoon (no check-out). From the database: 5 + 5 + 4 cards, with ZKBioTime's
-// late-in, early-out, worked time and overtime; from the API: 5 + 4.
+// check-in) and afternoon (no check-out). 3 rows of 5.
+// The first card, All Days, clears the status filter ('*'); a card with a filter shows only the
+// matching days and jumps down to them (#bt-records, 0.11.0).
+$allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) \count(array_filter($this->period->days, fn ($d): bool => $d->date <= $this->period->today)), 'slate', '*'];
 $cards = $calc ? [
+    $allDays,
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
     [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
@@ -85,6 +88,7 @@ $cards = $calc ? [
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', ''],
     [Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::countTone($s->punchCount, 'blue'), 'punches'],
 ] : [
+    $allDays,
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
     [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
@@ -125,15 +129,17 @@ $cards = $calc ? [
         <?php foreach ($cards as [$label, $value, $tone, $filter]) :
             $inner = '<span class="bt-stat-label">' . $e($label) . '</span><span class="bt-stat-value">' . $value . '</span>';
             ?>
-            <?php if ($filter !== '') : ?>
-                <a class="bt-stat bt-tone-<?php echo $tone; ?><?php echo $filter === $this->status ? ' is-active' : ''; ?>" href="<?php echo $this->filterUrl($filter); ?>"><?php echo $inner; ?></a>
+            <?php if ($filter !== '') :
+                $value = $filter === '*' ? '' : $filter;
+                ?>
+                <a class="bt-stat bt-tone-<?php echo $tone; ?><?php echo $value === $this->status ? ' is-active' : ''; ?>" href="<?php echo $this->filterUrl($value); ?>#bt-records"<?php echo $value === $this->status ? ' aria-current="true"' : ''; ?>><?php echo $inner; ?></a>
             <?php else : ?>
                 <div class="bt-stat bt-tone-<?php echo $tone; ?>"><?php echo $inner; ?></div>
             <?php endif; ?>
         <?php endforeach; ?>
     </div>
 
-    <section class="bt-panel">
+    <section class="bt-panel" id="bt-records">
         <div class="bt-panel-head">
             <h2 class="bt-panel-title"><?php echo $e($this->rangeTitle()); ?></h2>
             <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', $this->total)); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
