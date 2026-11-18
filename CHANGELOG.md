@@ -3,6 +3,13 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.5] - 2026-11-18
+
+### Changed
+- **Every card has its own colour**, the same on My Attendance, My Dashboard and the Manager Dashboard (`Ui::cardTone()`); cards with 0 keep their colour instead of turning grey, and Attendance Rate has a fixed colour.
+- **My Attendance → Total Late** column (late-in + early-out of the day) replaces Worked; Worked Time stays as a card and on the day details.
+- **Manager Dashboard**: "All my departments" is now "All Departments".
+
 ## [1.0.4] - 2026-11-18
 
 ### Added

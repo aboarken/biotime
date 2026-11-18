@@ -37,6 +37,19 @@
 /* Weekends: blue. Sky: Weekend Days Worked. Holidays are purple (bt-tone-purple). */
 .com-biotime .bt-tone-weekend { --bt-tone: #3b5998; --bt-tone-soft: #e6edf9; }
 .com-biotime .bt-tone-sky { --bt-tone: #0369a1; --bt-tone-soft: #dff3fc; }
+/* Card colours (1.0.5): every card has its own (Ui::cardTone()). */
+.com-biotime .bt-tone-ink { --bt-tone: #0f172a; --bt-tone-soft: #e2e8f0; }
+.com-biotime .bt-tone-orange { --bt-tone: #c2410c; --bt-tone-soft: #fff7ed; }
+.com-biotime .bt-tone-gold { --bt-tone: #a16207; --bt-tone-soft: #fefce8; }
+.com-biotime .bt-tone-cyan { --bt-tone: #0e7490; --bt-tone-soft: #ecfeff; }
+.com-biotime .bt-tone-lime { --bt-tone: #4d7c0f; --bt-tone-soft: #f7fee7; }
+.com-biotime .bt-tone-emerald { --bt-tone: #047857; --bt-tone-soft: #ecfdf5; }
+.com-biotime .bt-tone-indigo { --bt-tone: #4338ca; --bt-tone-soft: #eef2ff; }
+.com-biotime .bt-tone-rose { --bt-tone: #e11d48; --bt-tone-soft: #fff1f2; }
+.com-biotime .bt-tone-fuchsia { --bt-tone: #a21caf; --bt-tone-soft: #fdf4ff; }
+.com-biotime .bt-tone-crimson { --bt-tone: #881337; --bt-tone-soft: #fff1f2; }
+.com-biotime .bt-tone-brown { --bt-tone: #7c2d12; --bt-tone-soft: #fef2e8; }
+.com-biotime .bt-tone-stone { --bt-tone: #57534e; --bt-tone-soft: #f5f5f4; }
 
 /* Page heading row: title (and meta line) left, month navigation or action right */
 .com-biotime .bt-head {
