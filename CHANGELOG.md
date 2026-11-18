@@ -7,6 +7,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 
 ### Changed
 - **My Dashboard → Your Devices (was Devices You Used) lists every device the employee uses**: every device they have punched on and every device they are registered on in ZKBioTime (`iclock_transaction`, `iclock_terminalemployee` + `iclock_terminal`), with the month's fingerprint, face and total punches; a device not used in the month shows 0. With the API, as before (the month's devices).
+- **Schedules show only their times** (e.g. 07:30–15:30), without the timetable's name below them (e.g. "IN07:30-OUT15:30"), which repeated the same information; the name shows only when a day has no times.
 - **Monthly Overview without the Missing Morning Punch and Missing Afternoon Punch tiles**: their days count as Present in the tiles and the bar; the two cards above stay.
 
 ## [0.7.0] - 2026-11-18
