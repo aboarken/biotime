@@ -52,6 +52,11 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.13 – Chart names, cards, phones
+- [ ] My Dashboard: no *Statistics* heading; the charts are named Total Attendance, Attendance per Month, Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month (rates), Punches per Device.
+- [ ] My Dashboard cards have no line under the numbers and are as tall as on My Attendance.
+- [ ] On a phone (390 px) every chart's axis text is readable, month names do not overlap, and the monthly rate bars show the month above the bar.
+
 ### 1.0.12 – Statistics cards
 - [ ] My Dashboard: *Statistics* is a heading without a box around it; each chart (Days so far, Days per month, Late in and early out, Average check-in and check-out, Attendance rate per month, Your Devices) is its own card with its title in the header and a line under it; two cards per row on a wide screen, one on a phone.
 
