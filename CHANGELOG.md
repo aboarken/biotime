@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-11-18
+
+### Changed
+- **My Dashboard → Your Devices (was Devices You Used) lists every device the employee uses**: every device they have punched on and every device they are registered on in ZKBioTime (`iclock_transaction`, `iclock_terminalemployee` + `iclock_terminal`), with the month's fingerprint, face and total punches; a device not used in the month shows 0. With the API, as before (the month's devices).
+- **Schedules show only their times** (e.g. 07:30–15:30), without the timetable's name below them (e.g. "IN07:30-OUT15:30"), which repeated the same information; the name shows only when a day has no times.
+- **Monthly Overview without the Missing Morning Punch and Missing Afternoon Punch tiles**: their days count as Present in the tiles and the bar; the two cards above stay.
+- **No Missing Punch tag next to Present**: My Attendance, the day details, the calendar (tag, "!" marker and legend entry) no longer show it. A missing check-in or check-out still shows *Missing* in its column, and the Missing Morning Punch / Missing Afternoon Punch cards, filters and the Recent Activity note stay.
+- **My Attendance without the Punches column**: each day's punches (time, state, verification, device) are on the day details page, opened from the date.
+
 ## [0.7.0] - 2026-11-18
 
 Attendance from ZKBioTime's database, completed (0.5.0–0.6.3): schedules from the shifts, Late In and Early Out from ZKBioTime 9.5's pay codes, holidays, leave, missing morning and afternoon punches.

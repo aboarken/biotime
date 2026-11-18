@@ -25,4 +25,4 @@ if ($status === null) {
 
 $label = $f->status($day);
 ?>
-<span class="bt-badges"><span class="bt-badge bt-tone-<?php echo Ui::tone($status); ?>"><?php if (in_array($status, ['checked_in', 'checked_out'], true)) : ?><span aria-hidden="true"><?php echo Ui::symbol($status); ?></span><?php else : ?><span class="bt-dot" aria-hidden="true"></span><?php endif; ?><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></span><?php if (($displayData['tag'] ?? true) && $day->missingPunch()) : ?><span class="bt-badge bt-tone-amber"><span aria-hidden="true">!</span><?php echo \Joomla\CMS\Language\Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span><?php endif; ?></span>
+<span class="bt-badges"><span class="bt-badge bt-tone-<?php echo Ui::tone($status); ?>"><?php if (in_array($status, ['checked_in', 'checked_out'], true)) : ?><span aria-hidden="true"><?php echo Ui::symbol($status); ?></span><?php else : ?><span class="bt-dot" aria-hidden="true"></span><?php endif; ?><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></span></span>

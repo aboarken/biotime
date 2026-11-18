@@ -3,7 +3,7 @@
 
 Employees log in to Joomla and see their own attendance from ZKBioTime: each day's check-in and
 check-out (with the device and how they were verified), the time between them, and whether the
-day was Present (with a Missing Punch tag when one of the two is missing), Absent or a Weekend,
+day was Present, Absent or a Weekend,
 and how many times they punched by fingerprint and face, per month and per device.
 
 ZKBioTime is the single source of truth. Joomla only reads and displays: it never creates,
@@ -25,7 +25,7 @@ are respected.
 | Menu item type | What the user sees |
 |---|---|
 | **My Dashboard** | **Today**: check-in, check-out, the time between them and the status. The month's figures: days present (of the working days so far), days absent, missing-punch days, attendance rate, average check-in (and the earliest), average check-out (and the latest), average and total time between check-in and check-out, weekend days worked, punches; a Monthly Overview chart with the same figures as a table; the devices used most; Recent Activity (last 7 days, with the day name). Devices You Used shows each device used in the month with its fingerprint, face and total punches, and a total row. Every figure links to My Attendance with the matching filter. |
-| **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, the status and all punches of the day (time, state, verification, device, area). Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, exceptions, with or without punches) or a date. |
+| **My Attendance** | One row per day: date (link to the day's details), day, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), the time between them, and the status; the day's punches are on its details page. Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, exceptions, with or without punches) or a date. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
 
@@ -42,7 +42,7 @@ as an option is chosen. The component styles everything itself
 
 | Status | When |
 |---|---|
-| Present | any punch was recorded. When the check-in or the check-out is missing, the day is also tagged **Missing Punch** (and the missing time shows *Missing*); it counts as Present and as a Missing Punch day. |
+| Present | any punch was recorded. When the check-in or the check-out is missing, the missing time shows *Missing*; it counts as Present and as a missing morning or afternoon punch. |
 | Checked In / Checked Out | today, after the check-in (↘) / after the check-out (↗) |
 | Absent | a past working day without any punch |
 | Weekend | a weekend day without punches (Friday and Saturday by default, *Integration Settings → System → Weekend days*). A weekend day **with** a check-in or check-out loses the weekend tag and is shown like any other day. |
@@ -50,7 +50,7 @@ as an option is chosen. The component styles everything itself
 **Check-in** is the first punch **before 12:00** and **check-out** the last punch **from 12:00 on**,
 whatever state the device recorded (a morning "Check Out" punch is a check-in, an afternoon
 "Check In" punch a check-out). A day with punches only in the morning has no check-out, one with
-punches only in the afternoon has no check-in: both show *Missing* and the Missing Punch tag.
+punches only in the afternoon has no check-in: both show *Missing*.
 Today shows **Checked In** (↘) after the check-in and **Checked Out** (↗) after the check-out.
 
 **Dates** are shown as DD/MM/YYYY by default (*Integration Settings → System → Date format*), and

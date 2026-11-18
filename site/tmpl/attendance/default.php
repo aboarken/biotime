@@ -154,7 +154,6 @@ $cards = $calc ? [
                                 <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
                             <?php endif; ?>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_PUNCHES'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -182,20 +181,6 @@ $cards = $calc ? [
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
-                            </td>
-                            <td>
-                                <?php if ($day->punches === []) : ?>
-                                    <span class="bt-check-none">0</span>
-                                <?php else : ?>
-                                    <details class="bt-punches">
-                                        <summary><?php echo Text::plural('COM_BIOTIME_N_PUNCHES', count($day->punches)); ?></summary>
-                                        <ol>
-                                            <?php foreach ($day->punches as $p) : ?>
-                                                <li><?php echo $e(implode(' · ', array_filter([$f->time($p->time), $p->state, $p->verify, $p->device, $p->area]))); ?></li>
-                                            <?php endforeach; ?>
-                                        </ol>
-                                    </details>
-                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
