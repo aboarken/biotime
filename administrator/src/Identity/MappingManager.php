@@ -11,10 +11,8 @@ namespace BiotimePortal\Component\Biotime\Administrator\Identity;
 // phpcs:enable PSR1.Files.SideEffects
 
 
-use BiotimePortal\Component\Biotime\Administrator\Api\EmployeeDirectoryInterface;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 
 /**
  * Administrator operations on #__biotime_usermap. Every change is audited with the administrator
@@ -26,12 +24,12 @@ final class MappingManager
     private \Closure $clock;
 
     /**
-     * @param \Closure(): EmployeeDirectoryInterface $clientFactory
+     * @param \Closure(): EmployeeDirectoryInterface $directory
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      */
     public function __construct(
         private readonly UserMapRepositoryInterface $repository,
-        private readonly \Closure $clientFactory,
+        private readonly \Closure $directory,
         private readonly AuditLogInterface $audit,
         ?\Closure $clock = null
     ) {
@@ -43,7 +41,7 @@ final class MappingManager
      *
      * @return array<string, mixed> The employee record (to confirm the name to the administrator)
      *
-     * @throws MappingException|ZkbException
+     * @throws MappingException|SourceException
      */
     public function assign(int $joomlaUserId, string $joomlaEmail, string $empCode, int $actorId): array
     {
@@ -54,13 +52,13 @@ final class MappingManager
         $empCode = trim($empCode);
 
         try {
-            ZkbClient::empCode($empCode);
+            EmployeeKeys::code($empCode);
         } catch (\InvalidArgumentException) {
             throw new MappingException('COM_BIOTIME_MAPPING_ERR_CODE');
         }
 
         $exact = array_values(array_filter(
-            ($this->clientFactory)()->employeesByCode($empCode),
+            ($this->directory)()->employeesByCode($empCode),
             static fn (array $e): bool => (string) ($e['emp_code'] ?? '') === $empCode
         ));
 
@@ -76,9 +74,9 @@ final class MappingManager
         $employeeId = (string) ($employee['id'] ?? '');
 
         try {
-            ZkbClient::id($employeeId);
+            EmployeeKeys::id($employeeId);
         } catch (\InvalidArgumentException) {
-            throw new ZkbException(ZkbException::BAD_RESPONSE, 'Employee without a valid id');
+            throw new SourceException(SourceException::BAD_RESPONSE, 'Employee without a valid id');
         }
 
         $owner = $this->repository->findByEmployeeId($employeeId);
@@ -113,7 +111,7 @@ final class MappingManager
      *
      * @return array<string, mixed>
      *
-     * @throws MappingException|ZkbException
+     * @throws MappingException|SourceException
      */
     public function confirm(int $joomlaUserId, string $joomlaEmail, int $actorId): array
     {

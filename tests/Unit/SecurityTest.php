@@ -20,13 +20,13 @@ final class SecurityTest extends TestCase
     public function testEncryptionRoundTripUsesAes256GcmWithRandomNonce(): void
     {
         $vault = new KeyVault(self::SECRET);
-        $a     = $vault->encrypt('p4ss', KeyVault::CONTEXT_PASSWORD);
-        $b     = $vault->encrypt('p4ss', KeyVault::CONTEXT_PASSWORD);
+        $a     = $vault->encrypt('p4ss', KeyVault::CONTEXT_DB_PASSWORD);
+        $b     = $vault->encrypt('p4ss', KeyVault::CONTEXT_DB_PASSWORD);
 
         self::assertStringStartsWith('v1:', $a);
         self::assertNotSame($a, $b, 'a fresh nonce for every encryption');
         self::assertStringNotContainsString('p4ss', $a);
-        self::assertSame('p4ss', $vault->decrypt($a, KeyVault::CONTEXT_PASSWORD));
+        self::assertSame('p4ss', $vault->decrypt($a, KeyVault::CONTEXT_DB_PASSWORD));
     }
 
     public function testCiphertextIsBoundToItsContext(): void
@@ -34,18 +34,18 @@ final class SecurityTest extends TestCase
         $vault = new KeyVault(self::SECRET);
 
         $this->expectException(KeyVaultException::class);
-        $vault->decrypt($vault->encrypt('p4ss', KeyVault::CONTEXT_PASSWORD), KeyVault::CONTEXT_STATIC_TOKEN);
+        $vault->decrypt($vault->encrypt('p4ss', KeyVault::CONTEXT_DB_PASSWORD), 'another-context');
     }
 
     public function testOtherSecretOrTamperingFails(): void
     {
-        $cipher = (new KeyVault(self::SECRET))->encrypt('p4ss', KeyVault::CONTEXT_PASSWORD);
+        $cipher = (new KeyVault(self::SECRET))->encrypt('p4ss', KeyVault::CONTEXT_DB_PASSWORD);
 
         foreach ([
-            fn () => (new KeyVault('another-secret-of-enough-length'))->decrypt($cipher, KeyVault::CONTEXT_PASSWORD),
-            fn () => (new KeyVault(self::SECRET))->decrypt(substr($cipher, 0, -4) . 'AAAA', KeyVault::CONTEXT_PASSWORD),
-            fn () => (new KeyVault(self::SECRET))->decrypt('v0:' . substr($cipher, 3), KeyVault::CONTEXT_PASSWORD),
-            fn () => (new KeyVault(self::SECRET))->decrypt('v1:short', KeyVault::CONTEXT_PASSWORD),
+            fn () => (new KeyVault('another-secret-of-enough-length'))->decrypt($cipher, KeyVault::CONTEXT_DB_PASSWORD),
+            fn () => (new KeyVault(self::SECRET))->decrypt(substr($cipher, 0, -4) . 'AAAA', KeyVault::CONTEXT_DB_PASSWORD),
+            fn () => (new KeyVault(self::SECRET))->decrypt('v0:' . substr($cipher, 3), KeyVault::CONTEXT_DB_PASSWORD),
+            fn () => (new KeyVault(self::SECRET))->decrypt('v1:short', KeyVault::CONTEXT_DB_PASSWORD),
             fn () => new KeyVault('short'),
         ] as $attempt) {
             try {

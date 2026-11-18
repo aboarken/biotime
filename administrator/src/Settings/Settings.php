@@ -10,8 +10,6 @@ namespace BiotimePortal\Component\Biotime\Administrator\Settings;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
@@ -22,12 +20,10 @@ use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
  * Immutable view of the settings stored in #__biotime_settings (name/value rows).
  *
  * Settings live in the component's own table, not in com_config params: com_config replaces all
- * params on save, and the password and token must be encrypted before they are stored.
+ * params on save, and the database password must be encrypted before it is stored.
  */
 final class Settings
 {
-    public const DEFAULT_PAGE_SIZE     = 100;
-    public const DEFAULT_MAX_PAGES     = 50;
     public const DEFAULT_CACHE_MINUTES = 5;
     public const MAX_CACHE_MINUTES     = 60;
 
@@ -35,20 +31,9 @@ final class Settings
     public const TIME_FORMATS = ['H:i', 'H:i:s', 'h:i A'];
 
     public const DEFAULTS = [
-        // Connection. The port is part of the server URL (https://host:5555).
-        'server_url'       => '',
-        // Read only: port of versions before 0.2.0, merged into the server URL until saved.
-        'server_port'      => '',
-        'auth_method'      => Credentials::METHOD_JWT,
-        'api_username'     => '',
-        'api_password_enc' => '',
-        'api_token_enc'    => '',
+        // Database connection and query timeouts (seconds)
         'connect_timeout'  => '5',
         'timeout'          => '30',
-        'verify_tls'       => '1',
-        'ca_bundle'        => '',
-        'tls_pin'          => '',
-        'connect_via'      => '',
         // Employee mapping: the Joomla custom user field holding emp_code, then e-mail as fallback
         'match_field'      => 'employeeid',
         'auto_match'       => '1',
@@ -56,17 +41,7 @@ final class Settings
         'module_charts'    => '1',
         // Weekend days, ISO weekdays (1 = Monday … 7 = Sunday), comma-separated: Friday and Saturday
         'weekend_days'     => '5,6',
-        // Calculated daily attendance and schedules: a read-only ZKBioTime endpoint or saved report
-        'daily_path'          => '',
-        'daily_param_emp'     => 'emp_code',
-        'daily_param_from'    => 'start_date',
-        'daily_param_to'      => 'end_date',
-        'daily_date_format'   => 'Y-m-d',
-        'daily_extra'         => '',
-        'daily_fields'        => '',
-        'daily_duration_unit' => 'minutes',
-        'daily_status_map'    => '',
-        // Direct read from ZKBioTime's own database (0.5.0); '' = not used
+        // ZKBioTime's own database (0.5.0), read by every portal page (0.11.0); '' = not set up
         'db_engine'        => '',
         'db_host'          => '',
         'db_port'          => '7496',
@@ -77,25 +52,18 @@ final class Settings
         'db_password_enc'  => '',
         'db_ssl'           => 'verify',
         'db_ca'            => '',
-        // Where the portal pages read attendance: 'api' or 'database' (0.6.0)
-        'data_source'      => 'api',
         // Unit of ZKBioTime's duration columns: auto, minutes or seconds
         'db_duration_unit' => 'auto',
         // System
         'detailed_log'     => '1',
         'cache_minutes'    => '5',
-        'page_size'        => '100',
-        'max_pages'        => '50',
         'date_format'      => 'd/m/Y',
         'time_format'      => 'H:i',
         'server_timezone'  => '',
-        // Internal: the cached API token (encrypted) and when to renew it. Never in the form.
-        'token_cache_enc'      => '',
-        'token_cache_renew_at' => '',
     ];
 
     /** Names never sent to the browser. */
-    public const SECRET_NAMES = ['api_password_enc', 'api_token_enc', 'token_cache_enc', 'token_cache_renew_at', 'db_password_enc'];
+    public const SECRET_NAMES = ['db_password_enc'];
 
     /** @param array<string, string> $values */
     public function __construct(private readonly array $values = [])
@@ -107,74 +75,6 @@ final class Settings
         return $this->values[$name] ?? self::DEFAULTS[$name] ?? '';
     }
 
-    /**
-     * The server URL including its port. A port stored separately by an older version is merged
-     * in, so existing sites keep working until the settings are saved again.
-     */
-    public function serverUrl(): string
-    {
-        $url  = $this->get('server_url');
-        $port = (int) $this->get('server_port');
-
-        if ($url === '' || $port < 1 || $port > 65535 || parse_url($url, PHP_URL_PORT) !== null) {
-            return $url;
-        }
-
-        $parts = parse_url($url);
-
-        if (!\is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
-            return $url;
-        }
-
-        $default = strtolower($parts['scheme']) === 'https' ? 443 : 80;
-
-        return $parts['scheme'] . '://' . $parts['host'] . ($port !== $default ? ':' . $port : '') . ($parts['path'] ?? '');
-    }
-
-    public function authMethod(): string
-    {
-        $method = $this->get('auth_method');
-
-        return \in_array($method, Credentials::METHODS, true) ? $method : Credentials::METHOD_JWT;
-    }
-
-    public function username(): string
-    {
-        return $this->get('api_username');
-    }
-
-    public function passwordCiphertext(): string
-    {
-        return $this->get('api_password_enc');
-    }
-
-    public function hasPassword(): bool
-    {
-        return $this->passwordCiphertext() !== '';
-    }
-
-    public function staticTokenCiphertext(): string
-    {
-        return $this->get('api_token_enc');
-    }
-
-    public function hasStaticToken(): bool
-    {
-        return $this->staticTokenCiphertext() !== '';
-    }
-
-    /** Whether enough is stored to try a connection. */
-    public function isConfigured(): bool
-    {
-        if ($this->serverUrl() === '') {
-            return false;
-        }
-
-        $login = $this->username() !== '' && $this->hasPassword();
-
-        return $this->authMethod() === Credentials::METHOD_JWT ? $login : ($this->hasStaticToken() || $login);
-    }
-
     public function connectTimeout(): int
     {
         return max(1, min(60, $this->timeout(), (int) $this->get('connect_timeout')));
@@ -183,27 +83,6 @@ final class Settings
     public function timeout(): int
     {
         return max(1, min(300, (int) $this->get('timeout')));
-    }
-
-    public function verifyTls(): bool
-    {
-        return $this->get('verify_tls') !== '0';
-    }
-
-    public function caBundle(): string
-    {
-        return $this->get('ca_bundle');
-    }
-
-    public function tlsPin(): string
-    {
-        return $this->get('tls_pin');
-    }
-
-    /** "host", "host:port" or "IP:port" to connect to instead of the server URL's host; '' = direct. */
-    public function connectVia(): string
-    {
-        return $this->get('connect_via');
     }
 
     /** Name of the Joomla custom user field that holds the employee code; '' = not used. */
@@ -223,16 +102,6 @@ final class Settings
     public function moduleEnabled(string $module): bool
     {
         return $this->get('module_' . $module) !== '0';
-    }
-
-    /**
-     * Where calculated daily attendance is read, as configured by the administrator.
-     *
-     * @param 'daily' $kind
-     */
-    public function source(string $kind): SourceConfig
-    {
-        return SourceConfig::fromSettings($this, $kind);
     }
 
     /** Database engine of the direct read: DbConfig::ENGINE_*, or '' when not used. */
@@ -260,10 +129,13 @@ final class Settings
         return [$via, 0];
     }
 
-    /** Pages read attendance from the database (PostgreSQL only), not the API. */
+    /**
+     * The portal pages can read the database: they need PostgreSQL (the queries are written for
+     * it; SQL Server is only checked by Test Database).
+     */
     public function readsDatabase(): bool
     {
-        return $this->get('data_source') === 'database' && $this->dbEngine() === DbConfig::ENGINE_PGSQL;
+        return $this->dbEngine() === DbConfig::ENGINE_PGSQL;
     }
 
     public function dbDurationUnit(): string
@@ -306,16 +178,6 @@ final class Settings
         } catch (KeyVaultException | \InvalidArgumentException $e) {
             throw new DbException(DbException::NOT_CONFIGURED, 'Database settings are incomplete or cannot be decrypted', '', $e);
         }
-    }
-
-    public function pageSize(): int
-    {
-        return max(1, min(1000, (int) $this->get('page_size') ?: self::DEFAULT_PAGE_SIZE));
-    }
-
-    public function maxPages(): int
-    {
-        return max(1, min(1000, (int) $this->get('max_pages') ?: self::DEFAULT_MAX_PAGES));
     }
 
     public function detailedLog(): bool
@@ -393,13 +255,8 @@ final class Settings
         return $days;
     }
 
-    public function isHttps(): bool
-    {
-        return str_starts_with(strtolower($this->serverUrl()), 'https://');
-    }
-
     /**
-     * Values safe to show in the form: no ciphertext, no cached token, the port inside the URL.
+     * Values safe to show in the form: no ciphertext.
      *
      * @return array<string, string>
      */
@@ -411,9 +268,6 @@ final class Settings
             unset($data[$name]);
         }
 
-        $data['server_url'] = $this->serverUrl();
-        unset($data['server_port']);
-
         // Host and port are one field in the form, as the server URL.
         $data['db_server'] = $this->get('db_host') !== '' ? DbConfig::formatAddress($this->get('db_host'), (int) $this->get('db_port')) : '';
         unset($data['db_host'], $data['db_port']);
@@ -424,9 +278,7 @@ final class Settings
     public function __debugInfo(): array
     {
         return $this->toFormData() + [
-            'api_password_enc' => $this->hasPassword() ? '[set]' : '',
-            'api_token_enc'    => $this->hasStaticToken() ? '[set]' : '',
-            'db_password_enc'  => $this->hasDbPassword() ? '[set]' : '',
+            'db_password_enc' => $this->hasDbPassword() ? '[set]' : '',
         ];
     }
 }

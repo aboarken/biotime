@@ -16,10 +16,8 @@ $f       = $this->f;
 $s       = $this->summary;
 $e       = fn (string $text): string => $this->escape($text);
 $check   = fn ($day, string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => $type, 'device' => true]);
+// Each day carries ZKBioTime's schedule, late-in, early-out and worked time (0.6.0).
 $min     = fn (?int $minutes): string => LayoutHelper::render('biotime.minutes', ['minutes' => $minutes, 'f' => $f]);
-// Read from ZKBioTime's database: each day also carries ZKBioTime's schedule, late-in,
-// early-out and worked time (0.6.0).
-$calc    = $this->period->calculated;
 $filters = [
     ''              => Text::_('COM_BIOTIME_FILTER_ALL'),
     'attended'      => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
@@ -30,11 +28,9 @@ $filters = [
     'absent'        => Text::_('COM_BIOTIME_STATUS_ABSENT'),
     'weekend'       => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
     'weekendworked' => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
-] + ($calc ? [
     'late'          => Text::_('COM_BIOTIME_FILTER_LATE'),
     'early'         => Text::_('COM_BIOTIME_FILTER_EARLY'),
     'holiday'       => Text::_('COM_BIOTIME_STATUS_HOLIDAY'),
-] : []) + [
     'exceptions'    => Text::_('COM_BIOTIME_FILTER_EXCEPTIONS'),
     'punches'       => Text::_('COM_BIOTIME_FILTER_PUNCHES'),
     'nopunches'     => Text::_('COM_BIOTIME_FILTER_NO_PUNCHES'),
@@ -71,7 +67,7 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
 // The first card, All Days, clears the status filter ('*'); a card with a filter shows only the
 // matching days and jumps down to them (#bt-records, 0.11.0).
 $allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) \count(array_filter($this->period->days, fn ($d): bool => $d->date <= $this->period->today)), 'slate', '*'];
-$cards = $calc ? [
+$cards = [
     $allDays,
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
@@ -86,17 +82,6 @@ $cards = $calc ? [
     [Text::_('COM_BIOTIME_CARD_OVERTIME'), $e($f->duration($s->overtimeMinutes)), Ui::countTone($s->overtimeMinutes, 'teal'), ''],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', ''],
     [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', ''],
-    [Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::countTone($s->punchCount, 'blue'), 'punches'],
-] : [
-    $allDays,
-    [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
-    [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
-    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'sky'), 'weekendworked'],
-    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', ''],
-    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', ''],
-    [Text::_('COM_BIOTIME_CARD_TOTAL_SPAN_SHORT'), $e($f->duration($s->spanMinutes)), 'slate', ''],
     [Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::countTone($s->punchCount, 'blue'), 'punches'],
 ];
 ?>
@@ -153,16 +138,12 @@ $cards = $calc ? [
                     <thead>
                         <tr>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DATE'); ?></th>
-                            <?php if ($calc) : ?><th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></th><?php endif; ?>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SCHEDULE'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_IN'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
-                            <?php if ($calc) : ?>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_WORKED'); ?></th>
-                            <?php else : ?>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_SPAN'); ?></th>
-                            <?php endif; ?>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_WORKED'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
                         </tr>
                     </thead>
@@ -171,22 +152,18 @@ $cards = $calc ? [
                         <tr class="<?php echo $day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ''); ?><?php echo $day->date === $this->period->today ? ' bt-row-today' : ''; ?>">
                             <th scope="row"><a href="<?php echo $this->url('view=day&date=' . $day->date); ?>"><?php echo $e($f->date($day->date)); ?></a>
                                 <span class="bt-sub"><?php echo $e($f->weekday($day->weekday())); ?></span></th>
-                            <?php if ($calc) : ?><td><?php echo LayoutHelper::render('biotime.schedule', ['day' => $day, 'f' => $f]); ?></td><?php endif; ?>
+                            <td><?php echo LayoutHelper::render('biotime.schedule', ['day' => $day, 'f' => $f]); ?></td>
                             <td><?php echo $check($day, 'in'); ?></td>
                             <td><?php echo $check($day, 'out'); ?></td>
-                            <?php if ($calc) : ?>
-                                <td><?php echo $min($day->late); ?></td>
-                                <td><?php echo $min($day->early); ?></td>
-                                <td><?php echo $day->worked !== null && $day->worked > 0 ? $e($f->duration($day->worked)) : '<span class="bt-check-none">—</span>'; ?></td>
-                            <?php else : ?>
-                                <td><?php echo $e($f->duration($day->span())); ?></td>
-                            <?php endif; ?>
+                            <td><?php echo $min($day->late); ?></td>
+                            <td><?php echo $min($day->early); ?></td>
+                            <td><?php echo $day->worked !== null && $day->worked > 0 ? $e($f->duration($day->worked)) : '<span class="bt-check-none">—</span>'; ?></td>
                             <td>
                                 <div class="bt-badges">
                                     <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
                                     <?php foreach ($day->exceptions as $ex) : ?>
-                                        <?php // Late and early have their own columns when read from the database. ?>
-                                        <?php if (!in_array($ex, $calc ? ['missing_check_in', 'missing_check_out', 'late', 'early'] : ['missing_check_in', 'missing_check_out'], true)) : ?>
+                                        <?php // Late and early have their own columns. ?>
+                                        <?php if (!in_array($ex, ['missing_check_in', 'missing_check_out', 'late', 'early'], true)) : ?>
                                             <span class="bt-badge bt-badge--outline bt-tone-amber"><?php echo $e($f->exception($ex)); ?></span>
                                         <?php endif; ?>
                                     <?php endforeach; ?>

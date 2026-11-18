@@ -20,8 +20,9 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
 use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
-use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
+use BiotimePortal\Component\Biotime\Administrator\Security\SecretProvider;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 /**
@@ -39,9 +40,17 @@ final class BiotimeComponent extends MVCComponent implements RouterServiceInterf
         $this->services = $services;
     }
 
-    public function getClientFactory(): ZkbClientFactory
+    /**
+     * @throws \BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException without a usable secret
+     */
+    public function getKeyVault(): KeyVault
     {
-        return $this->service(ZkbClientFactory::class);
+        return $this->service(KeyVault::class);
+    }
+
+    public function getSecretProvider(): SecretProvider
+    {
+        return $this->service(SecretProvider::class);
     }
 
     public function getSettingsRepository(): SettingsRepository

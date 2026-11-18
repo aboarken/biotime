@@ -10,7 +10,7 @@ namespace BiotimePortal\Component\Biotime\Site\Controller;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 use Joomla\CMS\Access\Exception\NotAllowed;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
@@ -68,7 +68,7 @@ final class DisplayController extends BaseController
 
         try {
             $identity = $this->currentIdentity();
-        } catch (ZkbException $e) {
+        } catch (SourceException $e) {
             $this->input->set('view', 'unmatched');
             $this->input->set('layout', 'unavailable');
             $this->input->set('kind', $e->getKind());

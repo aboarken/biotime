@@ -13,7 +13,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Audit;
 use Joomla\Database\DatabaseInterface;
 use Joomla\Database\ParameterType;
 use Psr\Log\LoggerInterface;
-use BiotimePortal\Component\Biotime\Administrator\Api\Redactor;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 
 final class DbAuditLog implements AuditLogInterface, AuditCounterInterface
 {
@@ -32,7 +32,8 @@ final class DbAuditLog implements AuditLogInterface, AuditCounterInterface
             'actor_id' => max(0, $actorId),
             'action'   => substr(preg_replace('/[^a-z0-9_.]/', '', $action) ?? '', 0, 50),
             'result'   => substr($result, 0, 20),
-            'detail'   => Redactor::scrub($detail, [], 250),
+            // One line, no markup, anything that looks like a password removed.
+            'detail'   => mb_substr(DbException::clean(strip_tags($detail)), 0, 250),
             'created'  => gmdate('Y-m-d H:i:s'),
         ];
 

@@ -25,6 +25,7 @@ use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbEmployeeDirectory;
+use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Administrator\Database\Query;
 use BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent;
 use BiotimePortal\Component\Biotime\Administrator\Identity\DbUserFieldReader;
@@ -33,9 +34,10 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\IdentityResolver;
 use BiotimePortal\Component\Biotime\Administrator\Identity\MappingManager;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapRepositoryInterface;
 use BiotimePortal\Component\Biotime\Administrator\Log\JoomlaLogger;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
+use BiotimePortal\Component\Biotime\Administrator\Security\KeyVaultException;
 use BiotimePortal\Component\Biotime\Administrator\Security\RateLimiter;
 use BiotimePortal\Component\Biotime\Administrator\Security\SecretProvider;
-use BiotimePortal\Component\Biotime\Administrator\Service\ZkbClientFactory;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsRepository;
 
 return new class () implements ServiceProviderInterface {
@@ -64,13 +66,10 @@ return new class () implements ServiceProviderInterface {
             static fn (): SecretProvider => new SecretProvider((string) Factory::getApplication()->get('secret', ''))
         );
 
+        // Encrypts the database password at rest; throws KeyVaultException without a usable secret.
         $container->share(
-            ZkbClientFactory::class,
-            static fn (Container $c): ZkbClientFactory => new ZkbClientFactory(
-                $c->get(SettingsRepository::class),
-                $c->get(SecretProvider::class),
-                $c->get(JoomlaLogger::class)
-            )
+            KeyVault::class,
+            static fn (Container $c): KeyVault => new KeyVault($c->get(SecretProvider::class)->getSecret())
         );
 
         $container->share(
@@ -81,26 +80,33 @@ return new class () implements ServiceProviderInterface {
 
         $container->share(RateLimiter::class, static fn (Container $c): RateLimiter => new RateLimiter($c->get(DbAuditLog::class)));
 
-        $client = static fn (Container $c): \Closure => static fn () => $c->get(ZkbClientFactory::class)->create();
-
         // One read-only connection to ZKBioTime's database per page load, opened when first needed
-        // (attendance and employee lookups share it).
+        // (attendance and employee lookups share it). The pages need PostgreSQL.
         $container->share(
             Query::class,
-            static fn (Container $c): Query => (new DbConnector())->connect(
-                $c->get(SettingsRepository::class)->load()->dbConfig($c->get(ZkbClientFactory::class)->vault())
-            )
+            static function (Container $c): Query {
+                $settings = $c->get(SettingsRepository::class)->load();
+
+                if (!$settings->readsDatabase()) {
+                    throw new DbException(DbException::NOT_CONFIGURED, 'The PostgreSQL connection to ZKBioTime\'s database is not set up');
+                }
+
+                try {
+                    $vault = $c->get(KeyVault::class);
+                } catch (KeyVaultException $e) {
+                    throw new DbException(DbException::NOT_CONFIGURED, 'No encryption secret for the database password', '', $e);
+                }
+
+                return (new DbConnector())->connect($settings->dbConfig($vault));
+            }
         );
 
-        // Employees for matching Joomla users: from the database when the pages read it (0.6.1),
-        // else from the API. The ids are the same in both, so mappings stay valid either way.
+        // Employees for matching Joomla users, from the database (0.6.1).
         $container->share(
             DbEmployeeDirectory::class,
             static fn (Container $c): DbEmployeeDirectory => new DbEmployeeDirectory(static fn (): Query => $c->get(Query::class))
         );
-        $directory = static fn (Container $c): \Closure => $c->get(SettingsRepository::class)->load()->readsDatabase()
-            ? static fn () => $c->get(DbEmployeeDirectory::class)
-            : $client($c);
+        $directory = static fn (Container $c): \Closure => static fn (): DbEmployeeDirectory => $c->get(DbEmployeeDirectory::class);
 
         $container->share(
             UserMapRepositoryInterface::class,
@@ -153,33 +159,28 @@ return new class () implements ServiceProviderInterface {
 
         $container->share(
             AttendanceService::class,
-            static function (Container $c) use ($client, $zone): AttendanceService {
+            static function (Container $c) use ($zone): AttendanceService {
                 $settings = $c->get(SettingsRepository::class)->load();
                 $zoneName = $zone($c)->getName();
-                $database = null;
 
                 // Attendance from ZKBioTime's database (0.6.0): one reader, and at most one
                 // connection, per page load.
-                if ($settings->readsDatabase()) {
-                    $reader   = null;
-                    $database = static function () use (&$reader, $c, $settings, $zoneName): AttendanceReader {
-                        return $reader ??= new AttendanceReader(
-                            static fn (): Query => $c->get(Query::class),
-                            \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
-                            $settings->dbDurationUnit()
-                        );
-                    };
-                }
+                $reader   = null;
+                $database = static function () use (&$reader, $c, $settings, $zoneName): AttendanceReader {
+                    return $reader ??= new AttendanceReader(
+                        static fn (): Query => $c->get(Query::class),
+                        \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
+                        $settings->dbDurationUnit()
+                    );
+                };
 
                 return new AttendanceService(
-                    $client($c),
-                    $settings->source('daily'),
+                    $database,
                     $c->get(UserCacheInterface::class),
                     $c->get(JoomlaLogger::class),
                     $zone($c),
                     null,
-                    $settings->weekendDays(),
-                    $database
+                    $settings->weekendDays()
                 );
             }
         );

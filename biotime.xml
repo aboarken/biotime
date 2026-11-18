@@ -59,7 +59,6 @@
         <submenu>
             <menu link="option=com_biotime&amp;view=integrationsettings">COM_BIOTIME_SUBMENU_SETTINGS</menu>
             <menu link="option=com_biotime&amp;view=usermappings">COM_BIOTIME_SUBMENU_MAPPINGS</menu>
-            <menu link="option=com_biotime&amp;view=endpoints">COM_BIOTIME_SUBMENU_ENDPOINTS</menu>
         </submenu>
         <files folder="administrator">
             <filename>access.xml</filename>

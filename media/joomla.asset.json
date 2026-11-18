@@ -16,14 +16,6 @@
       "uri": "com_biotime/portal.css"
     },
     {
-      "name": "com_biotime.admin",
-      "type": "script",
-      "uri": "com_biotime/admin.js",
-      "attributes": {
-        "defer": true
-      }
-    },
-    {
       "name": "com_biotime.filters",
       "type": "script",
       "uri": "com_biotime/filters.js",

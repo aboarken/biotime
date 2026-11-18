@@ -11,7 +11,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Security;
 // phpcs:enable PSR1.Files.SideEffects
 
 /**
- * Encrypts the API password, the General Auth Token and the cached API token at rest with AES-256-GCM.
+ * Encrypts the ZKBioTime database password at rest with AES-256-GCM.
  *
  * The encryption key is derived (HKDF-SHA256) from a master secret that never lives in the
  * database (see SecretProvider). Each ciphertext is bound to a context string through GCM
@@ -21,10 +21,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Security;
  */
 final class KeyVault
 {
-    public const CONTEXT_PASSWORD     = 'api-password';
-    public const CONTEXT_STATIC_TOKEN = 'api-static-token';
-    public const CONTEXT_TOKEN_CACHE  = 'api-token-cache';
-    public const CONTEXT_DB_PASSWORD  = 'db-password';
+    public const CONTEXT_DB_PASSWORD = 'db-password';
 
     private const VERSION = 'v1';
     private const CIPHER  = 'aes-256-gcm';

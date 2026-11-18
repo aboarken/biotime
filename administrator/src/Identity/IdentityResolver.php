@@ -11,10 +11,8 @@ namespace BiotimePortal\Component\Biotime\Administrator\Identity;
 // phpcs:enable PSR1.Files.SideEffects
 
 
-use BiotimePortal\Component\Biotime\Administrator\Api\EmployeeDirectoryInterface;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbException;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -25,8 +23,8 @@ use Psr\Log\LoggerInterface;
  *    equal exactly one employee's emp_code. When the field is set but no employee has that code,
  *    the user is "not found": e-mail is NOT tried, so a wrong code never maps someone else.
  *  - When the field is empty and e-mail matching is enabled, e-mail addresses are compared exactly
- *    after trim + lowercase over every employee the API user may read; list filters are not
- *    trusted, since they may return partial matches.
+ *    after trim + lowercase over every employee in ZKBioTime's database; the code lookup is
+ *    not trusted either: emp_code is always compared exactly.
  *  - Exactly one match maps the user. None is "not found", several are "ambiguous"; both are
  *    retried at most every RECHECK_SECONDS, and an administrator can map by employee code.
  *  - One employee can only be mapped to one Joomla user; a second user becomes "ambiguous".
@@ -51,12 +49,12 @@ final class IdentityResolver
     private \Closure $clock;
 
     /**
-     * @param \Closure(): EmployeeDirectoryInterface $clientFactory  Lazy: active mappings need no API call
+     * @param \Closure(): EmployeeDirectoryInterface $directory  Lazy: active mappings need no lookup
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      */
     public function __construct(
         private readonly UserMapRepositoryInterface $repository,
-        private readonly \Closure $clientFactory,
+        private readonly \Closure $directory,
         private readonly AuditLogInterface $audit,
         private readonly LoggerInterface $logger,
         private readonly bool $autoMatch = true,
@@ -67,7 +65,7 @@ final class IdentityResolver
     }
 
     /**
-     * @throws ZkbException when ZKBioTime must be asked and cannot answer (nothing is stored then)
+     * @throws SourceException when ZKBioTime must be asked and cannot answer (nothing is stored then)
      */
     public function resolve(int $joomlaUserId, string $joomlaEmail): Identity
     {
@@ -142,14 +140,14 @@ final class IdentityResolver
     private function lookupCode(int $userId, string $email, string $code, \DateTimeImmutable $now): Identity
     {
         try {
-            ZkbClient::empCode($code);
+            EmployeeKeys::code($code);
         } catch (\InvalidArgumentException) {
             return $this->storeNotMatched($userId, $email, UserMapping::STATUS_NOT_FOUND, $now, 'invalid_employee_field');
         }
 
         $matches = [];
 
-        foreach ($this->client()->employeesByCode($code) as $employee) {
+        foreach ($this->directory()->employeesByCode($code) as $employee) {
             $id = (string) ($employee['id'] ?? '');
 
             if ((string) ($employee['emp_code'] ?? '') === $code && preg_match('/^[1-9][0-9]{0,19}$/', $id)) {
@@ -174,10 +172,9 @@ final class IdentityResolver
             return $this->storeNotMatched($userId, $email, UserMapping::STATUS_NOT_FOUND, $now, 'invalid_email');
         }
 
-        $result  = $this->client()->allEmployees();
         $matches = [];
 
-        foreach ($result->items as $employee) {
+        foreach ($this->directory()->allEmployees() as $employee) {
             if (EmailNormalizer::normalize(\is_string($employee['email'] ?? null) ? $employee['email'] : '') !== $email) {
                 continue;
             }
@@ -191,10 +188,6 @@ final class IdentityResolver
         }
 
         if ($matches === []) {
-            if ($result->truncated) {
-                $this->logger->warning(\sprintf('Employee matching for Joomla user %d read only part of the employee list (safety maximum); raise it in Integration Settings', $userId));
-            }
-
             return $this->storeNotMatched($userId, $email, UserMapping::STATUS_NOT_FOUND, $now, 'no_employee_with_email');
         }
 
@@ -239,9 +232,9 @@ final class IdentityResolver
         $userId = $mapping->joomlaUserId;
 
         try {
-            $employee = $this->client()->employee((string) $mapping->employeeId);
-        } catch (ZkbException $e) {
-            if ($e->getKind() === ZkbException::NOT_FOUND) {
+            $employee = $this->directory()->employee((string) $mapping->employeeId);
+        } catch (SourceException $e) {
+            if ($e->getKind() === SourceException::NOT_FOUND) {
                 $this->suspend($mapping, $now, 'employee_not_found');
 
                 return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
@@ -295,8 +288,8 @@ final class IdentityResolver
         return $now->getTimestamp() - $mapping->checkedAt->getTimestamp();
     }
 
-    private function client(): EmployeeDirectoryInterface
+    private function directory(): EmployeeDirectoryInterface
     {
-        return ($this->clientFactory)();
+        return ($this->directory)();
     }
 }

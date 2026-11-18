@@ -2,7 +2,7 @@
 <!--
     Only permissions live here. Connection and module settings are stored in #__biotime_settings
     through Integration Settings, because com_config replaces all component params on save and the
-    password and token must be encrypted before they are stored.
+    database password must be encrypted before it is stored.
 -->
 <config>
     <fieldset name="permissions" label="JCONFIG_PERMISSIONS_LABEL" description="JCONFIG_PERMISSIONS_DESC">

@@ -78,7 +78,7 @@ final class HtmlView extends BaseHtmlView
 
         $this->profile = $model->attendance()->profile($model->identity());
         $this->devices = \BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats::withDevices($this->period->days, $model->attendance()->devices($model->identity()));
-        // The name from ZKBioTime; with the API, the Joomla user's name.
+        // The name from ZKBioTime; when it cannot be read, the Joomla user's name.
         $f = $model->formatter();
         $this->profileRow = array_values(array_filter([
             ['COM_BIOTIME_PROFILE_DEPARTMENT', $this->profile['department'] ?? null],

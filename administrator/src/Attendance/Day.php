@@ -15,7 +15,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Attendance;
  * One calendar day of one employee: the punches, check-in and check-out, the day's status and
  * read-only exceptions. Values ZKBioTime did not provide are null and shown as "—".
  *
- * Status: ZKBioTime's calculated status when a daily source is configured; otherwise the portal
+ * Status: holiday, leave (other) or day off (rest) as ZKBioTime calculated it; otherwise the portal
  * tells it from the punches (see AttendanceService::dayStatus()): present (any punch; with the
  * "Missing Punch" tag when the check-in or check-out is missing, see missingPunch()), checked in
  * (today), absent (a past working day without any punch) or weekend (a weekend day without
@@ -28,8 +28,8 @@ final class Day
     public const STATUS_CHECKED_IN = 'checked_in';
     public const STATUS_CHECKED_OUT = 'checked_out';
 
-    /** Every status a day can have (ZKBioTime's mapped statuses plus the portal's own). */
-    public const STATUSES = [...SourceConfig::DAILY_STATUSES, self::STATUS_WEEKEND, self::STATUS_CHECKED_IN, self::STATUS_CHECKED_OUT];
+    /** Every status a day can have (ZKBioTime's statuses plus the portal's own). */
+    public const STATUSES = ['present', 'late', 'early', 'absent', 'holiday', 'rest', 'incomplete', 'other', self::STATUS_WEEKEND, self::STATUS_CHECKED_IN, self::STATUS_CHECKED_OUT];
 
     /** Statuses that count as attended. */
     public const ATTENDED = ['present', 'late', 'early', 'incomplete', self::STATUS_CHECKED_IN, self::STATUS_CHECKED_OUT];
@@ -51,7 +51,7 @@ final class Day
 
     /**
      * @param list<Punch> $punches  in time order
-     * @param bool        $hasRow   the daily source returned a row for this date
+     * @param bool        $hasRow   ZKBioTime's database has a row (schedule or calculation) for this date
      */
     public function __construct(
         public readonly string $date,
@@ -158,7 +158,8 @@ final class Day
     /**
      * Read-only exceptions from the values above. Nothing is corrected.
      *
-     * @param bool $dailyConfigured the administrator configured a daily source
+     * @param bool $dailyConfigured ZKBioTime has a schedule or calculation row for the date, so a
+     *                              missing schedule is worth noting
      * @param bool $isPast          the day is over (no "missing check-out" before that)
      */
     public function detectExceptions(bool $dailyConfigured, bool $isPast): void

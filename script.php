@@ -65,6 +65,21 @@ return new class () implements ServiceProviderInterface {
                     'src/Api/Transport/JoomlaHttpTransport.php',
                     // 0.4.7: only the tests used it (the portal caches in the database).
                     'src/Cache/StoredUserCache.php',
+                    // 0.11.0: the REST API is no longer used; every page reads ZKBioTime's database.
+                    'src/Api',
+                    'src/Discovery',
+                    'src/Service/ZkbClientFactory.php',
+                    'src/Settings/DbTokenStore.php',
+                    'src/Attendance/SourceConfig.php',
+                    'src/Controller/EndpointsController.php',
+                    'src/View/Endpoints',
+                    'tmpl/endpoints',
+                ];
+
+                /** Media files (media/com_biotime) of removed features. */
+                private const OBSOLETE_MEDIA = [
+                    // 0.11.0: only Find Endpoints used it.
+                    'js/admin.js',
                 ];
 
                 /** Settings rows of removed options. */
@@ -73,6 +88,13 @@ return new class () implements ServiceProviderInterface {
                     // 0.4.4: the Leave Source and the Leave information switch.
                     'module_leave', 'leave_path', 'leave_param_emp', 'leave_param_from', 'leave_param_to',
                     'leave_date_format', 'leave_extra', 'leave_fields', 'leave_duration_unit', 'leave_status_map',
+                    // 0.11.0: the REST API connection (with its encrypted password, token and cached
+                    // token), the Daily Attendance Source and the choice of data source.
+                    'server_url', 'server_port', 'auth_method', 'api_username', 'api_password_enc', 'api_token_enc',
+                    'verify_tls', 'ca_bundle', 'tls_pin', 'connect_via', 'page_size', 'max_pages',
+                    'token_cache_enc', 'token_cache_renew_at', 'data_source',
+                    'daily_path', 'daily_param_emp', 'daily_param_from', 'daily_param_to', 'daily_date_format',
+                    'daily_extra', 'daily_fields', 'daily_duration_unit', 'daily_status_map',
                 ];
 
                 /** Front-end views that no longer exist; menu items pointing to them are trashed. */
@@ -133,7 +155,8 @@ return new class () implements ServiceProviderInterface {
                     }
 
                     $removed = $this->removeObsoleteFiles(JPATH_SITE . '/components/com_biotime', self::OBSOLETE_SITE)
-                        + $this->removeObsoleteFiles(JPATH_ADMINISTRATOR . '/components/com_biotime', self::OBSOLETE_ADMIN);
+                        + $this->removeObsoleteFiles(JPATH_ADMINISTRATOR . '/components/com_biotime', self::OBSOLETE_ADMIN)
+                        + $this->removeObsoleteFiles(JPATH_ROOT . '/media/com_biotime', self::OBSOLETE_MEDIA);
 
                     $db = Factory::getContainer()->get(DatabaseInterface::class);
 
@@ -141,7 +164,6 @@ return new class () implements ServiceProviderInterface {
                     $this->copyDevicesPermission($db);
                     $this->switchDateFormat($db);
                     $trashed = $this->trashObsoleteMenuItems($db);
-                    $this->mergeServerPort($db);
                     $this->deleteObsoleteSettings($db);
 
                     $app = Factory::getApplication();
@@ -298,52 +320,6 @@ return new class () implements ServiceProviderInterface {
                         )->execute();
                     } catch (\Throwable) {
                         // Not critical: the format can be chosen in Integration Settings.
-                    }
-                }
-
-                /**
-                 * 0.2.0: the port is part of the server URL. A port stored separately by 0.1.x is
-                 * moved into the URL (https://host:5555) and the old row removed.
-                 */
-                private function mergeServerPort(DatabaseInterface $db): void
-                {
-                    try {
-                        $rows = $db->setQuery(
-                            $db->createQuery()
-                                ->select($db->quoteName(['name', 'value']))
-                                ->from($db->quoteName('#__biotime_settings'))
-                                ->whereIn($db->quoteName('name'), ['server_url', 'server_port'], ParameterType::STRING)
-                        )->loadAssocList('name', 'value');
-
-                        $url  = trim((string) ($rows['server_url'] ?? ''));
-                        $port = (int) ($rows['server_port'] ?? 0);
-
-                        if ($port < 1 || $port > 65535) {
-                            return;
-                        }
-
-                        $parts = parse_url($url);
-
-                        if ($url !== '' && \is_array($parts) && !isset($parts['port']) && !empty($parts['scheme']) && !empty($parts['host'])) {
-                            $default = strtolower($parts['scheme']) === 'https' ? 443 : 80;
-                            $merged  = $parts['scheme'] . '://' . $parts['host'] . ($port !== $default ? ':' . $port : '') . rtrim($parts['path'] ?? '', '/');
-
-                            $db->setQuery(
-                                $db->createQuery()
-                                    ->update($db->quoteName('#__biotime_settings'))
-                                    ->set($db->quoteName('value') . ' = :url')
-                                    ->where($db->quoteName('name') . ' = ' . $db->quote('server_url'))
-                                    ->bind(':url', $merged)
-                            )->execute();
-                        }
-
-                        $db->setQuery(
-                            $db->createQuery()
-                                ->delete($db->quoteName('#__biotime_settings'))
-                                ->where($db->quoteName('name') . ' = ' . $db->quote('server_port'))
-                        )->execute();
-                    } catch (\Throwable) {
-                        // Not critical: Settings::serverUrl() merges the old port at run time too.
                     }
                 }
 

@@ -22,16 +22,6 @@ final class HtmlView extends BaseHtmlView
 {
     public Form $form;
 
-    public bool $hasPassword = false;
-
-    public bool $hasToken = false;
-
-    public bool $isHttp = false;
-
-    public bool $isPinned = false;
-
-    public bool $insecureTls = false;
-
     public string $secretSource = '';
 
     public bool $secretEnvTooShort = false;
@@ -48,11 +38,6 @@ final class HtmlView extends BaseHtmlView
         $settings = $model->settings();
 
         $this->form              = $model->getForm();
-        $this->hasPassword       = $settings->hasPassword();
-        $this->hasToken          = $settings->hasStaticToken();
-        $this->isHttp            = $settings->serverUrl() !== '' && !$settings->isHttps();
-        $this->isPinned          = $settings->tlsPin() !== '';
-        $this->insecureTls       = !$settings->verifyTls() && !$this->isPinned && $settings->isHttps();
         $this->secretSource      = $model->secretSource();
         $this->secretEnvTooShort = $model->secretEnvTooShort();
         $this->hasDbPassword     = $settings->hasDbPassword();
@@ -76,24 +61,10 @@ final class HtmlView extends BaseHtmlView
 
         $toolbar->apply('settings.save', 'JTOOLBAR_APPLY');
 
-        $toolbar->standardButton('test', 'COM_BIOTIME_TEST_CONNECTION')
-            ->task('settings.test')
-            ->icon('icon-plug')
-            ->listCheck(false);
-
         $toolbar->standardButton('testdb', 'COM_BIOTIME_DB_TEST')
             ->task('settings.testDatabase')
             ->icon('icon-database')
             ->listCheck(false);
-
-        $toolbar->standardButton('readpin', 'COM_BIOTIME_READ_PIN')
-            ->task('settings.readPin')
-            ->icon('icon-lock')
-            ->listCheck(false);
-
-        $toolbar->linkButton('endpoints', 'COM_BIOTIME_ENDPOINTS_BUTTON')
-            ->url('index.php?option=com_biotime&view=endpoints')
-            ->icon('icon-search');
 
         // Back to the administrator dashboard; unsaved changes are discarded.
         $toolbar->linkButton('close', 'JTOOLBAR_CLOSE')

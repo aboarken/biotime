@@ -6,10 +6,6 @@
 
 namespace BiotimePortal\Component\Biotime\Tests\Support;
 
-use BiotimePortal\Component\Biotime\Administrator\Api\ClientConfig;
-use BiotimePortal\Component\Biotime\Administrator\Api\Credentials;
-use BiotimePortal\Component\Biotime\Administrator\Api\MemoryTokenStore;
-use BiotimePortal\Component\Biotime\Administrator\Api\ZkbClient;
 use BiotimePortal\Component\Biotime\Administrator\Audit\AuditLogInterface;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserFieldReaderInterface;
 use BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping;
@@ -93,21 +89,6 @@ final class FixedFieldReader implements UserFieldReaderInterface
 
 final class Fakes
 {
-    public static function client(RoutingTransport $transport, int $pageSize = 100, int $maxPages = 50): ZkbClient
-    {
-        return new ZkbClient(
-            $transport,
-            new ClientConfig('https://zkb.example.com:5555'),
-            new Credentials(Credentials::METHOD_JWT, 'api', 'secret-pass'),
-            new MemoryTokenStore(),
-            new ArrayLogger(),
-            $pageSize,
-            $maxPages,
-            null,
-            0
-        );
-    }
-
     /** A session-like cache over a plain array, with a controllable clock. */
     public static function cache(array &$store, int $ttl = 300, ?\Closure $clock = null): StoredUserCache
     {

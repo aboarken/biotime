@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Notices above portal data: unavailable parts, cut-off results and, when it differs from the
+ * Notices above portal data: unavailable parts and, when it differs from the
  * user's, the server's time zone. The explanatory note and "Updated" time were removed in 0.11.0.
  *
  * @license GNU General Public License version 2 or later
@@ -21,9 +21,6 @@ $e      = static fn (string $t): string => htmlspecialchars($t, ENT_QUOTES, 'UTF
         <?php echo $e(Text::_('COM_BIOTIME_ERROR_' . strtoupper((string) $kind))); ?>
     </div>
 <?php endforeach; ?>
-<?php if ($period->isTruncated()) : ?>
-    <div class="bt-alert bt-tone-amber" role="alert"><?php echo Text::_('COM_BIOTIME_TRUNCATED'); ?></div>
-<?php endif; ?>
 <?php if (!empty($displayData['zone'])) : ?>
     <p class="bt-note"><?php echo $e(Text::sprintf('COM_BIOTIME_TIMES_IN_ZONE', $displayData['zone'])); ?></p>
 <?php endif; ?>

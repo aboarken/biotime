@@ -21,7 +21,8 @@ $legend = [
     ['checked_out', Text::_('COM_BIOTIME_STATUS_CHECKED_OUT')],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT')],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND')],
-    ...($this->period->calculated ? [['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY')], ['rest', Text::_('COM_BIOTIME_STATUS_REST')]] : []),
+    ['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY')],
+    ['rest', Text::_('COM_BIOTIME_STATUS_REST')],
 ];
 ?>
 <div class="com-biotime biotime-calendar" data-bt-root="calendar">

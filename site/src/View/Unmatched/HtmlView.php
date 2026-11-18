@@ -10,6 +10,7 @@ namespace BiotimePortal\Component\Biotime\Site\View\Unmatched;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use BiotimePortal\Component\Biotime\Administrator\Support\SourceException;
 use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
@@ -23,7 +24,8 @@ final class HtmlView extends BaseHtmlView
 
     public function display($tpl = null): void
     {
-        $this->kind = Factory::getApplication()->getInput()->getCmd('kind', '');
+        $kind       = Factory::getApplication()->getInput()->getCmd('kind', '');
+        $this->kind = \in_array($kind, SourceException::KINDS, true) ? $kind : '';
 
         $document = $this->getDocument();
         $document->setMetaData('robots', 'noindex, nofollow');
