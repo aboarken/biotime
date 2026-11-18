@@ -51,28 +51,17 @@ $stat = function (string $label, string $value, string $tone, string $filter = '
         <?php endif; ?>
     </div>
 
-    <?php // The employee and the range shown, as one table row (0.10.0). ?>
-    <div class="bt-panel bt-profile-panel">
-        <div class="bt-table-wrap">
-            <table class="bt-table bt-profile-table">
-                <caption class="visually-hidden"><?php echo Text::_('COM_BIOTIME_PROFILE'); ?></caption>
-                <thead>
-                    <tr>
-                        <?php foreach ($this->profileRow as [$key]) : ?>
-                            <th scope="col"><?php echo Text::_($key); ?></th>
-                        <?php endforeach; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <?php foreach ($this->profileRow as [$key, $value]) : ?>
-                            <td data-label="<?php echo $e(Text::_($key)); ?>"><?php echo $e($value); ?></td>
-                        <?php endforeach; ?>
-                    </tr>
-                </tbody>
-            </table>
+    <?php // The employee and the range shown, in the same panel as Today (1.0.15): a title, then each label above its value. ?>
+    <section class="bt-panel bt-profile-panel" aria-labelledby="bt-profile-title">
+        <div class="bt-panel-head">
+            <h2 class="bt-panel-title" id="bt-profile-title"><?php echo Text::_('COM_BIOTIME_PROFILE'); ?></h2>
         </div>
-    </div>
+        <dl class="bt-today bt-today--info">
+            <?php foreach ($this->profileRow as [$key, $value]) : ?>
+                <div><dt><?php echo Text::_($key); ?></dt><dd><?php echo $e($value); ?></dd></div>
+            <?php endforeach; ?>
+        </dl>
+    </section>
 
     <?php echo $this->notices($this->period); ?>
 
