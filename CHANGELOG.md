@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.12] - 2026-11-18
+
+### Changed
+- **My Dashboard → Statistics: each chart is its own card**, as on the ServiceDesk Plus portal's dashboard: a white panel with a shadow, the chart's title in its header with a line under it, and the chart and legend below. The box around the whole Statistics section is gone; *Statistics* is a plain heading above the cards.
+
 ## [1.0.11] - 2026-11-18
 
 ### Added

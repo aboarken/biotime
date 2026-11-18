@@ -232,14 +232,15 @@ $ps      = $displayData['devices'] ?? null;
 $devices = $ps !== null ? array_values(array_filter($ps->devices, static fn (array $d): bool => (int) $d['total'] > 0)) : [];
 $devMax  = max(1, ...array_map(static fn (array $d): int => (int) $d['total'], $devices ?: [['total' => 1]]));
 
-$chart = static fn (string $title, string $summary, string $body, string $legendHtml = '', string $class = ''): string => '<figure class="bt-chart' . $class . '">'
-    . '<figcaption class="bt-chart-title">' . $e($title) . '</figcaption>' . $body . $legendHtml
-    . '<p class="visually-hidden">' . $e($summary) . '</p></figure>';
+// Each chart is its own card (1.0.12), as on the ServiceDesk Plus portal's dashboard: a panel with
+// the title in its header, a line under it, and the chart and its legend in the body.
+$chart = static fn (string $title, string $summary, string $body, string $legendHtml = '', string $class = ''): string => '<figure class="bt-panel bt-chart' . $class . '">'
+    . '<figcaption class="bt-panel-head"><span class="bt-panel-title">' . $e($title) . '</span></figcaption>'
+    . '<div class="bt-panel-body">' . $body . $legendHtml
+    . '<p class="visually-hidden">' . $e($summary) . '</p></div></figure>';
 ?>
-<section class="bt-panel" aria-labelledby="bt-stats-title">
-    <div class="bt-panel-head">
-        <h2 class="bt-panel-title" id="bt-stats-title"><?php echo Text::_('COM_BIOTIME_STATISTICS'); ?></h2>
-    </div>
+<section class="bt-statistics" aria-labelledby="bt-stats-title">
+    <h2 class="bt-section-title" id="bt-stats-title"><?php echo Text::_('COM_BIOTIME_STATISTICS'); ?></h2>
     <div class="bt-charts">
         <?php
         echo $chart(

@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.12 – Statistics cards
+- [ ] My Dashboard: *Statistics* is a heading without a box around it; each chart (Days so far, Days per month, Late in and early out, Average check-in and check-out, Attendance rate per month, Your Devices) is its own card with its title in the header and a line under it; two cards per row on a wide screen, one on a phone.
+
 ### 1.0.11 – Export PDF, white space under the footer
 - [ ] Manager Dashboard with a From date and a whole department (more rows than fit the table box): no white space under the site footer.
 - [ ] Integration Settings → Report Letterhead: choose the logo (letterhead banner), the two header lines and the footer lines; save. A logo outside `images/` or a colour like `red` is refused.
