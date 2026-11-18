@@ -412,6 +412,7 @@ final class AttendanceServiceTest extends TestCase
         }
 
         // No (or more than one) employee with the mapped code: nothing is shown.
+        $this->failing = [];
         $period = $this->service()->month(Identity::matched(5, '99', 'E99'), 2026, 11);
         self::assertSame(['punches' => 'not_found', 'daily' => 'not_found'], $period->errors);
     }
