@@ -149,6 +149,13 @@ final class ManagerModel extends PortalModel
         $errors = [];
         $user   = $this->identity()->joomlaUserId;
 
+        // Everyone's rows in a few queries instead of about fifteen per employee and month.
+        try {
+            $this->biotime()->getAttendanceReader()->preload(array_column($employees, 'emp_code'), new \DateTimeImmutable($from), new \DateTimeImmutable($to));
+        } catch (DbException) {
+            // Each employee is then read on its own, and its error shown as usual.
+        }
+
         foreach ($employees as $e) {
             $period = $this->attendance()->range(Identity::matched($user, (string) $e['id'], $e['emp_code']), new \DateTimeImmutable($from), new \DateTimeImmutable($to));
 

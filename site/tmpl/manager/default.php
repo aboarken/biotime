@@ -150,9 +150,9 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
         <section class="bt-panel" id="bt-records">
             <div class="bt-panel-head">
                 <h2 class="bt-panel-title"><?php echo $e($range); ?></h2>
-                <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_MANAGER_N_EMPLOYEES', \count($this->employees))); ?> · <?php echo $e(Text::plural('COM_BIOTIME_MANAGER_N_ROWS', \count($this->rows))); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
+                <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_MANAGER_N_EMPLOYEES', \count($this->rows))); ?> · <?php echo $e(Text::plural('COM_BIOTIME_N_DAYS', \count($this->dates))); ?><?php echo $this->status !== '' ? ' · ' . $e($filters[$this->status] ?? '') : ''; ?></span>
             </div>
-            <?php if ($this->rows === []) : ?>
+            <?php if ($this->rows === [] || $this->dates === []) : ?>
                 <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_NO_DAYS'); ?></p>
             <?php else : ?>
                 <div class="bt-table-wrap">
@@ -160,37 +160,56 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
                         <caption class="visually-hidden"><?php echo $e(Text::_('COM_BIOTIME_MANAGER_TITLE') . ': ' . $range); ?></caption>
                         <thead>
                             <tr>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_MANAGER_EMPLOYEE'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DATE'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_MANAGER_CHECK_IN_OUT'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                                <th scope="col"><?php echo Text::_('COM_BIOTIME_MANAGER_TOTAL'); ?></th>
+                                <th scope="col" class="bt-mgr-name"><?php echo Text::_('COM_BIOTIME_MANAGER_EMPLOYEE'); ?></th>
+                                <?php foreach ($this->dates as $date) :
+                                    $dt = new DateTimeImmutable($date);
+                                    ?>
+                                    <th scope="col" class="bt-mgr-date"><?php echo $e($f->date($date)); ?><span class="bt-sub"><?php echo $e($f->weekday((int) $dt->format('N'))); ?></span></th>
+                                <?php endforeach; ?>
+                                <th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
+                                <th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
+                                <th scope="col" class="bt-num"><?php echo Text::_('COM_BIOTIME_MANAGER_TOTAL'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
-                        <?php foreach ($this->rows as ['employee' => $emp, 'day' => $day]) :
-                            $total = ($day->late ?? 0) + ($day->early ?? 0);
+                        <?php foreach ($this->rows as $row) :
+                            $emp = $row['employee'];
                             ?>
-                            <tr class="<?php echo $day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ''); ?>">
-                                <th scope="row">
+                            <tr>
+                                <th scope="row" class="bt-mgr-name">
                                     <?php echo $e($emp['name']); ?>
                                     <span class="bt-sub"><?php echo $e(implode(' · ', array_filter([$emp['emp_code'], $emp['department']]))); ?></span>
                                 </th>
-                                <td>
-                                    <?php echo $e($f->date($day->date)); ?>
-                                    <span class="bt-sub"><?php echo $e($f->weekday($day->weekday())); ?></span>
-                                </td>
-                                <td class="bt-inout">
-                                    <?php if ($day->punches === [] && $day->status !== null) : ?>
-                                        <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
-                                    <?php else : ?>
-                                        <?php echo $check($day, 'in'); ?> <span class="bt-inout-sep" aria-hidden="true">–</span> <?php echo $check($day, 'out'); ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo $min($day->late); ?></td>
-                                <td><?php echo $min($day->early); ?></td>
-                                <td><?php echo $total > 0 ? '<strong class="bt-late">' . $e($f->duration($total)) . '</strong>' : '<span class="bt-check-none">—</span>'; ?></td>
+                                <?php foreach ($this->dates as $date) :
+                                    $day   = $row['days'][$date] ?? null;
+                                    $late  = $day?->late ?? 0;
+                                    $early = $day?->early ?? 0;
+                                    // The day's late-in and early-out in the cell's tooltip; the cell is amber when there are any.
+                                    $tip   = $day === null ? '' : implode(' · ', array_filter([
+                                        $day->checkIn !== null ? Text::_('COM_BIOTIME_COL_CHECK_IN') . ' ' . $f->time($day->checkIn) : '',
+                                        $day->checkOut !== null ? Text::_('COM_BIOTIME_COL_CHECK_OUT') . ' ' . $f->time($day->checkOut) : '',
+                                        $late > 0 ? Text::_('COM_BIOTIME_COL_LATE') . ' ' . $f->duration($late) : '',
+                                        $early > 0 ? Text::_('COM_BIOTIME_COL_EARLY') . ' ' . $f->duration($early) : '',
+                                    ]));
+                                    $class = $day === null ? '' : ($day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ($late + $early > 0 ? 'bt-mgr-late' : '')));
+                                    ?>
+                                    <td class="bt-inout <?php echo $class; ?>"<?php echo $tip !== '' ? ' title="' . $e($tip) . '"' : ''; ?>>
+                                        <?php if ($day === null) : ?>
+                                            <span class="bt-check-none">—</span>
+                                        <?php elseif ($day->punches === [] && $day->status !== null) : ?>
+                                            <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
+                                        <?php else : ?>
+                                            <span class="bt-inout-line"><?php echo $check($day, 'in'); ?></span>
+                                            <span class="bt-inout-line"><?php echo $check($day, 'out'); ?></span>
+                                            <?php if ($late + $early > 0) : ?>
+                                                <span class="bt-mgr-mins"><?php echo $e($f->duration($late + $early)); ?></span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td class="bt-num"><?php echo $min($row['late']); ?></td>
+                                <td class="bt-num"><?php echo $min($row['early']); ?></td>
+                                <td class="bt-num"><?php echo $row['late'] + $row['early'] > 0 ? '<strong class="bt-late">' . $e($f->duration($row['late'] + $row['early'])) . '</strong>' : '<span class="bt-check-none">—</span>'; ?></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
