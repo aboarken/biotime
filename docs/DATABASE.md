@@ -1,14 +1,13 @@
 # Reading ZKBioTime's database directly
 
-ZKBioTime 9.5's API gives punches, employees and devices only. Schedules, calculated attendance
-(late-in, early-out, worked hours, overtime), leave and holidays are only in its own database.
-Since 0.5.0 the component can connect to that database **read only**.
+The component reads everything from ZKBioTime's own PostgreSQL database, **read only**: punches,
+employees, schedules, ZKBioTime's calculated attendance (late-in, early-out, worked hours,
+overtime), leave and holidays. Since **0.11.0** this is the only source: the REST API integration
+(server URL, API user, Test Connection, Find Endpoints, Daily Attendance Source) was removed.
 
-0.5.0 added the connection and **Test Database**. Since **0.6.0** the pages can read from it:
-*Integration Settings → Database → Read attendance from: Database*. Since **0.6.1** employees are
-matched from the database too (`personnel_employee`: by the employee code field or by e-mail, the
-daily re-check, and User Mappings), so the database is the only source and the API settings may
-be left empty. The API integration stays in the component: choose *API* to use it again.
+0.5.0 added the connection and **Test Database**; 0.6.0 the portal pages read from it; 0.6.1
+employees are matched from it too (`personnel_employee`: by the employee code field or by e-mail,
+the daily re-check, and User Mappings).
 
 What the pages then show, per day and per month:
 
@@ -16,7 +15,7 @@ What the pages then show, per day and per month:
 |---|---|
 | Punches (time, state, device, area, fingerprint or face) | `iclock_transaction` |
 | Schedule (timetable name, start and end) | ZKBioTime's calculation (`att_payloadbase` + `att_timeinterval`) where it exists; else the schedules: temporary schedule (`att_tempschedule`, `att_temporaryschedule`), then the employee's shift (`att_attschedule`), the attendance group's (`att_groupschedule`) or the department's (`att_departmentschedule`), with `att_attshift` + `att_shiftdetail` + `att_timeinterval`. So today and later days show their schedule too |
-| Check-in and check-out | From the punches: check-in is the first punch before the cut-off, check-out the last punch from it. The cut-off is the end of the day's timetable check-in window (start + `att_timeinterval.in_above_margin`), or 12:00 on days without a timetable (and with the API) |
+| Check-in and check-out | From the punches: check-in is the first punch before the cut-off, check-out the last punch from it. The cut-off is the end of the day's timetable check-in window (start + `att_timeinterval.in_above_margin`), or 12:00 on days without a timetable |
 | Late in, early out, worked time | ZKBioTime's calculation, nothing is calculated by the portal: ZKBioTime 9.5 keeps it in `att_payloadpaycode` (pay codes *Late In* = L, *Early Out* = E, in `minutes`) and `att_payloadattcode` (*Worked Hours*), with the day's timetable in `att_payloadtimecard`; other builds in `att_payloadbase` (`late`, `early_leave`, `total_worked`). A day shows them once ZKBioTime has calculated it (Auto Calculate, e.g. nightly) |
 | Leave | Leave pay codes (`att_payloadpaycode`, e.g. *Annual Leave*): the day shows the leave's name instead of Absent |
 | Overtime | `att_payloadovertime.total_ot` |
@@ -85,18 +84,18 @@ Check it: register the server again in pgAdmin as `joomla_portal`, open the Quer
 
 ## 3. In Joomla
 
-*Integration Settings → Database (direct read)*:
+*Integration Settings → ZKBioTime Database*:
 
 | Field | Example | Notes |
 |---|---|---|
 | Database | PostgreSQL | |
-| Server | `zkb-server.example.local:7496` | Host and port in one field, as the API's Server URL. With *Verify*: the name on the database certificate. |
-| Connect via | `203.0.113.10:7496` | Optional, as for the API: the firewall's **public IP** and port that Joomla really connects to; the certificate is still checked against *Server*. An IP address only (PostgreSQL cannot take a name here). Empty: Joomla connects to *Server* directly, so then enter the public address there. |
+| Server | `zkb-server.example.local:7496` | Host and port in one field. With *Verify*: the name on the database certificate. |
+| Connect via | `203.0.113.10:7496` | Optional: the firewall's **public IP** and port that Joomla really connects to; the certificate is still checked against *Server*. An IP address only (PostgreSQL cannot take a name here). Empty: Joomla connects to *Server* directly, so then enter the public address there. |
 | Database name | `biotime` | |
 | User / Password | `joomla_portal` | |
 | Encryption | Verify / Require | *Verify* needs the certificate (or CA) file on the Joomla server. |
 
-So, as with the API: the local name goes in *Server* and the public address in *Connect via*,
+So the local name goes in *Server* and the public address in *Connect via*,
 or simply the public address in *Server* when the certificate has that name or with *Require*.
 Changing *Server* or *Connect via* asks for the password again.
 
