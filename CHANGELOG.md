@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.10] - 2026-11-18
+
+### Changed
+- **Manager Dashboard: Workforce is the selected card by default** and clears the status filter; All Days is a plain count there. (My Dashboard and My Attendance keep All Days.)
+
 ## [1.0.9] - 2026-11-18
 
 ### Fixed
