@@ -65,9 +65,18 @@ Check it: register the server again in pgAdmin as `joomla_portal`, open the Quer
 `biotime` and run `SELECT count(*) FROM iclock_transaction;` (a number) and
 `CREATE TABLE test_x (i int);` (must fail: *cannot execute CREATE TABLE in a read-only transaction*).
 
-> All tables include ZKBioTime's own accounts (`auth_user`, with password hashes). Keep the
-> portal user's password as safe as the administrator's. To keep that one table out:
-> `REVOKE SELECT ON auth_user FROM joomla_portal;`
+> All tables include ZKBioTime's own accounts (`auth_user`, with password hashes). The Manager
+> Dashboard (1.0.8) needs eight of its columns to follow ZKBioTime's user permissions, never the
+> password. Keep the table out and allow only those columns:
+>
+> ```sql
+> REVOKE SELECT ON auth_user FROM joomla_portal;
+> GRANT SELECT (id, username, email, emp_pin, is_active, is_superuser, can_manage_all_dept, del_flag) ON auth_user TO joomla_portal;
+> ```
+>
+> Check it as `joomla_portal`: `SELECT password FROM auth_user LIMIT 1;` must fail with
+> *permission denied*. `auth_user_auth_dept` (the departments of each user's data permissions)
+> is covered by the grant on all tables.
 
 ## 2. Network: only the Joomla server, encrypted
 

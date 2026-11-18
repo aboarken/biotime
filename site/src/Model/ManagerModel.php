@@ -18,8 +18,9 @@ use Joomla\CMS\Factory;
 
 /**
  * Manager Dashboard (1.0.0). A manager (permission "View Manager Dashboard") sees the employees
- * of the departments ZKBioTime names them Department Manager of, and of every department below
- * those (1.0.2), nobody else. The department
+ * of the departments ZKBioTime lets them see (1.0.8): those of their own ZKBioTime user's data
+ * permissions (every department for a ZKBioTime superuser), and those ZKBioTime names them
+ * Department Manager of with the departments below them; nobody else. The department
  * and employee filters only narrow that list: a value outside it is ignored. The period is at most
  * MAX_DAYS days (today by default), because every employee in the list is read.
  */
@@ -53,13 +54,22 @@ final class ManagerModel extends PortalModel
             return $this->departments = [];
         }
 
-        // Only what ZKBioTime gives the manager: the departments they are Department Manager of,
-        // with those below them (1.0.2). A department below another one already listed is not
-        // repeated.
-        $team = $this->biotime()->getTeamReader();
-        $out  = [];
-        // "View all departments" (1.0.3; Super Users have it): every department, whoever manages it.
-        $roots = $this->can('zkb.manager.all') ? $team->topDepartments() : $team->managedDepartments((int) $own['id']);
+        // Only what ZKBioTime gives the manager (1.0.8):
+        //  - "View all departments" (Super Users have it): every department;
+        //  - the manager's own ZKBioTime user account (same e-mail or username = employee ID):
+        //    a superuser sees every department, others the departments of their data
+        //    permissions, exactly those;
+        //  - departments ZKBioTime names them Department Manager of, with those below them.
+        $team  = $this->biotime()->getTeamReader();
+        $out   = [];
+        $mail  = (string) (Factory::getApplication()->getIdentity()?->email ?? '');
+        $scope = $this->can('zkb.manager.all') ? ['readable' => true, 'superuser' => true, 'departments' => []] : $team->userScope($this->identity()->empCode(), [$mail]);
+
+        if (!$scope['readable']) {
+            $this->logger()->warning('Manager Dashboard: ZKBioTime users (auth_user, auth_user_auth_dept) could not be read; only Department Managers are used. Grant SELECT (id, username, email, is_active, is_superuser) ON auth_user and SELECT ON auth_user_auth_dept to the portal\'s database user.');
+        }
+
+        $roots = $scope['superuser'] ? $team->topDepartments() : $team->managedDepartments((int) $own['id']);
 
         foreach ($roots as $root) {
             if (isset($out[$root])) {
@@ -69,6 +79,10 @@ final class ManagerModel extends PortalModel
             foreach ($team->departments($root) as $d) {
                 $out[$d['id']] ??= $d;
             }
+        }
+
+        foreach ($team->departmentsByIds($scope['departments']) as $d) {
+            $out[$d['id']] ??= $d;
         }
 
         return $this->departments = array_values($out);

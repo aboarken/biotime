@@ -54,6 +54,8 @@ those releases.
 
 ### 1.0.8 – Manager card order
 - [ ] Manager Dashboard: Workforce, then All Days (highlighted); the Employee ID field shows "e.g. EXXXX, then Enter".
+- [ ] On the BioTime server run the column grant from docs/DATABASE.md; as `joomla_portal`, `SELECT password FROM auth_user` is refused.
+- [ ] A manager with only View Manager Dashboard (not View all departments), whose ZKBioTime user has the same e-mail as their employee record, sees exactly the departments of that user's data permissions; a ZKBioTime superuser's employee sees all departments; someone without a ZKBioTime user or managed department sees the "no access" message.
 
 ### 1.0.7 – All Days on My Dashboard
 - [ ] My Dashboard starts with All Days; it equals Present + Absent + Leaves + Holidays + Weekends and opens My Attendance with every day of the school year.

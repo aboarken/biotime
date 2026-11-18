@@ -6,6 +6,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 ## [1.0.8] - 2026-11-18
 
 ### Changed
+- **The Manager Dashboard follows ZKBioTime's user permissions**: a manager needs only *View Manager Dashboard*. The portal finds the manager's own ZKBioTime **user** account (ZKBioTime keeps users apart from employees): the active, not deleted user linked to the employee ID (`emp_pin`), whose username is the employee ID, or with the employee's e-mail (or the Joomla e-mail). A ZKBioTime **superuser** or a user who may **manage all departments** sees every department; any other user sees exactly the departments of their data permissions (`auth_user_auth_dept`). Departments ZKBioTime names them Department Manager of (with those below) still count too, and *View all departments* still shows everything. Only `id, username, email, emp_pin, is_active, is_superuser, can_manage_all_dept, del_flag` of `auth_user` are read; see docs/DATABASE.md for the column-only grant (the password column stays unreadable). Without that access, a warning is logged and only Department Managers count.
 - **Manager Dashboard**: Workforce is the first card, then All Days (still selected by default); the Employee ID field's example reads "e.g. EXXXX, then Enter".
 
 ## [1.0.7] - 2026-11-18

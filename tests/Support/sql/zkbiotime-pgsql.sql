@@ -1,12 +1,17 @@
 -- TEST FIXTURE ONLY: the ZKBioTime 9.5 tables the portal reads, with the column names and types
 -- from a real server's Test Database report (PostgreSQL 15), and invented sample data.
 -- Used by tests/Unit/AttendanceReaderTest.php and TeamReaderTest.php (BIOTIME_TEST_PG). Never run on a real server.
-DROP TABLE IF EXISTS personnel_employee, personnel_department, personnel_position, personnel_resign, att_attemployee,
+DROP TABLE IF EXISTS auth_user, auth_user_auth_dept, personnel_employee, personnel_department, personnel_position, personnel_resign, att_attemployee,
   iclock_transaction, att_payloadbase, att_timeinterval, att_payloadovertime, att_holiday, att_attshift, att_shiftdetail,
   att_attschedule, att_groupschedule, att_departmentschedule, att_temporaryschedule, att_tempschedule,
   att_payloadtimecard, att_payloadpaycode, att_payloadattcode, iclock_terminal, iclock_terminalemployee CASCADE;
 
 CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200), parent_dept_id integer, dept_manager_id integer);
+-- ZKBioTime's users (not employees) and their data permissions per department (1.0.8). The real
+-- auth_user also holds the password hash: the portal reads only id, username, email, is_active
+-- and is_superuser (a column grant on a real server).
+CREATE TABLE auth_user (id serial PRIMARY KEY, username varchar(150), password varchar(128), emp_pin varchar(20), email varchar(254), is_active boolean, is_superuser boolean, can_manage_all_dept boolean, del_flag integer);
+CREATE TABLE auth_user_auth_dept (id serial PRIMARY KEY, myuser_id integer, department_id integer);
 CREATE TABLE personnel_resign (id integer PRIMARY KEY, resign_date date, resign_type integer, disableatt boolean, reason varchar(200), employee_id integer);
 CREATE TABLE personnel_position (id integer PRIMARY KEY, position_code varchar(50), position_name varchar(100));
 CREATE TABLE personnel_employee (id integer PRIMARY KEY, emp_code varchar(20), first_name varchar(100), last_name varchar(100), email varchar(50),
@@ -93,3 +98,14 @@ INSERT INTO att_payloadattcode VALUES
 -- Devices: Alice punches on Main Gate and is registered on the gym's device as well.
 INSERT INTO iclock_terminal VALUES (1, 'SN-MAIN', 'Main Gate', 'SpeedFace'), (2, 'SN-GYM', 'Biometric - Gym', 'ProFace');
 INSERT INTO iclock_terminalemployee VALUES (1, 'SN-MAIN', 'E1', 0), (2, 'SN-GYM', 'E1', 0), (3, 'SN-GYM', 'E2', 0);
+
+-- ZKBioTime users (1.0.8, columns as on ZKBioTime 9.5): Bob's user (his e-mail, another case) may
+-- see Human Resources only; an administrator sees everything; "hr" is linked to E3 (emp_pin) and
+-- may manage all departments; an inactive and a deleted user with Alice's e-mail are ignored.
+INSERT INTO auth_user VALUES
+  (1, 'admin', 'x', NULL, 'admin@example.com', true, true, false, 0),
+  (2, 'bob.manager', 'x', NULL, 'B@Example.com', true, false, false, 0),
+  (3, 'old', 'x', NULL, 'a@example.com', false, false, false, 0),
+  (4, 'hr', 'x', 'E3', 'hr@example.com', true, false, true, 0),
+  (5, 'gone', 'x', 'E1', 'a@example.com', true, false, false, 1);
+INSERT INTO auth_user_auth_dept VALUES (1, 2, 11), (2, 3, 10), (3, 5, 10);

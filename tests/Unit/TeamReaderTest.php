@@ -95,6 +95,17 @@ final class TeamReaderTest extends TestCase
         $down->managedDepartments(7);
     }
 
+    public function testWithoutAccessToZkbioTimeUsersOnlyDepartmentManagersCount(): void
+    {
+        $r = $this->reader([
+            'FROM personnel_employee WHERE emp_code' => [['email' => 'm@example.com']],
+            'information_schema.columns'             => [['column_name' => 'emp_pin']],
+            'FROM auth_user'                         => static fn (): array => throw new DbException(DbException::QUERY, 'permission denied for table auth_user'),
+        ]);
+
+        self::assertSame(['readable' => false, 'superuser' => false, 'departments' => []], $r->userScope('E7'));
+    }
+
     /** Against the PostgreSQL fixture (tests/Support/sql/zkbiotime-pgsql.sql), when BIOTIME_TEST_PG is set. */
     public function testRealPostgres(): void
     {
@@ -111,6 +122,14 @@ final class TeamReaderTest extends TestCase
         self::assertSame([10], $team->managedDepartments(1), 'Alice is the Department Manager of IT');
         self::assertSame([], $team->managedDepartments(2), 'Bob manages nothing');
         self::assertSame([10], $team->topDepartments(), 'View all departments: IT is the only top department (HR is below it)');
+
+        // ZKBioTime users' data permissions (1.0.8).
+        self::assertSame(['readable' => true, 'superuser' => false, 'departments' => [11]], $team->userScope('E2'), "Bob's user (same e-mail) may see HR");
+        self::assertSame(['readable' => true, 'superuser' => false, 'departments' => []], $team->userScope('E1'), 'Alice has no active user (one inactive, one deleted)');
+        self::assertTrue($team->userScope('E3')['superuser'], 'the user linked to E3 (emp_pin) may manage all departments');
+        self::assertTrue($team->userScope('E9', ['ADMIN@example.com'])['superuser'], 'the administrator user, by the Joomla e-mail');
+        self::assertSame([[11, 0]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departmentsByIds([11])));
+        self::assertSame([[10, 0], [11, 1]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departmentsByIds([11, 10])));
         self::assertSame([[10, 0], [11, 1]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(10)), 'IT and HR below it');
         self::assertSame([[11, 0]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(11)), 'HR alone');
         self::assertSame(['E2', 'E1'], array_column($team->employees([10, 11], '2026-11-18'), 'emp_code'), 'by department name: Human Resources, then Information Technology');
