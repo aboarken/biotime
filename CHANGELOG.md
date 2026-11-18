@@ -3,6 +3,16 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-11-18
+
+Attendance from ZKBioTime's database, completed (0.5.0–0.6.3): schedules from the shifts, Late In and Early Out from ZKBioTime 9.5's pay codes, holidays, leave, missing morning and afternoon punches.
+
+### Fixed
+- **Past months showed no Late In and Early Out after updating to 0.6.3.** Past months are kept in the cache for a day, and the copies saved by 0.6.2 (before Late In and Early Out were read from the pay codes) were still shown. Database cache keys now carry a version, so an update always reads the months again.
+
+### Changed
+- **Device names without "Biometric - "**: e.g. "Biometric - Main Gate" is shown as "Main Gate" (punch details, Devices You Used, My Punches, day details).
+
 ## [0.6.3] - 2026-11-18
 
 ### Fixed
