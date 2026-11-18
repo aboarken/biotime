@@ -59,7 +59,7 @@ jobs:
       - name: Install test tools (development only; not part of the package)
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Run automated tests (fake transport; no ZKBioTime server needed)
+      - name: Run automated tests (fake database; no ZKBioTime server needed)
         run: vendor/bin/phpunit
 
       - name: Build package
