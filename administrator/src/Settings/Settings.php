@@ -60,7 +60,17 @@ final class Settings
         'date_format'      => 'd/m/Y',
         'time_format'      => 'H:i',
         'server_timezone'  => '',
+        // Letterhead of the printed and PDF reports (1.0.11): logo (an image of the Media
+        // Manager), a line of text on each side under it, the footer lines and the main colour
+        'report_logo'         => '',
+        'report_header_left'  => '',
+        'report_header_right' => '',
+        'report_footer'       => '',
+        'report_color'        => '#1d3f74',
     ];
+
+    /** Image types the report logo may be (1.0.11). */
+    public const REPORT_LOGO_TYPES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
 
     /** Names never sent to the browser. */
     public const SECRET_NAMES = ['db_password_enc'];
@@ -280,5 +290,32 @@ final class Settings
         return $this->toFormData() + [
             'db_password_enc' => $this->hasDbPassword() ? '[set]' : '',
         ];
+    }
+
+    /**
+     * Letterhead of the printed and PDF reports (1.0.11), as stored by SettingsValidator: the logo
+     * (a path below images/, '' for none), the texts under it, the footer lines and the colour.
+     *
+     * @return array{logo: string, left: string, right: string, footer: list<string>, color: string}
+     */
+    public function letterhead(): array
+    {
+        $logo  = $this->get('report_logo');
+        $color = $this->get('report_color');
+
+        return [
+            'logo'   => self::isReportLogo($logo) ? $logo : '',
+            'left'   => $this->get('report_header_left'),
+            'right'  => $this->get('report_header_right'),
+            'footer' => array_values(array_filter(array_map('trim', explode("\n", $this->get('report_footer'))), static fn (string $l): bool => $l !== '')),
+            'color'  => preg_match('/^#[0-9a-f]{6}$/i', $color) ? strtolower($color) : self::DEFAULTS['report_color'],
+        ];
+    }
+
+    /** A logo path the reports may show: an image file below the site's images/ folder. */
+    public static function isReportLogo(string $path): bool
+    {
+        return (bool) preg_match('#^images/(?:[A-Za-z0-9 _().-]+/)*[A-Za-z0-9 _().-]+\.(?:' . implode('|', self::REPORT_LOGO_TYPES) . ')$#i', $path)
+            && !preg_match('#(^|/)\.\.?(/|$)#', $path);
     }
 }

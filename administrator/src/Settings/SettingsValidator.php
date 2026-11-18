@@ -83,6 +83,34 @@ final class SettingsValidator
 
         $values['server_timezone'] = $zone;
 
+        // Letterhead of the reports (1.0.11). The Media field adds "#joomlaImage://…" to the path.
+        $logo = trim(explode('#', self::str($input['report_logo'] ?? ''), 2)[0]);
+
+        if ($logo !== '' && !Settings::isReportLogo($logo)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_REPORT_LOGO';
+            $logo     = '';
+        }
+
+        $values['report_logo'] = $logo;
+
+        foreach (['report_header_left', 'report_header_right'] as $name) {
+            $values[$name] = mb_substr(trim((string) preg_replace('/\s+/u', ' ', strip_tags(self::str($input[$name] ?? '')))), 0, 200);
+        }
+
+        $footer = array_slice(array_filter(array_map(
+            static fn (string $l): string => mb_substr(trim((string) preg_replace('/[ \t]+/u', ' ', $l)), 0, 300),
+            explode("\n", str_replace("\r", '', strip_tags(self::str($input['report_footer'] ?? ''))))
+        ), static fn (string $l): bool => $l !== ''), 0, 6);
+        $values['report_footer'] = implode("\n", $footer);
+
+        $color = strtolower(trim(self::str($input['report_color'] ?? '')));
+
+        if ($color !== '' && !preg_match('/^#[0-9a-f]{6}$/', $color)) {
+            $errors[] = 'COM_BIOTIME_SETTINGS_ERR_REPORT_COLOR';
+        }
+
+        $values['report_color'] = preg_match('/^#[0-9a-f]{6}$/', $color) ? $color : Settings::DEFAULTS['report_color'];
+
         // Weekend days: ISO weekdays 1–7 (none is allowed: every day is then a working day).
         $weekend = $input['weekend_days'] ?? '';
         $weekend = \is_array($weekend) ? array_map(static fn ($v): string => \is_scalar($v) ? (string) $v : '', $weekend) : self::str($weekend);

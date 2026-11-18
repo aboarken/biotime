@@ -16,7 +16,9 @@ use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 use BiotimePortal\Component\Biotime\Site\Model\ManagerModel;
 use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
+use BiotimePortal\Component\Biotime\Site\View\Ui;
 use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
@@ -98,11 +100,33 @@ final class HtmlView extends BaseHtmlView
 
     public int $pages = 1;
 
+    /** Export PDF (1.0.11): the report has every row, the letterhead and paper-sized tables. */
+    public bool $report = false;
+
+    /**
+     * The report's date columns, in tables that fit the paper (1.0.11, ReportColumns).
+     *
+     * @var list<list<string>>
+     */
+    public array $dateChunks = [];
+
+    public bool $landscape = false;
+
+    /** @var array{logo: string, left: string, right: string, footer: list<string>, color: string} */
+    public array $letterhead = ['logo' => '', 'left' => '', 'right' => '', 'footer' => [], 'color' => '#1d3f74'];
+
+    /** Who made the report and when (site time zone), for its heading. */
+    public string $printedBy = '';
+
+    public string $printedAt = '';
+
     public function display($tpl = null): void
     {
         /** @var ManagerModel $model */
         $model = $this->getModel();
         $input = Factory::getApplication()->getInput();
+
+        $this->report = $this->getLayout() === 'print';
 
         $this->status = DayFilter::valid($input->getCmd('status', ''));
         $this->today  = $model->attendance()->today();
@@ -157,9 +181,15 @@ final class HtmlView extends BaseHtmlView
 
                 // The cards count every employee shown; the table shows PAGE_SIZE of them at a time.
                 $this->rowCount = \count($this->rows);
-                $this->pages = max(1, (int) ceil($this->rowCount / self::PAGE_SIZE));
-                $this->page  = min(max(1, $input->getInt('page', 1)), $this->pages);
-                $this->rows  = \array_slice($this->rows, ($this->page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
+
+                if ($this->report) {
+                    // The report has every row; its dates are cut into tables that fit the paper.
+                    [$this->landscape, $this->dateChunks] = ReportColumns::of($this->dates);
+                } else {
+                    $this->pages = max(1, (int) ceil($this->rowCount / self::PAGE_SIZE));
+                    $this->page  = min(max(1, $input->getInt('page', 1)), $this->pages);
+                    $this->rows  = \array_slice($this->rows, ($this->page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
+                }
             }
         } catch (DbException $e) {
             $this->problem = $e->getKind();
@@ -167,9 +197,92 @@ final class HtmlView extends BaseHtmlView
         }
 
         $this->preparePage($model, 'manager', 'COM_BIOTIME_MANAGER_TITLE');
-        $model->logPage('manager', $this->from . '..' . $this->to . ' employees=' . \count($this->employees) . ($this->status !== '' ? ' status=' . $this->status : ''));
+
+        if ($this->report) {
+            $this->prepareReport($model);
+        }
+
+        $model->logPage($this->report ? 'manager-pdf' : 'manager', $this->from . '..' . $this->to . ' employees=' . \count($this->employees) . ($this->status !== '' ? ' status=' . $this->status : ''));
 
         parent::display($tpl);
+    }
+
+    private function prepareReport(ManagerModel $model): void
+    {
+        $app = Factory::getApplication();
+        $now = Factory::getDate('now', $app->get('offset', 'UTC'));
+
+        $this->letterhead = $model->settings()->letterhead();
+        $this->printedBy  = (string) $app->getIdentity()?->name;
+        $this->printedAt  = $this->f->date($now->format('Y-m-d', true)) . ' ' . $this->f->time($now->format('H:i', true));
+
+        // The file name the browser offers when saving as PDF.
+        $this->getDocument()->setTitle(Text::_('COM_BIOTIME_REPORT_FILE') . ' ' . $this->from . ($this->to !== $this->from ? ' - ' . $this->to : ''));
+        $this->getDocument()->getWebAssetManager()->useScript('com_biotime.report');
+    }
+
+    /**
+     * The status filters (value => label), as in the Status list (1.0.11: shared with the PDF).
+     *
+     * @return array<string, string>
+     */
+    public function statusLabels(): array
+    {
+        return [
+            ''                 => Text::_('COM_BIOTIME_FILTER_ALL'),
+            'attended'         => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
+            'absent'           => Text::_('COM_BIOTIME_STATUS_ABSENT'),
+            'leave'            => Text::_('COM_BIOTIME_CARD_LEAVES'),
+            'missingmorning'   => Text::_('COM_BIOTIME_CARD_MISSING_MORNING'),
+            'missingafternoon' => Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'),
+            'late'             => Text::_('COM_BIOTIME_FILTER_LATE'),
+            'early'            => Text::_('COM_BIOTIME_FILTER_EARLY'),
+            'holiday'          => Text::_('COM_BIOTIME_STATUS_HOLIDAY'),
+            'weekend'          => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
+            'weekendworked'    => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
+        ];
+    }
+
+    /**
+     * The cards: [label, value html, tone, status filter ('' = none, '*' = every day)]; [] when
+     * nothing was read (1.0.11: shared with the PDF).
+     *
+     * @return list<array{0: string, 1: string, 2: string, 3: string}>
+     */
+    public function cards(): array
+    {
+        $s = $this->summary;
+        $f = $this->f;
+
+        if ($s === null) {
+            return [];
+        }
+
+        return [
+            // Workforce is the selected card by default and clears the status filter (1.0.10); All Days
+            // counts the days of everyone shown.
+            [Text::_('COM_BIOTIME_MANAGER_WORKFORCE'), (string) \count($this->employees), Ui::cardTone('COM_BIOTIME_MANAGER_WORKFORCE'), '*'],
+            [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, Ui::cardTone('COM_BIOTIME_CARD_ALL_DAYS'), ''],
+            [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', Ui::cardTone('COM_BIOTIME_CARD_PRESENT_DAYS'), 'attended'],
+            [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::cardTone('COM_BIOTIME_CARD_ABSENT_DAYS'), 'absent'],
+            [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::cardTone('COM_BIOTIME_CARD_LEAVES'), 'leave'],
+            [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::cardTone('COM_BIOTIME_CARD_HOLIDAYS'), 'holiday'],
+            [Text::_('COM_BIOTIME_CARD_WEEKENDS'), (string) $s->offDays, Ui::cardTone('COM_BIOTIME_CARD_WEEKENDS'), 'weekend'],
+            [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::cardTone('COM_BIOTIME_CARD_WEEKEND_WORKED'), 'weekendworked'],
+            [Text::_('COM_BIOTIME_CARD_RATE'), $s->rate === null ? '—' : $s->rate . ' <small>%</small>', Ui::cardTone('COM_BIOTIME_CARD_RATE'), ''],
+            [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::cardTone('COM_BIOTIME_CARD_MISSING_MORNING'), 'missingmorning'],
+            [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::cardTone('COM_BIOTIME_CARD_MISSING_AFTERNOON'), 'missingafternoon'],
+            // Days with a check-in (morning punch) and with a check-out (afternoon punch), 1.0.2.
+            [Text::_('COM_BIOTIME_MANAGER_MORNING_PUNCHES'), (string) $this->morningPunches, Ui::cardTone('COM_BIOTIME_MANAGER_MORNING_PUNCHES'), ''],
+            [Text::_('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), (string) $this->afternoonPunches, Ui::cardTone('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), ''],
+            [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $this->escape($f->time($s->avgCheckIn)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_IN'), ''],
+            [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $this->escape($f->time($s->avgCheckOut)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_OUT'), ''],
+            [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $this->escape($f->duration($s->lateMinutes)) . ' <small>' . $this->escape(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_LATE_TOTAL'), 'late'],
+            [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $this->escape($f->duration($s->earlyMinutes)) . ' <small>' . $this->escape(Text::plural('COM_BIOTIME_N_DAYS', $s->earlyDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_EARLY_TOTAL'), 'early'],
+            [Text::_('COM_BIOTIME_CARD_LATE_EARLY'), $this->escape($f->duration($s->lateEarlyMinutes())), Ui::cardTone('COM_BIOTIME_CARD_LATE_EARLY'), ''],
+            [Text::_('COM_BIOTIME_CARD_WORKED'), $this->escape($f->duration($s->workedMinutes)), Ui::cardTone('COM_BIOTIME_CARD_WORKED'), ''],
+            [Text::_('COM_BIOTIME_CARD_OVERTIME'), $this->escape($f->duration($s->overtimeMinutes)), Ui::cardTone('COM_BIOTIME_CARD_OVERTIME'), ''],
+        ];
     }
 
     /** This page with the same filters, changed by $changes ('' removes one). */

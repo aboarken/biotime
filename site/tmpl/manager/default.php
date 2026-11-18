@@ -7,7 +7,6 @@
 \defined('_JEXEC') or die;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
-use BiotimePortal\Component\Biotime\Site\View\Ui;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 
@@ -20,9 +19,7 @@ use Joomla\CMS\Layout\LayoutHelper;
  */
 
 $f     = $this->f;
-$s     = $this->summary;
 $e     = fn (string $text): string => $this->escape($text);
-$check = fn ($day, string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => $type, 'compact' => true]);
 $min   = fn (?int $minutes): string => LayoutHelper::render('biotime.minutes', ['minutes' => $minutes, 'f' => $f]);
 
 // Department list: the manager's department, then those below it (indented).
@@ -43,19 +40,7 @@ foreach ($this->dept > 0 ? $this->employees : $this->team as $emp) {
 
 $empSelect .= '</select>';
 
-$filters = [
-    ''                 => Text::_('COM_BIOTIME_FILTER_ALL'),
-    'attended'         => Text::_('COM_BIOTIME_FILTER_ATTENDED'),
-    'absent'           => Text::_('COM_BIOTIME_STATUS_ABSENT'),
-    'leave'            => Text::_('COM_BIOTIME_CARD_LEAVES'),
-    'missingmorning'   => Text::_('COM_BIOTIME_CARD_MISSING_MORNING'),
-    'missingafternoon' => Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'),
-    'late'             => Text::_('COM_BIOTIME_FILTER_LATE'),
-    'early'            => Text::_('COM_BIOTIME_FILTER_EARLY'),
-    'holiday'          => Text::_('COM_BIOTIME_STATUS_HOLIDAY'),
-    'weekend'          => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
-    'weekendworked'    => Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'),
-];
+$filters = $this->statusLabels();
 $statusSelect = '<select class="bt-input" id="bt-status" name="status">';
 
 foreach ($filters as $value => $label) {
@@ -80,31 +65,7 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
     . ' value="' . $e((new DateTimeImmutable($value))->format('d/m/Y')) . '">';
 
 // Cards: [label, value html, tone, filter]; '*' = every day (clears the status filter).
-$cards = $s === null ? [] : [
-    // Workforce is the selected card by default and clears the status filter (1.0.10); All Days
-    // counts the days of everyone shown.
-    [Text::_('COM_BIOTIME_MANAGER_WORKFORCE'), (string) \count($this->employees), Ui::cardTone('COM_BIOTIME_MANAGER_WORKFORCE'), '*'],
-    [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, Ui::cardTone('COM_BIOTIME_CARD_ALL_DAYS'), ''],
-    [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', Ui::cardTone('COM_BIOTIME_CARD_PRESENT_DAYS'), 'attended'],
-    [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::cardTone('COM_BIOTIME_CARD_ABSENT_DAYS'), 'absent'],
-    [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::cardTone('COM_BIOTIME_CARD_LEAVES'), 'leave'],
-    [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::cardTone('COM_BIOTIME_CARD_HOLIDAYS'), 'holiday'],
-    [Text::_('COM_BIOTIME_CARD_WEEKENDS'), (string) $s->offDays, Ui::cardTone('COM_BIOTIME_CARD_WEEKENDS'), 'weekend'],
-    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::cardTone('COM_BIOTIME_CARD_WEEKEND_WORKED'), 'weekendworked'],
-    [Text::_('COM_BIOTIME_CARD_RATE'), $s->rate === null ? '—' : $s->rate . ' <small>%</small>', Ui::cardTone('COM_BIOTIME_CARD_RATE'), ''],
-    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::cardTone('COM_BIOTIME_CARD_MISSING_MORNING'), 'missingmorning'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::cardTone('COM_BIOTIME_CARD_MISSING_AFTERNOON'), 'missingafternoon'],
-    // Days with a check-in (morning punch) and with a check-out (afternoon punch), 1.0.2.
-    [Text::_('COM_BIOTIME_MANAGER_MORNING_PUNCHES'), (string) $this->morningPunches, Ui::cardTone('COM_BIOTIME_MANAGER_MORNING_PUNCHES'), ''],
-    [Text::_('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), (string) $this->afternoonPunches, Ui::cardTone('COM_BIOTIME_MANAGER_AFTERNOON_PUNCHES'), ''],
-    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_IN'), ''],
-    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_OUT'), ''],
-    [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $e($f->duration($s->lateMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_LATE_TOTAL'), 'late'],
-    [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $e($f->duration($s->earlyMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->earlyDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_EARLY_TOTAL'), 'early'],
-    [Text::_('COM_BIOTIME_CARD_LATE_EARLY'), $e($f->duration($s->lateEarlyMinutes())), Ui::cardTone('COM_BIOTIME_CARD_LATE_EARLY'), ''],
-    [Text::_('COM_BIOTIME_CARD_WORKED'), $e($f->duration($s->workedMinutes)), Ui::cardTone('COM_BIOTIME_CARD_WORKED'), ''],
-    [Text::_('COM_BIOTIME_CARD_OVERTIME'), $e($f->duration($s->overtimeMinutes)), Ui::cardTone('COM_BIOTIME_CARD_OVERTIME'), ''],
-];
+$cards = $this->cards();
 $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->from) . ' – ' . $f->date($this->to);
 ?>
 <div class="com-biotime biotime-manager" data-bt-root="manager">
@@ -195,32 +156,8 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
                                     <?php echo $e($emp['name']); ?>
                                     <span class="bt-sub"><?php echo $e(implode(' · ', array_filter([$emp['emp_code'], $emp['department']]))); ?></span>
                                 </th>
-                                <?php foreach ($this->dates as $date) :
-                                    $day   = $row['days'][$date] ?? null;
-                                    $late  = $day?->late ?? 0;
-                                    $early = $day?->early ?? 0;
-                                    // The day's late-in and early-out in the cell's tooltip; the cell is amber when there are any.
-                                    $tip   = $day === null ? '' : implode(' · ', array_filter([
-                                        $day->checkIn !== null ? Text::_('COM_BIOTIME_COL_CHECK_IN') . ' ' . $f->time($day->checkIn) : '',
-                                        $day->checkOut !== null ? Text::_('COM_BIOTIME_COL_CHECK_OUT') . ' ' . $f->time($day->checkOut) : '',
-                                        $late > 0 ? Text::_('COM_BIOTIME_COL_LATE') . ' ' . $f->duration($late) : '',
-                                        $early > 0 ? Text::_('COM_BIOTIME_COL_EARLY') . ' ' . $f->duration($early) : '',
-                                    ]));
-                                    $class = $day === null ? '' : ($day->status === 'holiday' ? 'bt-row-holiday' : ($day->weekend ? 'bt-row-weekend' : ($late + $early > 0 ? 'bt-mgr-late' : '')));
-                                    ?>
-                                    <td class="bt-inout <?php echo $class; ?>"<?php echo $tip !== '' ? ' title="' . $e($tip) . '"' : ''; ?>>
-                                        <?php if ($day === null) : ?>
-                                            <span class="bt-check-none">—</span>
-                                        <?php elseif ($day->punches === [] && $day->status !== null) : ?>
-                                            <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
-                                        <?php else : ?>
-                                            <span class="bt-inout-line"><?php echo $check($day, 'in'); ?></span>
-                                            <span class="bt-inout-line"><?php echo $check($day, 'out'); ?></span>
-                                            <?php if ($late + $early > 0) : ?>
-                                                <span class="bt-mgr-mins"><?php echo $e($f->duration($late + $early)); ?></span>
-                                            <?php endif; ?>
-                                        <?php endif; ?>
-                                    </td>
+                                <?php foreach ($this->dates as $date) : ?>
+                                    <?php echo LayoutHelper::render('biotime.managercell', ['day' => $row['days'][$date] ?? null, 'f' => $f]); ?>
                                 <?php endforeach; ?>
                                 <td class="bt-num"><?php echo $min($row['late']); ?></td>
                                 <td class="bt-num"><?php echo $min($row['early']); ?></td>
@@ -237,6 +174,16 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
                     <span><?php echo $e(Text::sprintf('COM_BIOTIME_MANAGER_PAGE_OF', $this->page, $this->pages)); ?></span>
                     <?php if ($this->page < $this->pages) : ?><a class="bt-btn bt-btn--ghost" href="<?php echo $this->filterUrl(['page' => (string) ($this->page + 1)]); ?>#bt-records"><?php echo Text::_('COM_BIOTIME_MANAGER_NEXT'); ?> &rarr;</a><?php endif; ?>
                 </nav>
+            <?php endif; ?>
+            <?php if ($this->rows !== [] && $this->dates !== []) : ?>
+                <?php // Export PDF (1.0.11): every employee of every page on letterhead paper, in a new tab with the print dialog. ?>
+                <div class="bt-export">
+                    <a class="bt-btn" href="<?php echo $this->filterUrl(['layout' => 'print', 'tmpl' => 'component']); ?>" target="_blank" rel="noopener">
+                        <svg class="bt-btn-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M9.5 1.75H4.25a1.5 1.5 0 0 0-1.5 1.5v9.5a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5V5.5zM9.5 1.75V5.5h3.75M8 7.5v4.5M6 10l2 2 2-2"/></svg>
+                        <?php echo Text::_('COM_BIOTIME_MANAGER_EXPORT_PDF'); ?>
+                    </a>
+                    <span class="bt-export-hint"><?php echo $e(Text::plural('COM_BIOTIME_MANAGER_EXPORT_HINT', $this->rowCount)); ?></span>
+                </div>
             <?php endif; ?>
         </section>
         <?php endif; ?>

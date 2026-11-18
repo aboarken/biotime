@@ -52,6 +52,14 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.11 – Export PDF, white space under the footer
+- [ ] Manager Dashboard with a From date and a whole department (more rows than fit the table box): no white space under the site footer.
+- [ ] Integration Settings → Report Letterhead: choose the logo (letterhead banner), the two header lines and the footer lines; save. A logo outside `images/` or a colour like `red` is refused.
+- [ ] Manager Dashboard, 5 days or fewer → **Export PDF** (left, under the table): a new tab opens the print dialog; the preview is A4 **portrait**, letterhead on top, footer and page number on every page, every employee (not only the first 50).
+- [ ] The same for 16 days: A4 **landscape**, the dates in two tables (Part 1 of 2, Part 2 of 2), the totals in the last one; the header row repeats on every page and no employee row is split.
+- [ ] Save as PDF: the Arabic header and footer lines read correctly; the web and e-mail addresses in the footer are links.
+- [ ] With a status filter (e.g. Days Absent) the report lists only the matching employees and names the filter.
+
 ### 1.0.10 – Security review fixes
 - [ ] Change your Joomla profile e-mail to a ZKBioTime administrator's: the Manager Dashboard still shows only your own departments (then change it back).
 - [ ] After narrowing the database user (docs/DATABASE.md), every portal page and Test Database still work; `SELECT count(*) FROM django_session` as `joomla_portal` is refused.
