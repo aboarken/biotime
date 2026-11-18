@@ -10,7 +10,7 @@ ZKBioTime is the single source of truth. Joomla only reads and displays: it neve
 edits or corrects attendance data. Everything is read from **ZKBioTime's own PostgreSQL
 database, read only**: the punches (with the device and verification of each), the employees,
 each day's schedule and ZKBioTime's own calculation (late-in, early-out, worked time, overtime,
-holidays, leave, days off). Since 0.11.0 the ZKBioTime REST API is no longer used.
+holidays, leave, days off). Since 1.0.0 the ZKBioTime REST API is no longer used.
 
 Which table supplies each value is in [docs/DATABASE.md](docs/DATABASE.md).
 
@@ -29,6 +29,7 @@ are respected.
 | **My Attendance** | One row per day: date (link to the day's details), day, the schedule, **check-in** and **check-out** (each with its arrow, colour and the device and verification it was recorded with, or *Missing*), late in, early out, worked time and the status; the day's punches are on its details page. Weekend rows and today are shaded. Filter by month and year, status (present, missing punch, absent, weekend, weekend worked, late in, early out, holiday, exceptions, with or without punches) or From – To dates below the month (a date alone: From that date to today). Dashboard figures open it for the same range. |
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
+| **Manager Dashboard** | For managers (permission *View Manager Dashboard*): every employee of the manager's own ZKBioTime department and of the departments below it (not those who have resigned). Filters: department, employee, status, From – To (today by default, up to 31 days). Cards: **Workforce** and the My Attendance figures for everyone shown. Below, one row per employee per day: check-in and check-out in one column, then Late In, Early Out and Total. |
 
 Day details (one day: check-in, check-out, time between, status, every punch with how it was
 counted, exceptions) open from the Dashboard, Attendance and Calendar pages; they are not a
@@ -184,6 +185,7 @@ group (or the group your employees are in). Without them users get "You are not 
 | `zkb.attendance.view` | My Attendance (and day details) |
 | `zkb.calendar.view` | Attendance Calendar (and day details) |
 | `zkb.punches.view` | My Punches |
+| `zkb.manager.view` | Manager Dashboard (give it only to the managers' group) |
 
 My Dashboard also opens day details. Updating from 0.3.x moves menu items of the removed My
 Schedules, Attendance Reports and My Profile pages to the trash; updating from 0.4.0 or 0.4.1 turns

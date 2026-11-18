@@ -43,10 +43,10 @@ final class HtmlView extends BaseHtmlView
 
     public string $to = '';
 
-    /** Every device the employee uses, with this school year's punches (0.11.0). */
+    /** Every device the employee uses, with this school year's punches (1.0.0). */
     public ?\BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats $devices = null;
 
-    /** The school year shown: 1 August to 31 July (0.11.0); figures count up to today ($to). */
+    /** The school year shown: 1 August to 31 July (1.0.0); figures count up to today ($to). */
     public string $yearEnd = '';
 
     /** @var array{department: ?string, position: ?string, hire_date: ?string, name: ?string}|null from the database */

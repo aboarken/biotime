@@ -20,7 +20,7 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
- * Manager Dashboard (0.11.0): the workforce of the manager's department and the departments below
+ * Manager Dashboard (1.0.0): the workforce of the manager's department and the departments below
  * it. Filters: department, employee, From – To (today by default). Cards: workforce and the same
  * figures as My Attendance, for everyone shown. Below them one row per employee per day: check-in
  * and check-out in one column, then late in, early out and both together.

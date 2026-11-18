@@ -13,7 +13,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Support;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
 
 /**
- * ZKBioTime could not answer what a page or an administrator task needed (0.11.0; ZkbException
+ * ZKBioTime could not answer what a page or an administrator task needed (1.0.0; ZkbException
  * before). The "kind" is stable and selects the user-facing language string
  * COM_BIOTIME_ERROR_<KIND>, shown on portal pages and in User Mappings; the technical reason is
  * for the log only and is never shown to employees.

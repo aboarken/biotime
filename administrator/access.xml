@@ -12,5 +12,6 @@
         <action name="zkb.attendance.view" title="COM_BIOTIME_ACCESS_ATTENDANCE_VIEW" description="COM_BIOTIME_ACCESS_ATTENDANCE_VIEW_DESC" />
         <action name="zkb.calendar.view" title="COM_BIOTIME_ACCESS_CALENDAR_VIEW" description="COM_BIOTIME_ACCESS_CALENDAR_VIEW_DESC" />
         <action name="zkb.punches.view" title="COM_BIOTIME_ACCESS_PUNCHES_VIEW" description="COM_BIOTIME_ACCESS_PUNCHES_VIEW_DESC" />
+        <action name="zkb.manager.view" title="COM_BIOTIME_ACCESS_MANAGER_VIEW" description="COM_BIOTIME_ACCESS_MANAGER_VIEW_DESC" />
     </section>
 </access>

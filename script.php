@@ -65,7 +65,7 @@ return new class () implements ServiceProviderInterface {
                     'src/Api/Transport/JoomlaHttpTransport.php',
                     // 0.4.7: only the tests used it (the portal caches in the database).
                     'src/Cache/StoredUserCache.php',
-                    // 0.11.0: the REST API is no longer used; every page reads ZKBioTime's database.
+                    // 1.0.0: the REST API is no longer used; every page reads ZKBioTime's database.
                     'src/Api',
                     'src/Discovery',
                     'src/Service/ZkbClientFactory.php',
@@ -78,7 +78,7 @@ return new class () implements ServiceProviderInterface {
 
                 /** Media files (media/com_biotime) of removed features. */
                 private const OBSOLETE_MEDIA = [
-                    // 0.11.0: only Find Endpoints used it.
+                    // 1.0.0: only Find Endpoints used it.
                     'js/admin.js',
                 ];
 
@@ -88,7 +88,7 @@ return new class () implements ServiceProviderInterface {
                     // 0.4.4: the Leave Source and the Leave information switch.
                     'module_leave', 'leave_path', 'leave_param_emp', 'leave_param_from', 'leave_param_to',
                     'leave_date_format', 'leave_extra', 'leave_fields', 'leave_duration_unit', 'leave_status_map',
-                    // 0.11.0: the REST API connection (with its encrypted password, token and cached
+                    // 1.0.0: the REST API connection (with its encrypted password, token and cached
                     // token), the Daily Attendance Source and the choice of data source.
                     'server_url', 'server_port', 'auth_method', 'api_username', 'api_password_enc', 'api_token_enc',
                     'verify_tls', 'ca_bundle', 'tls_pin', 'connect_via', 'page_size', 'max_pages',

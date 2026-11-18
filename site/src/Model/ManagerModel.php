@@ -17,7 +17,7 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
 use Joomla\CMS\Factory;
 
 /**
- * Manager Dashboard (0.11.0). A manager (permission "View Manager Dashboard") sees the employees
+ * Manager Dashboard (1.0.0). A manager (permission "View Manager Dashboard") sees the employees
  * of their own ZKBioTime department and of every department below it, nobody else. The department
  * and employee filters only narrow that list: a value outside it is ignored. The period is at most
  * MAX_DAYS days (today by default), because every employee in the list is read.

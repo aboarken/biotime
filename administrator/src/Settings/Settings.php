@@ -41,7 +41,7 @@ final class Settings
         'module_charts'    => '1',
         // Weekend days, ISO weekdays (1 = Monday … 7 = Sunday), comma-separated: Friday and Saturday
         'weekend_days'     => '5,6',
-        // ZKBioTime's own database (0.5.0), read by every portal page (0.11.0); '' = not set up
+        // ZKBioTime's own database (0.5.0), read by every portal page (1.0.0); '' = not set up
         'db_engine'        => '',
         'db_host'          => '',
         'db_port'          => '7496',

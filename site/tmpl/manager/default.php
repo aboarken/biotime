@@ -14,7 +14,7 @@ use Joomla\CMS\Layout\LayoutHelper;
 /** @var \BiotimePortal\Component\Biotime\Site\View\Manager\HtmlView $this */
 
 /*
- * Manager Dashboard (0.11.0): filter bar (department, employee, status / From, To), cards
+ * Manager Dashboard (1.0.0): filter bar (department, employee, status / From, To), cards
  * (workforce and the figures of My Attendance for everyone shown; a card with a filter shows only
  * the matching days and jumps to them), then one row per employee per day.
  */

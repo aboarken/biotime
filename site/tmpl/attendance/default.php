@@ -65,7 +65,7 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
 // Summary cards: [label, value html, tone, filter]. Missing punches as two cards: morning (no
 // check-in) and afternoon (no check-out). 3 rows of 5.
 // The first card, All Days, clears the status filter ('*'); a card with a filter shows only the
-// matching days and jumps down to them (#bt-records, 0.11.0).
+// matching days and jumps down to them (#bt-records, 1.0.0).
 $allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) \count(array_filter($this->period->days, fn ($d): bool => $d->date <= $this->period->today)), 'slate', '*'];
 $cards = [
     $allDays,

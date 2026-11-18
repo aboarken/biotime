@@ -2,7 +2,7 @@
 
 The component reads everything from ZKBioTime's own PostgreSQL database, **read only**: punches,
 employees, schedules, ZKBioTime's calculated attendance (late-in, early-out, worked hours,
-overtime), leave and holidays. Since **0.11.0** this is the only source: the REST API integration
+overtime), leave and holidays. Since **1.0.0** this is the only source: the REST API integration
 (server URL, API user, Test Connection, Find Endpoints, Daily Attendance Source) was removed.
 
 0.5.0 added the connection and **Test Database**; 0.6.0 the portal pages read from it; 0.6.1

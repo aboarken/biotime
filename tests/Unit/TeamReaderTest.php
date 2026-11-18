@@ -12,7 +12,7 @@ use BiotimePortal\Component\Biotime\Tests\Support\CatalogueQuery;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Manager Dashboard (0.11.0): a manager's department, the departments below it and their employees.
+ * Manager Dashboard (1.0.0): a manager's department, the departments below it and their employees.
  */
 final class TeamReaderTest extends TestCase
 {
@@ -73,5 +73,24 @@ final class TeamReaderTest extends TestCase
         self::assertStringContainsString('personnel_resign', end($this->q->sent));
         self::assertSame([], $r->employees([], '2026-11-18'));
         self::assertSame([], $r->employees([10], 'not a date'));
+    }
+
+    /** Against the PostgreSQL fixture (tests/Support/sql/zkbiotime-pgsql.sql), when BIOTIME_TEST_PG is set. */
+    public function testRealPostgres(): void
+    {
+        $env = getenv('BIOTIME_TEST_PG');
+
+        if (!\is_string($env) || $env === '' || !\extension_loaded('pdo_pgsql')) {
+            self::markTestSkipped('BIOTIME_TEST_PG not set');
+        }
+
+        [$host, $port, $db, $user, $password] = explode(':', $env, 5);
+        $config = new \BiotimePortal\Component\Biotime\Administrator\Database\DbConfig('pgsql', $host, (int) $port, $db, $user, $password, \BiotimePortal\Component\Biotime\Administrator\Database\DbConfig::SSL_REQUIRE);
+        $team   = new TeamReader(static fn () => (new \BiotimePortal\Component\Biotime\Administrator\Database\DbConnector())->connect($config));
+
+        self::assertSame([[10, 0], [11, 1]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(10)), 'IT and HR below it');
+        self::assertSame([[11, 0]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departments(11)), 'HR alone');
+        self::assertSame(['E2', 'E1'], array_column($team->employees([10, 11], '2026-11-18'), 'emp_code'), 'by department name: Human Resources, then Information Technology');
+        self::assertSame(['E1'], array_column($team->employees([10, 11], '2027-01-01'), 'emp_code'), 'Bob resigned on 1 January 2027');
     }
 }

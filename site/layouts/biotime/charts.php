@@ -7,10 +7,10 @@
  *
  *  1. Days so far (donut): present, absent, holiday, weekend, leave; the attendance rate inside.
  *  2. Days per month (stacked columns): present, absent, holiday, leave.
- *  3. Late in and early out per month (grouped columns, minutes; database only).
+ *  3. Late in and early out per month (grouped columns, minutes).
  *  4. Average check-in and check-out per month (a floating column from check-in to check-out).
- *  5. Attendance rate per month (a small card per month, 0.11.0).
- *  6. Devices used, punches split by fingerprint and face (0.11.0).
+ *  5. Attendance rate per month (a small card per month, 1.0.0).
+ *  6. Devices used, punches split by fingerprint and face (1.0.0).
  *
  * Colours: the portal's tones (validated together for colour-blind separation): green present,
  * red absent, purple holiday, blue weekend, amber leave and late in, rose early out, teal check-in,
@@ -26,11 +26,10 @@ use BiotimePortal\Component\Biotime\Administrator\Attendance\ChartData;
 use Joomla\CMS\Language\Text;
 
 /**
- * @var array{days: list<\BiotimePortal\Component\Biotime\Administrator\Attendance\Day>, today: string, calc: bool, summary: \BiotimePortal\Component\Biotime\Administrator\Attendance\Summary, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, devices?: ?\BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats} $displayData
+ * @var array{days: list<\BiotimePortal\Component\Biotime\Administrator\Attendance\Day>, today: string, summary: \BiotimePortal\Component\Biotime\Administrator\Attendance\Summary, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, devices?: ?\BiotimePortal\Component\Biotime\Administrator\Attendance\PunchStats} $displayData
  */
 $f      = $displayData['f'];
 $s      = $displayData['summary'];
-$calc   = $displayData['calc'];
 $today  = $displayData['today'];
 $e      = static fn ($t): string => htmlspecialchars((string) $t, ENT_QUOTES, 'UTF-8');
 $months = ChartData::months($displayData['days'], $today);
@@ -153,22 +152,20 @@ $stacked .= $xLabels();
 // 3. Grouped columns: late in and early out minutes per month.
 $grouped = '';
 
-if ($calc) {
-    [$maxMin, $stepMin] = $nice(max(1, ...array_map(static fn (array $m): int => max($m['summary']->lateMinutes, $m['summary']->earlyMinutes), $months)));
-    $gw      = min(18, $band * 0.3);
-    $grouped = $grid($maxMin, $stepMin, $hm);
+[$maxMin, $stepMin] = $nice(max(1, ...array_map(static fn (array $m): int => max($m['summary']->lateMinutes, $m['summary']->earlyMinutes), $months)));
+$gw      = min(18, $band * 0.3);
+$grouped = $grid($maxMin, $stepMin, $hm);
 
-    foreach ($months as $i => $m) {
-        foreach ([['late', $m['summary']->lateMinutes, -1, 'COM_BIOTIME_COL_LATE'], ['early', $m['summary']->earlyMinutes, 1, 'COM_BIOTIME_COL_EARLY']] as [$k, $v, $side, $key]) {
-            $top = $y($v, $maxMin);
-            $x   = $side < 0 ? $cx($i) - $gw - 1 : $cx($i) + 1;
-            $grouped .= '<rect class="bt-chart-mark" x="' . round($x, 1) . '" y="' . $top . '" width="' . round($gw, 1) . '" height="' . max(0, round($T + $ph - $top, 1)) . '" rx="3" fill="' . $color[$k] . '">'
-                . '<title>' . $e($long($m) . ' · ' . Text::_($key) . ': ' . $f->duration($v)) . '</title></rect>';
-        }
+foreach ($months as $i => $m) {
+    foreach ([['late', $m['summary']->lateMinutes, -1, 'COM_BIOTIME_COL_LATE'], ['early', $m['summary']->earlyMinutes, 1, 'COM_BIOTIME_COL_EARLY']] as [$k, $v, $side, $key]) {
+        $top = $y($v, $maxMin);
+        $x   = $side < 0 ? $cx($i) - $gw - 1 : $cx($i) + 1;
+        $grouped .= '<rect class="bt-chart-mark" x="' . round($x, 1) . '" y="' . $top . '" width="' . round($gw, 1) . '" height="' . max(0, round($T + $ph - $top, 1)) . '" rx="3" fill="' . $color[$k] . '">'
+            . '<title>' . $e($long($m) . ' · ' . Text::_($key) . ': ' . $f->duration($v)) . '</title></rect>';
     }
-
-    $grouped .= $xLabels();
 }
+
+$grouped .= $xLabels();
 
 // 4. Lines: average check-in and check-out per month (minutes after midnight).
 $series = ['in' => [], 'out' => []];
@@ -260,14 +257,12 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
             $legend(array_map(static fn (string $k): array => [$color[$k], $label[$k], null], $stackKinds))
         );
 
-        if ($calc) {
-            echo $chart(
-                Text::_('COM_BIOTIME_CHART_LATE_EARLY'),
-                implode('; ', array_map(static fn (array $m): string => $long($m) . ': ' . Text::_('COM_BIOTIME_COL_LATE') . ' ' . $f->duration($m['summary']->lateMinutes) . ', ' . Text::_('COM_BIOTIME_COL_EARLY') . ' ' . $f->duration($m['summary']->earlyMinutes), $months)),
-                '<svg class="bt-chart-svg" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-hidden="true">' . $grouped . '</svg>',
-                $legend([[$color['late'], Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $f->duration($s->lateMinutes)], [$color['early'], Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $f->duration($s->earlyMinutes)]])
-            );
-        }
+        echo $chart(
+            Text::_('COM_BIOTIME_CHART_LATE_EARLY'),
+            implode('; ', array_map(static fn (array $m): string => $long($m) . ': ' . Text::_('COM_BIOTIME_COL_LATE') . ' ' . $f->duration($m['summary']->lateMinutes) . ', ' . Text::_('COM_BIOTIME_COL_EARLY') . ' ' . $f->duration($m['summary']->earlyMinutes), $months)),
+            '<svg class="bt-chart-svg" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-hidden="true">' . $grouped . '</svg>',
+            $legend([[$color['late'], Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $f->duration($s->lateMinutes)], [$color['early'], Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $f->duration($s->earlyMinutes)]])
+        );
 
         if ($lines !== '') {
             echo $chart(

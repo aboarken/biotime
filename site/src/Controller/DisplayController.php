@@ -33,6 +33,7 @@ final class DisplayController extends BaseController
         'calendar'   => 'zkb.calendar.view',
         'punches'    => 'zkb.punches.view',
         'day'        => ['zkb.attendance.view', 'zkb.calendar.view', 'zkb.dashboard.view'],
+        'manager'    => 'zkb.manager.view',
     ];
 
     protected $default_view = 'dashboard';

@@ -12,7 +12,7 @@ namespace BiotimePortal\Component\Biotime\Administrator\Database;
 
 
 /**
- * Manager Dashboard (0.11.0): the departments and employees a manager may see, read from
+ * Manager Dashboard (1.0.0): the departments and employees a manager may see, read from
  * ZKBioTime's database (read-only). A manager sees their own department and every department
  * below it (personnel_department.parent_dept_id), and the employees in them who have not resigned
  * (personnel_resign) by the given date. Names only: no other personal data is read.

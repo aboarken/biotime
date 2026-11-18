@@ -180,7 +180,7 @@ final class SettingsValidatorTest extends TestCase
         self::assertSame([], array_diff(array_keys($values), array_keys(Settings::DEFAULTS)), 'only known names');
 
         foreach (['server_url', 'api_username', 'api_password_enc', 'auth_method', 'tls_pin', 'page_size', 'data_source', 'daily_path', 'token_cache_enc'] as $removed) {
-            self::assertArrayNotHasKey($removed, Settings::DEFAULTS, $removed . ': the API settings are gone (0.11.0)');
+            self::assertArrayNotHasKey($removed, Settings::DEFAULTS, $removed . ': the API settings are gone (1.0.0)');
         }
     }
 

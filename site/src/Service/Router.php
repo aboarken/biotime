@@ -19,14 +19,14 @@ use Joomla\CMS\Component\Router\Rules\StandardRules;
 use Joomla\CMS\Menu\AbstractMenu;
 
 /**
- * SEF router. The four menu item types plus the day details page. No URL value ever selects the
+ * SEF router. The five menu item types plus the day details page. No URL value ever selects the
  * employee: months and dates only narrow the logged-in employee's own data.
  */
 final class Router extends RouterView
 {
     public function __construct(SiteApplication $app, AbstractMenu $menu)
     {
-        foreach (['dashboard', 'attendance', 'calendar', 'punches'] as $view) {
+        foreach (['dashboard', 'attendance', 'calendar', 'punches', 'manager'] as $view) {
             $this->registerView(new RouterViewConfiguration($view));
         }
 

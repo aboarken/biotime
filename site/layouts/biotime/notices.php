@@ -2,7 +2,7 @@
 
 /**
  * Notices above portal data: unavailable parts and, when it differs from the
- * user's, the server's time zone. The explanatory note and "Updated" time were removed in 0.11.0.
+ * user's, the server's time zone. The explanatory note and "Updated" time were removed in 1.0.0.
  *
  * @license GNU General Public License version 2 or later
  */

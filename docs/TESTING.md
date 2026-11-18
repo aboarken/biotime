@@ -35,7 +35,7 @@ The GitHub workflow runs PHP lint and these tests on every pull request before b
 ## 2. Browser checks on a real Joomla site
 
 The Playwright scripts of earlier versions drove the portal against a stand-in for the REST API;
-they were removed with the API in 0.11.0. Until scripts against the PostgreSQL fixture exist, use
+they were removed with the API in 1.0.0. Until scripts against the PostgreSQL fixture exist, use
 the checklist below on a test site whose Integration Settings point to a PostgreSQL loaded with
 `tests/Support/sql/zkbiotime-pgsql.sql`.
 
@@ -44,15 +44,24 @@ the checklist below on a test site whose Integration Settings point to a Postgre
 Run the items for the version being released, note the result, and send the notes (no
 passwords, tokens or personal data) with the pull request.
 
-Items of versions before 0.11.0 that mention the API, Test Connection, Find Endpoints or the
-Daily Attendance Source describe features removed in 0.11.0; they are kept as the record of
+Items of versions before 1.0.0 that mention the API, Test Connection, Find Endpoints or the
+Daily Attendance Source describe features removed in 1.0.0; they are kept as the record of
 those releases.
 
 ### Before the first test
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
-### 0.11.0 – Database only
+### 1.0.0 – Manager Dashboard, dashboard changes
+- [ ] Give a managers' group *View Manager Dashboard* (Options → Permissions) and add a **Manager Dashboard** menu item for it. A manager sees their own department and the departments below it in the Department list (indented); the Employee list holds only their employees; a resigned employee is not listed.
+- [ ] Default period is today; From/To shows up to 31 days. Cards: Workforce plus the My Attendance figures; clicking Days Absent shows only absent rows and jumps to the table; Workforce shows every row again.
+- [ ] The table has Employee, Date, Check-In / Check-Out (one column; Absent, Weekend, Holiday or Leave when there are no punches), Late In, Early Out, Total (late + early).
+- [ ] A user without the permission gets 403 on `index.php?option=com_biotime&view=manager`; a manager mapped to an employee without a department sees the "no department" message.
+- [ ] My Dashboard Period reads "From 01/08/2026 to 31/07/2027"; the circles chart is gone; *Attendance rate per month* and *Your Devices* show instead.
+- [ ] No explanatory note or "Updated" time under any portal page.
+- [ ] My Attendance: All Days is the first card; after choosing Days Present, All Days shows every day again. Every card (also on My Dashboard) lands on the records table.
+
+### 1.0.0 – Database only
 - [ ] After the update from 0.10.0: Integration Settings has no Connection, Credentials, TLS or
       Daily Attendance Source sections, no Read attendance from, no Test Connection, Read
       Certificate Pin or Find Endpoints buttons; the Find Endpoints submenu is gone and

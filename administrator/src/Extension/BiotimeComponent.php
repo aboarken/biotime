@@ -88,6 +88,20 @@ final class BiotimeComponent extends MVCComponent implements RouterServiceInterf
         return $this->service(AttendanceService::class);
     }
 
+    /**
+     * ZKBioTime's database (read-only); the connection opens when first needed.
+     */
+    public function getAttendanceReader(): \BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader
+    {
+        return $this->service(\BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader::class);
+    }
+
+    /** Manager Dashboard: departments and employees (1.0.0). */
+    public function getTeamReader(): \BiotimePortal\Component\Biotime\Administrator\Database\TeamReader
+    {
+        return $this->service(\BiotimePortal\Component\Biotime\Administrator\Database\TeamReader::class);
+    }
+
     public function getLogger(): JoomlaLogger
     {
         return $this->service(JoomlaLogger::class);

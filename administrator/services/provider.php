@@ -23,6 +23,7 @@ use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
 use BiotimePortal\Component\Biotime\Administrator\Cache\DbUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
+use BiotimePortal\Component\Biotime\Administrator\Database\TeamReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbEmployeeDirectory;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
@@ -157,25 +158,34 @@ return new class () implements ServiceProviderInterface {
             }
         };
 
+        // Attendance from ZKBioTime's database: one reader, and at most one connection, per page
+        // load (the connection opens when first needed).
+        $container->share(
+            AttendanceReader::class,
+            static function (Container $c) use ($zone): AttendanceReader {
+                $zoneName = $zone($c)->getName();
+
+                return new AttendanceReader(
+                    static fn (): Query => $c->get(Query::class),
+                    \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
+                    $c->get(SettingsRepository::class)->load()->dbDurationUnit()
+                );
+            }
+        );
+
+        // Manager Dashboard (1.0.0): departments and their employees.
+        $container->share(
+            TeamReader::class,
+            static fn (Container $c): TeamReader => new TeamReader(static fn (): Query => $c->get(Query::class))
+        );
+
         $container->share(
             AttendanceService::class,
             static function (Container $c) use ($zone): AttendanceService {
                 $settings = $c->get(SettingsRepository::class)->load();
-                $zoneName = $zone($c)->getName();
-
-                // Attendance from ZKBioTime's database (0.6.0): one reader, and at most one
-                // connection, per page load.
-                $reader   = null;
-                $database = static function () use (&$reader, $c, $settings, $zoneName): AttendanceReader {
-                    return $reader ??= new AttendanceReader(
-                        static fn (): Query => $c->get(Query::class),
-                        \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
-                        $settings->dbDurationUnit()
-                    );
-                };
 
                 return new AttendanceService(
-                    $database,
+                    static fn (): AttendanceReader => $c->get(AttendanceReader::class),
                     $c->get(UserCacheInterface::class),
                     $c->get(JoomlaLogger::class),
                     $zone($c),

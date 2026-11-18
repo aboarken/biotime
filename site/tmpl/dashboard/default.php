@@ -115,6 +115,5 @@ $stat = function (string $label, string $value, string $tone, string $filter = '
         ?>
     </div>
 
-    <?php // 'calc': the days carry ZKBioTime's calculation (always, since they come from its database). ?>
-    <?php echo LayoutHelper::render('biotime.charts', ['days' => $this->period->days, 'today' => $this->today, 'calc' => true, 'summary' => $s, 'f' => $f, 'devices' => $this->devices]); ?>
+    <?php echo LayoutHelper::render('biotime.charts', ['days' => $this->period->days, 'today' => $this->today, 'summary' => $s, 'f' => $f, 'devices' => $this->devices]); ?>
 </div>
