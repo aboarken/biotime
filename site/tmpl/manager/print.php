@@ -17,8 +17,8 @@ use Joomla\CMS\Uri\Uri;
  * Manager Dashboard report, "Export PDF" (1.0.11): opened in a new tab with tmpl=component, it
  * opens the print dialog, where "Save as PDF" makes the PDF. The page has the letterhead of
  * Integration Settings (logo, header texts, footer on every page), a title band, the filters,
- * the cards and every employee shown (not only one page of them). A4 portrait when every date
- * fits next to the other columns; otherwise landscape, the dates in several tables, each with
+ * the cards and every employee shown (not only one page of them). Always A4 landscape (1.0.14);
+ * a period longer than 12 days is cut into several tables, each with
  * the employee column again and the totals in the last one.
  */
 
@@ -31,9 +31,9 @@ $labels = $this->statusLabels();
 $app    = Factory::getApplication();
 $site   = trim((string) $app->get('sitename', ''));
 
-// The paper: A4, portrait or landscape (HtmlView::reportColumns()), and the main colour.
+// The paper: A4 landscape (1.0.14), and the main colour.
 $this->getDocument()->getWebAssetManager()->addInlineStyle(
-    '@page { size: A4 ' . ($this->landscape ? 'landscape' : 'portrait') . '; }'
+    '@page { size: A4 landscape; }'
     . ' .com-biotime.bt-report { --bt-report: ' . $head['color'] . '; --bt-foot-h: ' . ($head['footer'] === [] ? 0 : 4 + 4.2 * min(\count($head['footer']), 6)) . 'mm; }'
 );
 
@@ -76,7 +76,7 @@ $meta = [
     [Text::_('COM_BIOTIME_REPORT_PRINTED'), trim($this->printedAt . ($this->printedBy !== '' ? ' · ' . $this->printedBy : ''))],
 ];
 ?>
-<div class="com-biotime bt-report<?php echo $this->landscape ? ' bt-report--landscape' : ''; ?>" data-bt-root="manager-report" data-bt-report data-autoprint="<?php echo $this->problem === '' && $this->tooMany === 0 ? '1' : '0'; ?>">
+<div class="com-biotime bt-report bt-report--landscape" data-bt-root="manager-report" data-bt-report data-autoprint="<?php echo $this->problem === '' && $this->tooMany === 0 ? '1' : '0'; ?>">
     <div class="bt-report-tools">
         <button type="button" class="bt-btn" data-bt-print><?php echo Text::_('COM_BIOTIME_REPORT_PRINT'); ?></button>
         <button type="button" class="bt-btn bt-btn--ghost" data-bt-close><?php echo Text::_('COM_BIOTIME_REPORT_CLOSE'); ?></button>
@@ -98,11 +98,11 @@ $meta = [
                 <tr><td>
                     <header class="bt-report-letterhead">
                         <div class="bt-report-logo">
+                            <?php // The site name is always at the top (1.0.14); a logo, when one is set, above it. ?>
                             <?php if ($logo !== '') : ?>
-                                <img src="<?php echo $e($logo); ?>" alt="<?php echo $e($site); ?>">
-                            <?php else : ?>
-                                <span class="bt-report-sitename"><?php echo $e($site); ?></span>
+                                <img src="<?php echo $e($logo); ?>" alt="">
                             <?php endif; ?>
+                            <span class="bt-report-sitename"><?php echo $e($site); ?></span>
                         </div>
                         <?php if ($head['left'] !== '' || $head['right'] !== '') : ?>
                             <div class="bt-report-lines">

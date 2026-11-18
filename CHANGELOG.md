@@ -3,6 +3,13 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.14] - 2026-11-18
+
+### Changed
+- **Export PDF is always A4 landscape** (was portrait for up to 6 days). Periods longer than 12 days are still split into tables of at most 12 days.
+- **The PDF shows the site name at the top** (Joomla's Global Configuration → Site Name) in every case, then the *Attendance Report* title band; a logo set in Report Letterhead, if any, goes above it. Nothing about a particular organisation is built in: the logo, header lines and footer stay empty until an administrator fills them in.
+- **Cards: Total Late In and Total Early Out show only the time**, without the number of days, on My Dashboard, My Attendance, the Manager Dashboard and the PDF.
+
 ## [1.0.13] - 2026-11-18
 
 ### Changed

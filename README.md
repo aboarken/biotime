@@ -38,13 +38,13 @@ counted, exceptions) open from the Dashboard, Attendance and Calendar pages; the
 menu item type.
 
 **Export PDF (Manager Dashboard, 1.0.11).** The button under the table opens the report in a new
-tab and the browser's print dialog; choose **Save as PDF**. The report has the letterhead set in
-*Integration Settings → Report Letterhead* (logo or banner image, a line of text on each side
-under it, up to six footer lines on every page with clickable web and e-mail addresses, and the
-main colour), a title band with the period, the filters used, who printed it and when, the same
-cards and the table in the page's own colours, and page numbers. It is **A4 portrait** when every
-date fits (up to 6 days) and **A4 landscape** otherwise, the dates then split into tables of at
-most 12 days, each repeating the employee column, the totals in the last one. The header row
+tab and the browser's print dialog; choose **Save as PDF**. The report has the **site name** at the
+top (Joomla's *Global Configuration → Site Name*), an **Attendance Report** title band with the
+period, the filters used, who printed it and when, the same cards and the table in the page's own
+colours, and page numbers. It is always **A4 landscape**; a period longer than 12 days is split
+into tables of at most 12 days, each repeating the employee column, the totals in the last one.
+*Integration Settings → Report Letterhead* can add a logo above the site name, a line of text on
+each side under it and footer lines; all are empty by default. The header row
 repeats on every page, and an employee's row never breaks across pages. It is made by the browser,
 so no PDF library is installed on the server and Arabic text is shown correctly.
 
@@ -133,7 +133,7 @@ the Joomla server that each employee only ever sees their own records.
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
 | | Match by e-mail when the field is empty | On by default. Since 1.0.10 every match by e-mail waits for an administrator to confirm it in User Mappings (Joomla does not verify e-mail changes). |
 | Modules | Charts | No longer used since 0.9.0 (My Dashboard has no Monthly Overview). |
-| Report Letterhead | Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), e.g. the whole letterhead banner; empty shows the site name. Footer: up to 6 lines. |
+| Report Letterhead | Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). All optional and empty by default: the report always shows the site name at the top. Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), shown above the site name. Footer: up to 6 lines. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
 | | Date format, Time format | How the portal shows dates and times. |
