@@ -52,6 +52,11 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.5 – Card colours, Total Late
+- [ ] No two cards on a page share a colour; a card with 0 keeps its colour.
+- [ ] My Attendance: columns Late In, Early Out, Total Late (their sum), no Worked column.
+- [ ] Manager Dashboard: the department list starts with "All Departments".
+
 ### 1.0.4 – Large teams, Employee ID search, weekend schedule
 - [ ] As a Super User (View all departments), open the Manager Dashboard with All my departments: no "pcre.backtrack_limit" error; with more than 300 employees the page asks to narrow the list.
 - [ ] Choose a department of more than 50 employees: the table shows 50 per page with Previous / Next; the cards count all of them.

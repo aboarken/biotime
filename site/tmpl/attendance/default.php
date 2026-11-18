@@ -68,25 +68,25 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
 // The first card, All Days, clears the status filter ('*'); a card with a filter shows only the
 // matching days and jumps down to them (#bt-records, 1.0.0).
 // All Days: present + absent + leaves + holidays + weekend days so far (1.0.3).
-$allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, 'slate', '*'];
+$allDays = [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, Ui::cardTone('COM_BIOTIME_CARD_ALL_DAYS'), '*'];
 $cards = [
     $allDays,
-    [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', 'green', 'attended'],
-    [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::countTone($s->absentDays, 'red'), 'absent'],
-    [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::countTone($s->leaveDays, 'amber'), 'leave'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::countTone($s->missingMorningDays, 'amber'), 'missingmorning'],
-    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::countTone($s->missingAfternoonDays, 'amber'), 'missingafternoon'],
-    [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::countTone($s->holidayDays, 'purple'), 'holiday'],
-    [Text::_('COM_BIOTIME_CARD_WEEKENDS'), (string) $s->offDays, Ui::countTone($s->offDays, 'weekend'), 'weekend'],
-    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::countTone($s->weekendWorked, 'sky'), 'weekendworked'],
-    [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $e($f->duration($s->lateMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::countTone($s->lateMinutes, 'amber'), 'late'],
-    [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $e($f->duration($s->earlyMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->earlyDays)) . '</small>', Ui::countTone($s->earlyMinutes, 'amber'), 'early'],
-    [Text::_('COM_BIOTIME_CARD_LATE_EARLY'), $e($f->duration($s->lateEarlyMinutes())), Ui::countTone($s->lateEarlyMinutes(), 'red'), ''],
-    [Text::_('COM_BIOTIME_CARD_WORKED'), $e($f->duration($s->workedMinutes)), 'blue', ''],
-    [Text::_('COM_BIOTIME_CARD_OVERTIME'), $e($f->duration($s->overtimeMinutes)), Ui::countTone($s->overtimeMinutes, 'teal'), ''],
-    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), 'teal', ''],
-    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), 'blue', ''],
-    [Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::countTone($s->punchCount, 'blue'), 'punches'],
+    [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', Ui::cardTone('COM_BIOTIME_CARD_PRESENT_DAYS'), 'attended'],
+    [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::cardTone('COM_BIOTIME_CARD_ABSENT_DAYS'), 'absent'],
+    [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::cardTone('COM_BIOTIME_CARD_LEAVES'), 'leave'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays, Ui::cardTone('COM_BIOTIME_CARD_MISSING_MORNING'), 'missingmorning'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays, Ui::cardTone('COM_BIOTIME_CARD_MISSING_AFTERNOON'), 'missingafternoon'],
+    [Text::_('COM_BIOTIME_CARD_HOLIDAYS'), (string) $s->holidayDays, Ui::cardTone('COM_BIOTIME_CARD_HOLIDAYS'), 'holiday'],
+    [Text::_('COM_BIOTIME_CARD_WEEKENDS'), (string) $s->offDays, Ui::cardTone('COM_BIOTIME_CARD_WEEKENDS'), 'weekend'],
+    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), (string) $s->weekendWorked, Ui::cardTone('COM_BIOTIME_CARD_WEEKEND_WORKED'), 'weekendworked'],
+    [Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $e($f->duration($s->lateMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->lateDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_LATE_TOTAL'), 'late'],
+    [Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $e($f->duration($s->earlyMinutes)) . ' <small>' . $e(Text::plural('COM_BIOTIME_N_DAYS', $s->earlyDays)) . '</small>', Ui::cardTone('COM_BIOTIME_CARD_EARLY_TOTAL'), 'early'],
+    [Text::_('COM_BIOTIME_CARD_LATE_EARLY'), $e($f->duration($s->lateEarlyMinutes())), Ui::cardTone('COM_BIOTIME_CARD_LATE_EARLY'), ''],
+    [Text::_('COM_BIOTIME_CARD_WORKED'), $e($f->duration($s->workedMinutes)), Ui::cardTone('COM_BIOTIME_CARD_WORKED'), ''],
+    [Text::_('COM_BIOTIME_CARD_OVERTIME'), $e($f->duration($s->overtimeMinutes)), Ui::cardTone('COM_BIOTIME_CARD_OVERTIME'), ''],
+    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_IN'), $e($f->time($s->avgCheckIn)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_IN'), ''],
+    [Text::_('COM_BIOTIME_CARD_AVG_CHECK_OUT'), $e($f->time($s->avgCheckOut)), Ui::cardTone('COM_BIOTIME_CARD_AVG_CHECK_OUT'), ''],
+    [Text::_('COM_BIOTIME_CARD_PUNCHES'), (string) $s->punchCount, Ui::cardTone('COM_BIOTIME_CARD_PUNCHES'), 'punches'],
 ];
 ?>
 <div class="com-biotime biotime-attendance" data-bt-root="attendance">
@@ -147,7 +147,7 @@ $cards = [
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_CHECK_OUT'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_WORKED'); ?></th>
+                            <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_TOTAL_LATE'); ?></th>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_STATUS'); ?></th>
                         </tr>
                     </thead>
@@ -161,7 +161,8 @@ $cards = [
                             <td><?php echo $check($day, 'out'); ?></td>
                             <td><?php echo $min($day->late); ?></td>
                             <td><?php echo $min($day->early); ?></td>
-                            <td><?php echo $day->worked !== null && $day->worked > 0 ? $e($f->duration($day->worked)) : '<span class="bt-check-none">—</span>'; ?></td>
+                            <?php // Total Late: late-in + early-out of the day (1.0.5, was Worked). ?>
+                            <td><?php echo $min(($day->late ?? 0) + ($day->early ?? 0)); ?></td>
                             <td>
                                 <div class="bt-badges">
                                     <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
