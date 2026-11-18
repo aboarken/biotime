@@ -112,7 +112,7 @@ passwords, tokens or personal data) with the pull request.
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
 ### 0.10.0 – Statistics, employee row, Attendance Management System
-- [ ] My Dashboard has no Recent Activity; Statistics shows 5 charts (database): Days so far, Days per month, Late in and early out per month, Average check-in and check-out per month (floating columns, no lines), and the bars, with the same totals as the cards. Hovering a bar, slice or point shows its value.
+- [ ] My Dashboard has no Recent Activity; Statistics shows 5 charts (database): Days so far, Days per month, Late in and early out per month, Average check-in and check-out per month (floating columns, no lines), and the circles (one ring per figure, "of N working days" below), with the same totals as the cards. Hovering a bar, slice or point shows its value.
 - [ ] With the API: 4 charts in 2 rows (no late/early chart).
 - [ ] Under the heading, a table row: Department, Position, Employee ID, Name, Period "From 01/08/2026 to <today>". On a phone it shows one line per column.
 - [ ] The note under the pages reads "Your schedule, late in, early out ... counts as a check-out." and "Weekend days: Friday, Saturday. They show as Weekend unless you punched that day."

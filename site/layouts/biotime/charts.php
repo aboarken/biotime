@@ -9,11 +9,12 @@
  *  2. Days per month (stacked columns): present, absent, holiday, leave.
  *  3. Late in and early out per month (grouped columns, minutes; database only).
  *  4. Average check-in and check-out per month (a floating column from check-in to check-out).
- *  5. Missing punches and other days (horizontal bars).
+ *  5. Missing punches and other days (circles: a ring per figure, filled by its share of the days).
  *
  * Colours: the portal's tones (validated together for colour-blind separation): green present,
  * red absent, purple holiday, blue weekend, amber leave and late in, rose early out, teal check-in,
- * indigo check-out, navy bars.
+ * indigo check-out; the circles teal (no check-in), indigo (no check-out), sky (weekend work),
+ * amber (late in) and rose (early out).
  *
  * @license GNU General Public License version 2 or later
  */
@@ -40,7 +41,7 @@ if ($months === []) {
 
 $color = [
     'present' => '#15803d', 'absent' => '#dc2626', 'holiday' => '#7c3aed', 'weekend' => '#3b5998', 'leave' => '#d97706',
-    'late' => '#d97706', 'early' => '#be185d', 'in' => '#0d9488', 'out' => '#4f46e5', 'bar' => '#17426f',
+    'late' => '#d97706', 'early' => '#be185d', 'in' => '#0d9488', 'out' => '#4f46e5',
 ];
 $label = [
     'present' => Text::_('COM_BIOTIME_STATUS_PRESENT'),
@@ -214,26 +215,26 @@ if ($known !== []) {
             }
 
             $lines .= '<rect class="bt-chart-mark" x="' . $x . '" y="' . round($ly($v) - 3, 1) . '" width="' . round($fw, 1) . '" height="6" rx="3" fill="' . $color[$k] . '"><title>' . $tip . '</title></rect>'
-                . '<text class="bt-chart-value" x="' . $cx($i) . '" y="' . ($k === 'out' ? round($ly($v) - 8, 1) : round($ly($v) + 16, 1)) . '" text-anchor="middle">' . $clock($v) . '</text>';
+                . '<text class="bt-chart-value" x="' . $cx($i) . '" y="' . ($k === 'out' && $ly($v) - 8 >= 10 ? round($ly($v) - 8, 1) : round($ly($v) + 16, 1)) . '" text-anchor="middle">' . $clock($v) . '</text>';
         }
     }
 
     $lines .= $xLabels();
 }
 
-// 5. Horizontal bars: missing punches, weekend work, late and early days.
+// 5. Circles: missing punches, weekend work, late and early days. Each ring fills by its share
+// of the working days so far (weekend work: of the weekend days so far), the number inside.
+$weekendTotal = $kinds['weekend'] + $s->weekendWorked;
 $bars = [
-    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays],
-    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays],
-    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked],
+    [Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), $s->missingMorningDays, $s->workingDays, '#0d9488', 'COM_BIOTIME_CHART_OF_WORKING_DAYS'],
+    [Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), $s->missingAfternoonDays, $s->workingDays, '#4f46e5', 'COM_BIOTIME_CHART_OF_WORKING_DAYS'],
+    [Text::_('COM_BIOTIME_CARD_WEEKEND_WORKED'), $s->weekendWorked, $weekendTotal, '#0284c7', 'COM_BIOTIME_CHART_OF_WEEKEND_DAYS'],
 ];
 
 if ($calc) {
-    $bars[] = [Text::_('COM_BIOTIME_CHART_LATE_DAYS'), $s->lateDays];
-    $bars[] = [Text::_('COM_BIOTIME_CHART_EARLY_DAYS'), $s->earlyDays];
+    $bars[] = [Text::_('COM_BIOTIME_CHART_LATE_DAYS'), $s->lateDays, $s->workingDays, $color['late'], 'COM_BIOTIME_CHART_OF_WORKING_DAYS'];
+    $bars[] = [Text::_('COM_BIOTIME_CHART_EARLY_DAYS'), $s->earlyDays, $s->workingDays, $color['early'], 'COM_BIOTIME_CHART_OF_WORKING_DAYS'];
 }
-
-$barMax = max(1, ...array_column($bars, 1));
 
 $chart = static fn (string $title, string $summary, string $body, string $legendHtml = '', string $class = ''): string => '<figure class="bt-chart' . $class . '">'
     . '<figcaption class="bt-chart-title">' . $e($title) . '</figcaption>' . $body . $legendHtml
@@ -280,18 +281,23 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
             );
         }
 
-        $hbars = '<div class="bt-hbars">';
+        $rc    = 2 * M_PI * 38;
+        $rings = '<div class="bt-rings">';
 
-        foreach ($bars as [$name, $n]) {
-            $hbars .= '<div class="bt-hbar" title="' . $e($name . ': ' . Text::plural('COM_BIOTIME_N_DAYS', $n)) . '"><span class="bt-hbar-label">' . $e($name) . '</span>'
-                . '<span class="bt-hbar-track"><span class="bt-hbar-fill" style="width:' . ($n > 0 ? max(2, round(100 * $n / $barMax, 1)) : 0) . '%;background:' . $color['bar'] . '"></span></span>'
-                . '<span class="bt-hbar-value">' . $n . '</span></div>';
+        foreach ($bars as [$name, $n, $of, $c, $ofKey]) {
+            $share = $of > 0 ? min(1, $n / $of) : 0;
+            $note  = Text::sprintf($ofKey, $of);
+            $rings .= '<div class="bt-ring" title="' . $e($name . ': ' . $n . ' ' . $note) . '">'
+                . '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="38" fill="none" stroke="#eef0f3" stroke-width="10"/>'
+                . ($n > 0 ? '<circle cx="50" cy="50" r="38" fill="none" stroke="' . $c . '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' . round(max(1, $rc * $share), 2) . ' ' . round($rc, 2) . '" transform="rotate(-90 50 50)"/>' : '')
+                . '<text class="bt-ring-value" x="50" y="58" text-anchor="middle">' . $n . '</text></svg>'
+                . '<span class="bt-ring-label">' . $e($name) . '</span><span class="bt-ring-note">' . $e($note) . '</span></div>';
         }
 
         echo $chart(
             Text::_('COM_BIOTIME_CHART_OTHER_DAYS'),
-            implode(', ', array_map(static fn (array $b): string => $b[0] . ' ' . $b[1], $bars)),
-            $hbars . '</div>',
+            implode(', ', array_map(static fn (array $b): string => $b[0] . ' ' . $b[1] . ' ' . Text::sprintf($b[4], $b[2]), $bars)),
+            $rings . '</div>',
             '',
             // Full width after an even number of charts (database: 4); beside the times otherwise.
             ($calc ? 1 : 0) + ($lines !== '' ? 1 : 0) + 2 === 4 ? ' bt-chart--wide' : ''
