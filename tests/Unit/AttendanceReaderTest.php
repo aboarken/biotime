@@ -7,7 +7,6 @@
 namespace BiotimePortal\Component\Biotime\Tests\Unit;
 
 use BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService;
-use BiotimePortal\Component\Biotime\Administrator\Attendance\SourceConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConfig;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
@@ -16,7 +15,6 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
 use BiotimePortal\Component\Biotime\Tests\Support\ArrayLogger;
 use BiotimePortal\Component\Biotime\Tests\Support\CatalogueQuery;
 use BiotimePortal\Component\Biotime\Tests\Support\Fakes;
-use BiotimePortal\Component\Biotime\Tests\Support\RoutingTransport;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -137,7 +135,7 @@ final class AttendanceReaderTest extends TestCase
             }
         }
 
-        // Punches in the API's field names, with the state and verification as ZKBioTime shows them.
+        // Punches in iclock_transaction's field names, with the state and verification as ZKBioTime shows them.
         $p = $this->reader(new CatalogueQuery('pgsql', $this->answers()))->punches('E1', new \DateTimeImmutable('2026-11-01'), new \DateTimeImmutable('2026-11-30'))[0];
         self::assertSame(['2026-11-02 07:42:10', 'Check In', 'Face', '15'], [$p['punch_time'], $p['punch_state_display'], $p['verify_type_display'], $p['verify_type']]);
     }
@@ -184,14 +182,12 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame('National Day', $days['2026-11-15']['holiday'], 'att_holiday gives the name');
 
         $period = (new AttendanceService(
-            static fn () => throw new \LogicException('no API'),
-            SourceConfig::parse('daily', []),
+            fn () => $this->reader(new CatalogueQuery('pgsql', $answers)),
             Fakes::cache($this->cache),
             new ArrayLogger(),
             new \DateTimeZone('Asia/Riyadh'),
             static fn () => new \DateTimeImmutable('2026-11-20 12:00:00', new \DateTimeZone('UTC')),
-            [5, 6],
-            fn () => $this->reader(new CatalogueQuery('pgsql', $answers))
+            [5, 6]
         ))->month(Identity::matched(5, '11', 'E1'), 2026, 11);
 
         self::assertSame([12, 25, '07:42:10', 'IN07:30-OUT15:30'], [$period->day('2026-11-02')->late, $period->day('2026-11-02')->early, $period->day('2026-11-02')->checkIn, $period->day('2026-11-02')->schedule]);
@@ -228,18 +224,15 @@ final class AttendanceReaderTest extends TestCase
 
     private function service(CatalogueQuery $q): AttendanceService
     {
-        $zkb    = new RoutingTransport();
         $reader = $this->reader($q);
 
         return new AttendanceService(
-            static fn () => Fakes::client($zkb),
-            SourceConfig::parse('daily', []),
+            static fn () => $reader,
             Fakes::cache($this->cache),
             new ArrayLogger(),
             new \DateTimeZone('Asia/Riyadh'),
             static fn () => new \DateTimeImmutable('2026-11-20 12:00:00', new \DateTimeZone('UTC')),
-            [5, 6],
-            static fn () => $reader
+            [5, 6]
         );
     }
 
@@ -247,8 +240,6 @@ final class AttendanceReaderTest extends TestCase
     {
         $alice  = Identity::matched(5, '11', 'E1');
         $period = $this->service(new CatalogueQuery('pgsql', $this->answers()))->month($alice, 2026, 11);
-
-        self::assertTrue($period->calculated);
 
         $d = $period->day('2026-11-02');
         self::assertSame(['present', 'Day 07:30-15:30', '07:30:00', '07:42:10', '15:05:00', 12, 25], [$d->status, $d->schedule, $d->schedStart, $d->checkIn, $d->checkOut, $d->late, $d->early]);

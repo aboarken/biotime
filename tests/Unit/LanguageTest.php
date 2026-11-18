@@ -130,7 +130,7 @@ final class LanguageTest extends TestCase
         self::assertSame([], $missing);
     }
 
-    public function testEveryErrorKindHasAMessageAndAHint(): void
+    public function testEveryErrorKindHasAPortalMessage(): void
     {
         $strings = self::strings();
 
