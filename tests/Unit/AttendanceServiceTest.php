@@ -164,24 +164,15 @@ final class AttendanceServiceTest extends TestCase
 
     public function testPunchesOfOtherEmployeesAreHiddenAndLogged(): void
     {
-        $period = $this->service()->month($this->alice, 2026, 11);
+        $service = $this->service();
+        $period  = $service->month($this->alice, 2026, 11);
 
         self::assertStringNotContainsString('BOB-GATE', serialize($period));
         self::assertSame([], $period->day('2026-11-05')->punches);
         self::assertSame([], $period->day('2026-11-06')->punches, 'a punch without an employee code');
         self::assertTrue($this->log->has('warning', 'rows of other employees'));
         self::assertStringNotContainsString('E2', $this->log->text(), 'no employee codes in the log');
-        self::assertSame(2, $this->service()->stats()['punches']['hidden'] ?? $this->serviceStats());
-    }
-
-    /** Hidden rows counted by a fresh read (the service above read from the cache). */
-    private function serviceStats(): int
-    {
-        $this->session = [];
-        $service       = $this->service();
-        $service->month($this->alice, 2026, 11);
-
-        return $service->stats()['punches']['hidden'];
+        self::assertSame(2, $service->stats()['punches']['hidden']);
     }
 
     public function testEachDateKeepsItsOwnScheduleAndZkbioTimesCalculation(): void
