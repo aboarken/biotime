@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.9] - 2026-11-18
+
+### Fixed
+- **Manager Dashboard slow over two months**: when the period crossed a month (e.g. 25 October to 5 November), reading each employee replaced the team's read-ahead rows, so every employee was read again on their own (about fifteen queries each). The team's rows are now kept.
+
+### Changed
+- **Manager Dashboard without Joomla's cache**: the team is read in a few queries, so each employee's months are no longer written to and read from `#__biotime_cache` on every view (hundreds of queries for a large team).
+- **Why a manager sees "You don't have access to view departments"** is written to `administrator/logs/com_biotime.php` (without names): no single ZKBioTime employee, no matching ZKBioTime user, a user without departments, or ZKBioTime's users not readable.
+
 ## [1.0.8] - 2026-11-18
 
 ### Changed

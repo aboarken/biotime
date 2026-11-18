@@ -67,14 +67,15 @@ final class TeamReader
      * is_active, is_superuser, can_manage_all_dept, del_flag (never the password).
      *
      * @param  list<string> $emails further e-mail addresses of the same person (e.g. Joomla's)
-     * @return array{readable: bool, superuser: bool, departments: list<int>} readable false when
-     *         ZKBioTime's users cannot be read (not granted, or another ZKBioTime version)
+     * @return array{readable: bool, superuser: bool, departments: list<int>, users: int} readable
+     *         false when ZKBioTime's users cannot be read (not granted, or another ZKBioTime
+     *         version); users: how many active ZKBioTime users matched (1.0.9, for the log)
      *
      * @throws DbException when the database cannot be reached
      */
     public function userScope(string $empCode, array $emails = []): array
     {
-        $none = ['readable' => false, 'superuser' => false, 'departments' => []];
+        $none = ['readable' => false, 'superuser' => false, 'departments' => [], 'users' => 0];
 
         try {
             foreach ($this->q()->rows('SELECT email FROM personnel_employee WHERE emp_code = :code', [':code' => $empCode]) as $r) {
@@ -137,15 +138,15 @@ final class TeamReader
         }
 
         if ($users === []) {
-            return ['readable' => true, 'superuser' => false, 'departments' => []];
+            return ['readable' => true, 'superuser' => false, 'departments' => [], 'users' => 0];
         }
 
         if (array_filter($users, static fn (array $u): bool => \in_array($u['is_superuser'], [true, 't', 1, '1'], true)) !== []) {
-            return ['readable' => true, 'superuser' => true, 'departments' => []];
+            return ['readable' => true, 'superuser' => true, 'departments' => [], 'users' => \count($users)];
         }
 
         if ($userCol === null || $deptCol === null) {
-            return $none;
+            return ['users' => \count($users)] + $none;
         }
 
         // Column names come from the database catalogue and are checked above; ids are integers.
@@ -158,10 +159,10 @@ final class TeamReader
                 throw $e;
             }
 
-            return $none;
+            return ['users' => \count($users)] + $none;
         }
 
-        return ['readable' => true, 'superuser' => false, 'departments' => array_values(array_unique(array_map(static fn (array $r): int => (int) $r['d'], $rows)))];
+        return ['readable' => true, 'superuser' => false, 'departments' => array_values(array_unique(array_map(static fn (array $r): int => (int) $r['d'], $rows))), 'users' => \count($users)];
     }
 
     /**

@@ -103,7 +103,7 @@ final class TeamReaderTest extends TestCase
             'FROM auth_user'                         => static fn (): array => throw new DbException(DbException::QUERY, 'permission denied for table auth_user'),
         ]);
 
-        self::assertSame(['readable' => false, 'superuser' => false, 'departments' => []], $r->userScope('E7'));
+        self::assertSame(['readable' => false, 'superuser' => false, 'departments' => [], 'users' => 0], $r->userScope('E7'));
     }
 
     /** Against the PostgreSQL fixture (tests/Support/sql/zkbiotime-pgsql.sql), when BIOTIME_TEST_PG is set. */
@@ -124,8 +124,8 @@ final class TeamReaderTest extends TestCase
         self::assertSame([10], $team->topDepartments(), 'every department: IT is the only top department (HR is below it)');
 
         // ZKBioTime users' data permissions (1.0.8).
-        self::assertSame(['readable' => true, 'superuser' => false, 'departments' => [11]], $team->userScope('E2'), "Bob's user (same e-mail) may see HR");
-        self::assertSame(['readable' => true, 'superuser' => false, 'departments' => []], $team->userScope('E1'), 'Alice has no active user (one inactive, one deleted)');
+        self::assertSame(['readable' => true, 'superuser' => false, 'departments' => [11], 'users' => 1], $team->userScope('E2'), "Bob's user (same e-mail) may see HR");
+        self::assertSame(['readable' => true, 'superuser' => false, 'departments' => [], 'users' => 0], $team->userScope('E1'), 'Alice has no active user (one inactive, one deleted)');
         self::assertTrue($team->userScope('E3')['superuser'], 'the user linked to E3 (emp_pin) may manage all departments');
         self::assertTrue($team->userScope('E9', ['ADMIN@example.com'])['superuser'], 'the administrator user, by the Joomla e-mail');
         self::assertSame([[11, 0]], array_map(static fn (array $d): array => [$d['id'], $d['depth']], $team->departmentsByIds([11])));

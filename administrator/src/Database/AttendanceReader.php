@@ -682,6 +682,13 @@ final class AttendanceReader
             return;
         }
 
+        // Already read ahead (e.g. the Manager Dashboard's whole team, then one of them again):
+        // keep it. Reading one employee here would replace the team's rows (1.0.9).
+        if ($this->bulkRange !== null && $from->format('Y-m-d') >= $this->bulkRange[0] && $to->format('Y-m-d') <= $this->bulkRange[1]
+            && array_diff($codes, array_keys($this->bulk['punches'] ?? [])) === []) {
+            return;
+        }
+
         // Employees (as employee()): exactly one per code, else none.
         $bind = [];
 
