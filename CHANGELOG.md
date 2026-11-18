@@ -6,7 +6,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 ## [1.0.13] - 2026-11-18
 
 ### Changed
-- **My Dashboard charts renamed**: Total Attendance (was Days so far), Attendance per Month (was Days per month), Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month (was Attendance rate per month), Punches per Device (was Your Devices). The *Statistics* heading above them is gone.
+- **My Dashboard charts renamed**: Total Attendance (was Days so far), Status per Month (was Days per month), Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month (was Attendance rate per month), Punches per Device (was Your Devices). The *Statistics* heading above them is gone.
 - **My Dashboard cards without notes under the numbers** (no "earliest/latest", hints or day counts below the value), so they are the same size as on My Attendance; Total Late In and Total Early Out show their days next to the time, as on My Attendance.
 
 ### Fixed

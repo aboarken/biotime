@@ -53,7 +53,7 @@ those releases.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
 ### 1.0.13 – Chart names, cards, phones
-- [ ] My Dashboard: no *Statistics* heading; the charts are named Total Attendance, Attendance per Month, Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month (rates), Punches per Device.
+- [ ] My Dashboard: no *Statistics* heading; the charts are named Total Attendance, Status per Month, Total Late In and Early Out per Month, Average Check-In and Check-Out per Month, Attendance per Month, Punches per Device.
 - [ ] My Dashboard cards have no line under the numbers and are as tall as on My Attendance.
 - [ ] On a phone (390 px) every chart's axis text is readable, month names do not overlap, and the monthly rate bars show the month above the bar.
 
