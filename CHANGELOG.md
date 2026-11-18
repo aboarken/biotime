@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.15] - 2026-11-18
+
+### Added
+- **My Dashboard: Missing Punches per Month**, a new chart card next to *Total Late In and Early Out per Month* and drawn the same way: two columns per month, the days with a **missing morning punch** (no check-in, teal) and with a **missing afternoon punch** (no check-out, indigo), with the school year's totals in the legend.
+
 ## [1.0.14] - 2026-11-18
 
 ### Changed

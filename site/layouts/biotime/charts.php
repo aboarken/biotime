@@ -7,7 +7,8 @@
  *
  *  1. Days so far (donut): present, absent, holiday, weekend, leave; the attendance rate inside.
  *  2. Days per month (stacked columns): present, absent, holiday, leave.
- *  3. Late in and early out per month (grouped columns, minutes).
+ *  3. Late in and early out per month (grouped columns, minutes); then the days with a missing
+ *     morning and a missing afternoon punch per month, the same chart (1.0.15).
  *  4. Average check-in and check-out per month (a floating column from check-in to check-out).
  *  5. Attendance rate per month (a horizontal bar per month: red below 70 %, yellow to 95 %, green).
  *  6. Devices used, punches split by fingerprint and face (1.0.0).
@@ -172,6 +173,22 @@ foreach ($months as $i => $m) {
 
 $grouped .= $xLabels();
 
+// 3b. Grouped columns, the same chart: days with a missing morning punch (no check-in) and with a
+// missing afternoon punch (no check-out) per month (1.0.15), in the check-in and check-out colours.
+[$maxMiss, $stepMiss] = $nice(max(4, ...array_map(static fn (array $m): int => max($m['summary']->missingMorningDays, $m['summary']->missingAfternoonDays), $months)));
+$missing = $grid($maxMiss, $stepMiss, static fn (float $v): string => (string) (int) round($v));
+
+foreach ($months as $i => $m) {
+    foreach ([['in', $m['summary']->missingMorningDays, -1, 'COM_BIOTIME_CARD_MISSING_MORNING'], ['out', $m['summary']->missingAfternoonDays, 1, 'COM_BIOTIME_CARD_MISSING_AFTERNOON']] as [$k, $v, $side, $key]) {
+        $top = $y($v, $maxMiss);
+        $x   = $side < 0 ? $cx($i) - $gw - 1 : $cx($i) + 1;
+        $missing .= '<rect class="bt-chart-mark" x="' . round($x, 1) . '" y="' . $top . '" width="' . round($gw, 1) . '" height="' . max(0, round($T + $ph - $top, 1)) . '" rx="3" fill="' . $color[$k] . '">'
+            . '<title>' . $e($long($m) . ' · ' . Text::_($key) . ': ' . Text::plural('COM_BIOTIME_N_DAYS', $v)) . '</title></rect>';
+    }
+}
+
+$missing .= $xLabels();
+
 // 4. Lines: average check-in and check-out per month (minutes after midnight).
 $series = ['in' => [], 'out' => []];
 
@@ -269,6 +286,13 @@ $chart = static fn (string $title, string $summary, string $body, string $legend
             implode('; ', array_map(static fn (array $m): string => $long($m) . ': ' . Text::_('COM_BIOTIME_COL_LATE') . ' ' . $f->duration($m['summary']->lateMinutes) . ', ' . Text::_('COM_BIOTIME_COL_EARLY') . ' ' . $f->duration($m['summary']->earlyMinutes), $months)),
             '<svg class="bt-chart-svg" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-hidden="true">' . $grouped . '</svg>',
             $legend([[$color['late'], Text::_('COM_BIOTIME_CARD_LATE_TOTAL'), $f->duration($s->lateMinutes)], [$color['early'], Text::_('COM_BIOTIME_CARD_EARLY_TOTAL'), $f->duration($s->earlyMinutes)]])
+        );
+
+        echo $chart(
+            Text::_('COM_BIOTIME_CHART_MISSING'),
+            implode('; ', array_map(static fn (array $m): string => $long($m) . ': ' . Text::_('COM_BIOTIME_CARD_MISSING_MORNING') . ' ' . $m['summary']->missingMorningDays . ', ' . Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON') . ' ' . $m['summary']->missingAfternoonDays, $months)),
+            '<svg class="bt-chart-svg" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-hidden="true">' . $missing . '</svg>',
+            $legend([[$color['in'], Text::_('COM_BIOTIME_CARD_MISSING_MORNING'), (string) $s->missingMorningDays], [$color['out'], Text::_('COM_BIOTIME_CARD_MISSING_AFTERNOON'), (string) $s->missingAfternoonDays]])
         );
 
         if ($lines !== '') {

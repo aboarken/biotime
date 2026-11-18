@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.15 – Missing Punches per Month
+- [ ] My Dashboard: the card *Missing Punches per Month* is next to *Total Late In and Early Out per Month*: two columns per month (missing morning, missing afternoon); hovering a column shows the month and the days; the legend totals equal the Missing Morning Punch and Missing Afternoon Punch cards.
+
 ### 1.0.14 – PDF always landscape, site name; cards
 - [ ] Export PDF for 1 day and for 20 days: both A4 landscape; the site name (Global Configuration) at the top, then the "Attendance Report" band.
 - [ ] My Dashboard, My Attendance and the Manager Dashboard: Total Late In and Total Early Out show only the time (no "N days"); Average Check-In and Check-Out show only the time.
