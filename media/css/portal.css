@@ -690,36 +690,18 @@
   color: var(--bt-text-muted);
 }
 
-/* My Dashboard: the employee and the range shown, one table row (0.10.0) */
+/* My Dashboard: the employee and the range shown (1.0.15), in the same panel as Today: each label
+   above its value, in the portal's blue; smaller than Today's times, as names and dates are longer */
 .com-biotime .bt-profile-panel {
   margin-bottom: 1.25rem;
 }
 
-.com-biotime .bt-profile-table td {
+.com-biotime .bt-today--info dd {
+  font-size: 1.0625rem;
   font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Phones: one line per column, its label before the value */
-@media (max-width: 575.98px) {
-  .com-biotime .bt-profile-table thead {
-    display: none;
-  }
-
-  .com-biotime .bt-profile-table td {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    white-space: normal;
-    text-align: right;
-  }
-
-  .com-biotime .bt-profile-table td::before {
-    content: attr(data-label);
-    font-weight: 400;
-    color: var(--bt-text-muted);
-    text-align: left;
-  }
+  color: var(--bt-primary);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 /* My Dashboard → Statistics (0.10.0): inline SVG charts, 2 per row on wide screens. No box around

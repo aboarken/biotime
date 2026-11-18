@@ -3,6 +3,17 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.15] - 2026-11-18
+
+### Added
+- **My Dashboard: Missing Punches per Month** replaces *Status per Month* (second card, next to Total Attendance). It is drawn like *Total Late In and Early Out per Month*: two columns per month, the days with a **missing morning punch** (no check-in, teal) and with a **missing afternoon punch** (no check-out, indigo), with the school year's totals in the legend.
+
+### Changed
+- **My Dashboard: Employee Information** (department, position, employee ID, name, period) is now a panel like *Today*: a title, then each label in small capitals above its value (in the portal's blue), side by side (two per row on a phone), instead of a one-row table.
+
+### Removed
+- The *Status per Month* chart (present, absent, holiday and leave days per month); Total Attendance still shows the year's split.
+
 ## [1.0.14] - 2026-11-18
 
 ### Changed
