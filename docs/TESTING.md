@@ -53,6 +53,8 @@ those releases.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
 ### 1.0.10 – Workforce default
+- [ ] With Detailed logging on, the second page load shows a connect time near 0 ms (the connection is kept); restart PostgreSQL on the BioTime server, reload: the page still works.
+- [ ] Manager Dashboard: choosing another department is quicker than the first page load (departments and team kept for the cache time).
 - [ ] Manager Dashboard opens with Workforce highlighted; after choosing Days Absent, Workforce shows everyone's days again.
 
 ### 1.0.9 – Faster Manager Dashboard, access log

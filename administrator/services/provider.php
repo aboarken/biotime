@@ -98,7 +98,8 @@ return new class () implements ServiceProviderInterface {
                     throw new DbException(DbException::NOT_CONFIGURED, 'No encryption secret for the database password', '', $e);
                 }
 
-                return (new DbConnector())->connect($settings->dbConfig($vault));
+                // Kept open between pages (1.0.10): no new encrypted connection per page.
+                return (new DbConnector())->connect($settings->dbConfig($vault), true);
             }
         );
 

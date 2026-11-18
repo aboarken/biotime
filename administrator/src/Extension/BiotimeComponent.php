@@ -96,6 +96,12 @@ final class BiotimeComponent extends MVCComponent implements RouterServiceInterf
         return $this->service(\BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader::class);
     }
 
+    /** The per-user cache (#__biotime_cache), kept for the cache time of the settings. */
+    public function getUserCache(): \BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface
+    {
+        return $this->service(\BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface::class);
+    }
+
     /** Manager Dashboard: departments and employees (1.0.0). */
     public function getTeamReader(): \BiotimePortal\Component\Biotime\Administrator\Database\TeamReader
     {

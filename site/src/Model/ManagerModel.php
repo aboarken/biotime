@@ -28,6 +28,9 @@ final class ManagerModel extends PortalModel
 {
     public const MAX_DAYS = 31;
 
+    /** Cache key prefix of the manager's departments and team (1.0.10). */
+    private const CACHE = 'mgr1:';
+
     /** @var list<array{id: int, name: string, parent: ?int, depth: int}>|null */
     private ?array $departments = null;
 
@@ -48,12 +51,37 @@ final class ManagerModel extends PortalModel
             return $this->departments;
         }
 
+        // Kept for the cache time (1.0.10): the departments a manager may see change rarely, and
+        // reading them takes several queries to the ZKBioTime server on every page.
+        $cache  = $this->biotime()->getUserCache();
+        $cached = $cache->get($this->identity(), self::CACHE . 'departments');
+
+        if (isset($cached['d']) && \is_array($cached['d'])) {
+            return $this->departments = $cached['d'];
+        }
+
+        $this->departments = $this->readDepartments();
+
+        if ($this->departments !== []) {
+            $cache->set($this->identity(), self::CACHE . 'departments', ['d' => $this->departments]);
+        }
+
+        return $this->departments;
+    }
+
+    /**
+     * @return list<array{id: int, name: string, parent: ?int, depth: int}>
+     *
+     * @throws DbException
+     */
+    private function readDepartments(): array
+    {
         $own = $this->biotime()->getAttendanceReader()->employee($this->identity()->empCode());
 
         if ($own === null) {
             $this->logger()->warning(\sprintf('Manager Dashboard, Joomla user %d: no department shown: the mapped employee code is not exactly one ZKBioTime employee', $this->identity()->joomlaUserId));
 
-            return $this->departments = [];
+            return [];
         }
 
         // Only what ZKBioTime gives the manager (1.0.8):
@@ -101,7 +129,7 @@ final class ManagerModel extends PortalModel
             ));
         }
 
-        return $this->departments = array_values($out);
+        return array_values($out);
     }
 
     /**
@@ -113,7 +141,24 @@ final class ManagerModel extends PortalModel
      */
     public function team(): array
     {
-        return $this->team ??= $this->biotime()->getTeamReader()->employees(array_column($this->departments(), 'id'), $this->attendance()->today());
+        if ($this->team !== null) {
+            return $this->team;
+        }
+
+        // Kept for the cache time (1.0.10), for the same departments and day.
+        $ids    = array_column($this->departments(), 'id');
+        $key    = self::CACHE . 'team:' . $this->attendance()->today() . ':' . md5(implode(',', $ids));
+        $cache  = $this->biotime()->getUserCache();
+        $cached = $cache->get($this->identity(), $key);
+
+        if (isset($cached['t']) && \is_array($cached['t'])) {
+            return $this->team = $cached['t'];
+        }
+
+        $this->team = $this->biotime()->getTeamReader()->employees($ids, $this->attendance()->today());
+        $cache->set($this->identity(), $key, ['t' => $this->team]);
+
+        return $this->team;
     }
 
     /** The chosen department (?dept=), when it is one of the manager's; 0 for all. */

@@ -6,6 +6,8 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 ## [1.0.10] - 2026-11-18
 
 ### Changed
+- **Faster pages: the connection to ZKBioTime's database stays open between pages** (a persistent PDO connection), so a page no longer waits for a new encrypted connection to the BioTime server. A connection found closed (e.g. after PostgreSQL restarted) is replaced once by a fresh one and the query runs again. Test Database still opens a new connection. On the BioTime server this keeps up to one idle connection per PHP worker of the Joomla site open.
+- **Faster Manager Dashboard: the manager's departments and team list are kept for the cache time** (Integration Settings → Cache time) instead of being read from ZKBioTime on every page and every department chosen. A change of a manager's permissions in ZKBioTime shows within that time; "no access" is never kept.
 - **Manager Dashboard: Workforce is the selected card by default** and clears the status filter; All Days is a plain count there. (My Dashboard and My Attendance keep All Days.)
 
 ## [1.0.9] - 2026-11-18

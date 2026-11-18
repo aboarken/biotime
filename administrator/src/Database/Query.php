@@ -24,8 +24,21 @@ class Query
     /** Time spent connecting (with the TLS handshake) this request. */
     public static float $connectSeconds = 0.0;
 
-    public function __construct(private readonly ?\PDO $pdo, public readonly string $engine)
+    /**
+     * @param (\Closure(): \PDO)|null $reconnect a fresh connection, used once when a kept-open
+     *                                         connection turns out to be closed (1.0.10)
+     */
+    public function __construct(private ?\PDO $pdo, public readonly string $engine, private ?\Closure $reconnect = null)
     {
+    }
+
+    /** SQLSTATE classes of a connection that is gone (08 connection exception, 57P0x shutdown). */
+    private static function connectionLost(\PDOException $e): bool
+    {
+        $state = (string) ($e->errorInfo[0] ?? $e->getCode());
+
+        return str_starts_with($state, '08') || \in_array($state, ['57P01', '57P02', '57P03'], true)
+            || preg_match('/server closed the connection|no connection to the server|SSL (SYSCALL error|connection has been closed)|terminating connection/i', $e->getMessage()) === 1;
     }
 
     /**
@@ -48,8 +61,21 @@ class Query
         $start = microtime(true);
 
         try {
-            $statement = $this->pdo->prepare($sql);
-            $statement->execute($params);
+            try {
+                $statement = $this->pdo->prepare($sql);
+                $statement->execute($params);
+            } catch (\PDOException $e) {
+                if ($this->reconnect === null || !self::connectionLost($e)) {
+                    throw $e;
+                }
+
+                // The kept-open connection was closed (server restart, network): once more on a
+                // fresh one. Only SELECTs run here, so repeating one is harmless.
+                $this->pdo       = ($this->reconnect)();
+                $this->reconnect = null;
+                $statement       = $this->pdo->prepare($sql);
+                $statement->execute($params);
+            }
 
             return array_values($statement->fetchAll(\PDO::FETCH_ASSOC));
         } catch (\PDOException $e) {
