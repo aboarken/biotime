@@ -111,6 +111,13 @@ passwords, tokens or personal data) with the pull request.
 - [ ] Send one sample JSON answer each for the JWT login (token replaced by `…`) and for
       `/personnel/api/employees/?page=1&page_size=1` (personal values replaced).
 
+### 0.9.0 – School year dashboard, From – To
+- [ ] My Dashboard has no month arrows or month/year selection; under the heading: department · position · employee ID · name, then "From 01/08/2026 to <today>". Before August, the range starts on 1 August of last year.
+- [ ] No Monthly Overview and no Your Devices panel on My Dashboard.
+- [ ] Cards are 5 per row (database: 3 full rows) and include Holidays and Weekend Days Worked; the totals cover 1 August to today and match My Attendance for the same From – To.
+- [ ] Clicking a card (e.g. Days Absent) opens My Attendance with From 01/08 – To today and that status.
+- [ ] My Attendance: From and To are on a second line below Month, Year and Status. Choosing From alone shows that date to today; From + To shows that range (the table title shows the dates); choosing a Month clears both.
+
 ### 0.8.0 – Your Devices, Monthly Overview
 - [ ] My Dashboard → Your Devices lists every device you have punched on or are registered on; devices not used this month show 0.
 - [ ] Monthly Overview shows Present, Absent, Weekend, Holiday and Weekend Days Worked only; the bar has no orange or pink part.

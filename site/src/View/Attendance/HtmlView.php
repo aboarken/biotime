@@ -10,6 +10,7 @@ namespace BiotimePortal\Component\Biotime\Site\View\Attendance;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use BiotimePortal\Component\Biotime\Administrator\Attendance\DateRange;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Day;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Period;
 use BiotimePortal\Component\Biotime\Administrator\Attendance\Summary;
@@ -19,8 +20,8 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
 
 /**
- * My Attendance: one month, one row per day: check-in, check-out (with the device), the time
- * between them, the punches and the day's status.
+ * My Attendance: one month, or from one date to another (0.9.0), one row per day: check-in,
+ * check-out (with the device), the time between them and the day's status.
  */
 final class HtmlView extends BaseHtmlView
 {
@@ -40,7 +41,10 @@ final class HtmlView extends BaseHtmlView
 
     public string $status = '';
 
-    public string $date = '';
+    /** From date – to date (YYYY-MM-DD) when chosen; empty for the selected month. */
+    public string $from = '';
+
+    public string $to = '';
 
     public int $page = 1;
 
@@ -54,27 +58,28 @@ final class HtmlView extends BaseHtmlView
         $model = $this->getModel();
         $input = Factory::getApplication()->getInput();
 
-        // Search by date: the date's month is shown, filtered to that day.
-        // Typed as DD/MM/YYYY in the filter bar; links use YYYY-MM-DD.
-        $date = trim($input->getString('date', ''));
-
-        if (preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$#', $date, $m)) {
-            $date = \sprintf('%04d-%02d-%02d', (int) $m[3], (int) $m[2], (int) $m[1]);
-        }
-
-        if (preg_match('/^(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $date) && checkdate((int) substr($date, 5, 2), (int) substr($date, 8, 2), (int) substr($date, 0, 4))) {
-            $this->date = $date;
-            $input->set('month', substr($date, 0, 7));
-            // The filter bar also sends its month and year lists: the chosen date wins.
-            $input->set('y', (int) substr($date, 0, 4));
-            $input->set('mo', (int) substr($date, 5, 2));
+        // Links from before 0.9.0 search one date (?date=): the same as from = to = that date.
+        if ($input->getString('from', '') === '' && $input->getString('to', '') === '' && ($date = DateRange::parse($input->getString('date', ''))) !== null) {
+            $input->set('from', $date);
+            $input->set('to', $date);
         }
 
         $status       = $input->getCmd('status', '');
         $this->status = \in_array($status, self::FILTERS, true) ? $status : '';
 
-        [$this->year, $this->month] = $model->selectedMonth();
-        $this->period  = $model->period();
+        // From date – to date (below the month): wins over the month and year lists.
+        $range = $model->selectedRange();
+
+        if ($range !== null) {
+            [$this->from, $this->to] = $range;
+            $this->year   = (int) substr($this->to, 0, 4);
+            $this->month  = (int) substr($this->to, 5, 2);
+            $this->period = $model->rangePeriod($this->from, $this->to);
+        } else {
+            [$this->year, $this->month] = $model->selectedMonth();
+            $this->period = $model->period();
+        }
+
         $this->summary = $this->period->summary();
 
         $rows = array_values(array_filter($this->period->days, fn (Day $d): bool => $this->matches($d)));
@@ -85,26 +90,37 @@ final class HtmlView extends BaseHtmlView
         $this->rows  = \array_slice($rows, ($this->page - 1) * self::PAGE_SIZE, self::PAGE_SIZE);
 
         $this->preparePage($model, 'attendance', 'COM_BIOTIME_ATTENDANCE_TITLE');
-        $model->logPage('attendance', \sprintf('%04d-%02d', $this->year, $this->month) . ($this->status !== '' ? ' status=' . $this->status : ''));
+        $model->logPage('attendance', ($range !== null ? $this->from . '..' . $this->to : \sprintf('%04d-%02d', $this->year, $this->month)) . ($this->status !== '' ? ' status=' . $this->status : ''));
 
         parent::display($tpl);
     }
 
+    /** This page with the same month or range, filtered by $status. */
+    public function filterUrl(string $status, int $page = 1): string
+    {
+        $extra = array_filter([
+            'status' => $status,
+            'page'   => $page > 1 ? (string) $page : '',
+        ]);
+
+        return $this->from !== ''
+            ? $this->url('view=attendance&' . http_build_query(['from' => $this->from, 'to' => $this->to] + $extra))
+            : $this->monthUrl('attendance', $this->year, $this->month, $extra);
+    }
+
     public function pageUrl(int $page): string
     {
-        return $this->monthUrl('attendance', $this->year, $this->month, array_filter([
-            'status' => $this->status,
-            'date'   => $this->date,
-            'page'   => $page > 1 ? (string) $page : '',
-        ]));
+        return $this->filterUrl($this->status, $page);
+    }
+
+    /** The table's title: the month, or "01/08/2026 – 18/11/2026". */
+    public function rangeTitle(): string
+    {
+        return $this->from === '' ? $this->monthTitle() : $this->f->date($this->from) . ($this->to !== $this->from ? ' – ' . $this->f->date($this->to) : '');
     }
 
     private function matches(Day $d): bool
     {
-        if ($this->date !== '' && $d->date !== $this->date) {
-            return false;
-        }
-
         return match ($this->status) {
             ''              => true,
             'attended'      => \in_array($d->status, Day::ATTENDED, true),

@@ -1,7 +1,8 @@
 <?php
 
 /**
- * The filter bar of a portal page: month and year, plus the page's own fields. Applied as soon as
+ * The filter bar of a portal page: month and year, plus the page's own fields (a field
+ * ['break' => true] starts a new line). Applied as soon as
  * an option is chosen (media/com_biotime/js/filters.js); without JavaScript a Show button submits it.
  *
  * @license GNU General Public License version 2 or later
@@ -16,7 +17,7 @@ use Joomla\CMS\Router\Route;
 /**
  * Years start at 2025 (FIRST_YEAR). allMonths adds "All months" (value 0) to the month list.
  *
- * @var array{view: string, year?: int, month?: int, allMonths?: bool, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, fields?: list<array{id: string, label: string, html: string}>, hidden?: array<string, string>} $displayData
+ * @var array{view: string, year?: int, month?: int, allMonths?: bool, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, fields?: list<array{id?: string, label?: string, html?: string, break?: bool}>, hidden?: array<string, string>} $displayData
  */
 $view   = $displayData['view'];
 $f      = $displayData['f'];
@@ -53,6 +54,10 @@ $all    = !empty($displayData['allMonths']);
         </div>
     <?php endif; ?>
     <?php foreach ($displayData['fields'] ?? [] as $field) : ?>
+        <?php if (!empty($field['break'])) : ?>
+            <span class="bt-toolbar-break" aria-hidden="true"></span>
+            <?php continue; ?>
+        <?php endif; ?>
         <div>
             <label class="bt-label" for="<?php echo $e($field['id']); ?>"><?php echo $e($field['label']); ?></label>
             <?php echo $field['html']; ?>

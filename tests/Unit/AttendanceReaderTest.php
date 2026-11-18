@@ -42,7 +42,7 @@ final class AttendanceReaderTest extends TestCase
         $interval = ['alias' => 'Day 07:30-15:30', 't_in' => '07:30:00', 'duration' => 480, 'in_above_margin' => 240, 'd_in' => '07:30:00', 'd_out' => '00:00:00'];
 
         return [
-            'FROM personnel_employee' => [['id' => 1, 'department_id' => 10, 'dept_name' => 'Information Technology', 'position_name' => 'Developer', 'hire_date' => '2024-09-01']],
+            'FROM personnel_employee' => [['id' => 1, 'department_id' => 10, 'first_name' => 'Alice', 'last_name' => 'A', 'dept_name' => 'Information Technology', 'position_name' => 'Developer', 'hire_date' => '2024-09-01']],
             'FROM att_attemployee'    => [['group_id' => 5]],
             'FROM iclock_transaction' => [
                 ['punch_time' => '2026-11-02 07:42:10', 'emp_code' => 'E1', 'punch_state' => '0', 'verify_type' => 15, 'terminal_alias' => 'Main Gate', 'area_alias' => 'HQ'],
@@ -275,7 +275,7 @@ final class AttendanceReaderTest extends TestCase
         self::assertSame([27, 35, 62, 2, 2, 3], [$s->lateMinutes, $s->earlyMinutes, $s->lateEarlyMinutes(), $s->lateDays, $s->earlyDays, $s->holidayDays]);
         self::assertSame(443 + 235 + 220, $s->workedMinutes);
         self::assertSame(30, $s->overtimeMinutes);
-        self::assertSame(['department' => 'Information Technology', 'position' => 'Developer', 'hire_date' => '2024-09-01'], $this->service(new CatalogueQuery('pgsql', $this->answers()))->profile($alice));
+        self::assertSame(['department' => 'Information Technology', 'position' => 'Developer', 'hire_date' => '2024-09-01', 'name' => 'Alice A'], $this->service(new CatalogueQuery('pgsql', $this->answers()))->profile($alice));
     }
 
     public function testMonthsCachedByAnOlderVersionAreReadAgain(): void
@@ -317,7 +317,7 @@ final class AttendanceReaderTest extends TestCase
         $from   = new \DateTimeImmutable('2026-11-01');
         $to     = new \DateTimeImmutable('2026-11-30');
 
-        self::assertSame(['Information Technology', 'Developer', 5], [$emp['department'], $emp['position'], $emp['group_id']]);
+        self::assertSame(['Information Technology', 'Developer', 5, 'Alice A'], [$emp['department'], $emp['position'], $emp['group_id'], $emp['name']]);
         self::assertSame(['2026-11-02 07:42:10', '2026-11-02 15:05:00', '2026-11-03 07:31:00'], array_column($r->punches('E1', $from, $to), 'punch_time'), 'local time, this month, Alice only');
 
         $days = array_column($r->days($emp, $from, $to), null, 'date');

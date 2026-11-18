@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-11-18
+
+### Changed
+- **My Dashboard shows the school year so far**: from 1 August (this year's, or last year's before August) to today. The month arrows and the month and year selection are gone; the range is shown under the heading, and every card opens My Attendance for the same range.
+- **My Dashboard: no Monthly Overview and no Your Devices panel.** Your devices stay on My Punches.
+- **My Dashboard cards, 5 per row**, with **Holidays** and **Weekend Days Worked** added (from the database: 15 cards — Present, Absent, Missing Morning, Missing Afternoon, Holidays / Weekend Days Worked, Rate, Average Check-In, Average Check-Out, Punches / Late In, Early Out, Late In + Early Out, Worked Time, Overtime). From the API: 10 cards (no holidays; the total time between check-in and check-out card is dropped, the average stays).
+- **My Dashboard shows the employee ID and name** after the department and position under the heading (the name from ZKBioTime; with the API, the Joomla user's name).
+- **My Attendance: From and To dates** below the month and year (up to 366 days). From alone shows that date to today. Choosing a month or year clears them. Replaces the single Date search; old links with ?date= still open that day.
+
 ## [0.8.0] - 2026-11-18
 
 ### Changed
