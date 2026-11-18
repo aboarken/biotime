@@ -101,11 +101,13 @@ INSERT INTO iclock_terminalemployee VALUES (1, 'SN-MAIN', 'E1', 0), (2, 'SN-GYM'
 
 -- ZKBioTime users (1.0.8, columns as on ZKBioTime 9.5): Bob's user (his e-mail, another case) may
 -- see Human Resources only; an administrator sees everything; "hr" is linked to E3 (emp_pin) and
--- may manage all departments; an inactive and a deleted user with Alice's e-mail are ignored.
+-- may manage all departments; an inactive and a deleted user with Alice's e-mail are ignored; the
+-- last user's username is an e-mail address and its e-mail field is empty (IT).
 INSERT INTO auth_user VALUES
   (1, 'admin', 'x', NULL, 'admin@example.com', true, true, false, 0),
   (2, 'bob.manager', 'x', NULL, 'B@Example.com', true, false, false, 0),
   (3, 'old', 'x', NULL, 'a@example.com', false, false, false, 0),
   (4, 'hr', 'x', 'E3', 'hr@example.com', true, false, true, 0),
-  (5, 'gone', 'x', 'E1', 'a@example.com', true, false, false, 1);
-INSERT INTO auth_user_auth_dept VALUES (1, 2, 11), (2, 3, 10), (3, 5, 10);
+  (5, 'gone', 'x', 'E1', 'a@example.com', true, false, false, 1),
+  (6, 'Manager@Example.com', 'x', NULL, NULL, true, false, false, 0);
+INSERT INTO auth_user_auth_dept VALUES (1, 2, 11), (2, 3, 10), (3, 5, 10), (4, 6, 10);

@@ -53,6 +53,7 @@ those releases.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
 ### 1.0.9 – Faster Manager Dashboard, access log
+- [ ] A manager whose ZKBioTime username is their e-mail address (e-mail field empty) sees the departments of that user's permissions.
 - [ ] Manager Dashboard from 25 October to 5 November: as quick as a single month.
 - [ ] A manager who gets "You don't have access…": `administrator/logs/com_biotime.php` says why (no employee, no ZKBioTime user, user without departments, or users not readable).
 

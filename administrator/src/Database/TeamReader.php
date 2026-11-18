@@ -61,8 +61,8 @@ final class TeamReader
      * What the employee's own ZKBioTime user account may see (1.0.8): ZKBioTime has employees and,
      * separately, users (auth_user) whose data permissions list departments (auth_user_auth_dept).
      * The employee's users are those linked to the employee code (emp_pin), whose username is the
-     * employee code, or with the employee's e-mail address (or one of $emails); active and not
-     * deleted. A superuser or a user who may manage all departments (can_manage_all_dept) sees
+     * employee code, or whose e-mail or username is the employee's e-mail address (or one of
+     * $emails, e.g. the Joomla account's); active and not deleted. A superuser or a user who may manage all departments (can_manage_all_dept) sees
      * every department. Only these columns of auth_user are read: id, username, email, emp_pin,
      * is_active, is_superuser, can_manage_all_dept, del_flag (never the password).
      *
@@ -102,7 +102,11 @@ final class TeamReader
             }
 
             if ($emails !== []) {
-                $who[] = 'LOWER(email) IN (' . implode(', ', array_keys(\array_slice($bind, 1, null, true))) . ')';
+                $in    = implode(', ', array_keys(\array_slice($bind, 1, null, true)));
+                $who[] = 'LOWER(email) IN (' . $in . ')';
+                // Many ZKBioTime users log in with their e-mail address as the username and leave
+                // the e-mail field empty (1.0.9).
+                $who[] = 'LOWER(username) IN (' . $in . ')';
             }
 
             $users = $this->q()->rows(

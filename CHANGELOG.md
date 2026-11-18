@@ -6,6 +6,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 ## [1.0.9] - 2026-11-18
 
 ### Fixed
+- **Managers whose ZKBioTime user logs in with an e-mail address saw "You don't have access to view departments"**: such users have the e-mail address as their username and an empty e-mail field. A ZKBioTime user now also matches when its **username** is the employee's or the Joomla account's e-mail address.
 - **Manager Dashboard slow over two months**: when the period crossed a month (e.g. 25 October to 5 November), reading each employee replaced the team's read-ahead rows, so every employee was read again on their own (about fifteen queries each). The team's rows are now kept.
 
 ### Changed
