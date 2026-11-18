@@ -41,7 +41,6 @@ final class SettingsValidatorTest extends TestCase
             'weekend_days'    => ['5', '6'],
             'match_field'     => 'employeeid',
             'auto_match'      => '1',
-            'module_charts'   => '1',
         ];
     }
 

@@ -26,12 +26,12 @@ $link  = static fn (DateTimeImmutable $d): string => Route::_('index.php?option=
     <?php if ((int) $prev->format('Y') >= \BiotimePortal\Component\Biotime\Administrator\Attendance\AttendanceService::FIRST_YEAR) : ?>
         <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($prev); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_PREV_MONTH_LABEL', $name($prev))); ?>">&larr;<span class="visually-hidden"> <?php echo Text::_('COM_BIOTIME_PREV_MONTH'); ?></span></a>
     <?php else : ?>
-        <span class="bt-btn bt-btn--ghost bt-btn--sm" aria-hidden="true" style="visibility: hidden">&larr;</span>
+        <span class="bt-btn bt-btn--ghost bt-btn--sm bt-invisible" aria-hidden="true">&larr;</span>
     <?php endif; ?>
     <p class="bt-monthnav-title" aria-current="date"><?php echo $e($name($first)); ?></p>
     <?php if (!isset($displayData['today']) || $next->format('Y-m') <= substr($displayData['today'], 0, 7)) : ?>
         <a class="bt-btn bt-btn--ghost bt-btn--sm" href="<?php echo $link($next); ?>" aria-label="<?php echo $e(Text::sprintf('COM_BIOTIME_NEXT_MONTH_LABEL', $name($next))); ?>"><span class="visually-hidden"><?php echo Text::_('COM_BIOTIME_NEXT_MONTH'); ?> </span>&rarr;</a>
     <?php else : ?>
-        <span class="bt-btn bt-btn--ghost bt-btn--sm" aria-hidden="true" style="visibility: hidden">&rarr;</span>
+        <span class="bt-btn bt-btn--ghost bt-btn--sm bt-invisible" aria-hidden="true">&rarr;</span>
     <?php endif; ?>
 </nav>

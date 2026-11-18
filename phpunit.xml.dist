@@ -12,9 +12,13 @@
             <directory>tests/Unit</directory>
         </testsuite>
     </testsuites>
-    <source>
+    <!-- The component's own code. A PHP deprecation raised inside a test tool (vendor/, e.g. the
+         SQLite driver of joomla/database on PHP 8.5) is not the component's: only deprecations in
+         the code below, or in what it calls directly, are reported and fail the PHP checks. -->
+    <source ignoreIndirectDeprecations="true">
         <include>
             <directory>administrator/src</directory>
+            <directory>site/src</directory>
         </include>
     </source>
 </phpunit>

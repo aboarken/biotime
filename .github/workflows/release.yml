@@ -22,6 +22,39 @@ permissions:
   contents: read
 
 jobs:
+  # The component on every PHP version it supports: no syntax error, no deprecation notice at
+  # compile time, and the tests pass without a deprecation.
+  php:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+    name: PHP ${{ matrix.php }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: openssl, pdo_pgsql
+          coverage: none
+          ini-values: error_reporting=E_ALL, display_errors=On
+
+      - name: Lint (errors and deprecations)
+        run: |
+          php -v | head -n1
+          out=$(find administrator site script.php -name '*.php' -print0 | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors' || true)
+          if [ -n "$out" ]; then echo "$out"; exit 1; fi
+
+      - name: Install test tools
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Tests (a deprecation fails them)
+        run: vendor/bin/phpunit --display-deprecations --fail-on-deprecation
+
   package:
     runs-on: ubuntu-24.04
     permissions:
@@ -50,6 +83,15 @@ jobs:
             echo "::error::Release tag $TAG does not match manifest version $VERSION (expected v$VERSION)."
             exit 1
           fi
+
+      # The component needs PHP 8.3 (script.php): lint and test with that version, not whatever
+      # the runner image ships.
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2, pinned to the commit: this job may write releases
+        with:
+          php-version: '8.3'
+          extensions: openssl, pdo_pgsql
+          coverage: none
 
       - name: Lint PHP
         run: |

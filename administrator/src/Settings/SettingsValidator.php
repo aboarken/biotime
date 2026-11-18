@@ -131,7 +131,7 @@ final class SettingsValidator
         $values['match_field'] = $matchField;
 
         // Employee mapping and modules.
-        foreach (['auto_match', 'module_charts'] as $flag) {
+        foreach (['auto_match'] as $flag) {
             $values[$flag] = self::flag($input[$flag] ?? '0') ? '1' : '0';
         }
 

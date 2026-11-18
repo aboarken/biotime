@@ -85,6 +85,8 @@ return new class () implements ServiceProviderInterface {
                 /** Settings rows of removed options. */
                 private const OBSOLETE_SETTINGS = [
                     'module_exports', 'export_per_hour', 'report_max_days',
+                    // 1.0.18: the Charts switch, unused since 0.9.0.
+                    'module_charts',
                     // 0.4.4: the Leave Source and the Leave information switch.
                     'module_leave', 'leave_path', 'leave_param_emp', 'leave_param_from', 'leave_param_to',
                     'leave_date_format', 'leave_extra', 'leave_fields', 'leave_duration_unit', 'leave_status_map',

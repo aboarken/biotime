@@ -89,6 +89,11 @@
   text-decoration: underline;
 }
 
+/* Keeps its room but is not shown (the month arrows at the first and the current month) */
+.com-biotime .bt-invisible {
+  visibility: hidden;
+}
+
 /* Buttons */
 .com-biotime .bt-btn {
   display: inline-flex;
@@ -788,6 +793,7 @@
 
 .com-biotime .bt-chart-key {
   display: inline-block;
+  flex: none;
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 3px;
@@ -886,21 +892,12 @@
 }
 
 .com-biotime .bt-device-track {
-  display: flex;
-  gap: 2px;
+  display: block;
+  width: 100%;
   height: 0.875rem;
   background: #f1f3f6;
   border-radius: 4px;
   overflow: hidden;
-}
-
-.com-biotime .bt-device-track span {
-  display: block;
-  height: 100%;
-}
-
-.com-biotime .bt-device-track span:first-child {
-  border-radius: 4px 0 0 4px;
 }
 
 .com-biotime .bt-device-total {

@@ -42,14 +42,6 @@ final class DisplayController extends BaseController
     {
         $this->noCache();
 
-        // Before 0.4.6 the saved ZKBioTime data lived in the session; it is now in its own table.
-        // Remove this clean-up in 0.6, once every session from before 0.4.6 has expired.
-        $session = $this->app->getSession();
-
-        if ($session->has('com_biotime.cache')) {
-            $session->remove('com_biotime.cache');
-        }
-
         if (!$this->requireLogin()) {
             return $this;
         }
@@ -79,6 +71,10 @@ final class DisplayController extends BaseController
 
         if (!$identity->isMatched()) {
             $this->input->set('view', 'unmatched');
+            $this->input->set('layout', 'default');
+        } elseif ($view !== 'manager' || $this->input->getCmd('layout', 'default') !== 'print') {
+            // Only the layouts the component has (1.0.18): the Manager Dashboard's PDF report is
+            // the one layout a request may choose; anything else is the page itself.
             $this->input->set('layout', 'default');
         }
 

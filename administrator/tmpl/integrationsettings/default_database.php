@@ -33,6 +33,7 @@ $when  = HTMLHelper::_('date', gmdate('Y-m-d H:i:s', (int) ($r['at'] ?? time()))
             </div>
         <?php else :
             $writable = (array) $r['writable'];
+            // The text an administrator copies into a support request: English on purpose, names only.
             $summary  = [
                 'ZKBioTime database report (names only)',
                 'Engine: ' . $r['engine'] . ' ' . $r['version'],

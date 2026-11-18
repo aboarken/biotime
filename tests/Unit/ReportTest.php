@@ -53,7 +53,7 @@ final class ReportTest extends TestCase
         return $validator->validate($report + [
             'connect_timeout' => '5', 'timeout' => '30', 'detailed_log' => '1', 'cache_minutes' => '5',
             'date_format' => 'Y-m-d', 'time_format' => 'H:i', 'server_timezone' => '', 'weekend_days' => ['5', '6'],
-            'match_field' => 'employeeid', 'auto_match' => '1', 'module_charts' => '1',
+            'match_field' => 'employeeid', 'auto_match' => '1',
         ], new Settings());
     }
 
@@ -100,6 +100,10 @@ final class ReportTest extends TestCase
         self::assertContains('COM_BIOTIME_SETTINGS_ERR_REPORT_COLOR', $this->errors(['report_color' => 'red;}body{x']));
         self::assertSame([], $this->errors(['report_logo' => '', 'report_color' => '']), 'both may be empty');
         self::assertSame('#1d3f74', $this->validate(['report_color' => ''])['report_color'], 'empty: the default colour');
+
+        // No trailing newline slips through (1.0.18).
+        self::assertFalse(Settings::isReportLogo("images/logo.png\n"));
+        self::assertSame('#1d3f74', (new Settings(['report_color' => "#ffffff\n"]))->letterhead()['color']);
 
         // A value stored some other way is not used.
         $head = (new Settings(['report_logo' => 'images/../x.png', 'report_color' => 'url(x)']))->letterhead();

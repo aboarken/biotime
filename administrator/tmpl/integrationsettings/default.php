@@ -53,7 +53,7 @@ $stored = static fn (bool $set): string => Text::_($set ? 'COM_BIOTIME_SETTINGS_
         <?php echo $this->loadTemplate('database'); ?>
     <?php endif; ?>
 
-    <?php foreach (['mapping', 'modules', 'report'] as $set) : ?>
+    <?php foreach (['mapping', 'report'] as $set) : ?>
         <fieldset class="options-form">
             <legend><?php echo Text::_('COM_BIOTIME_SETTINGS_FIELDSET_' . strtoupper($set)); ?></legend>
             <?php echo $this->form->renderFieldset($set); ?>
