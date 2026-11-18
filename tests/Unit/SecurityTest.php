@@ -96,9 +96,9 @@ final class SecurityTest extends TestCase
         $limiter = new RateLimiter($counter, static fn (): \DateTimeImmutable => $now);
 
         $counter->used = 19;
-        self::assertTrue($limiter->allow(5, 'settings.test', 20));
+        self::assertTrue($limiter->allow(5, 'settings.testdb', 20));
         $counter->used = 20;
-        self::assertFalse($limiter->allow(5, 'settings.test', 20));
+        self::assertFalse($limiter->allow(5, 'settings.testdb', 20));
         self::assertSame('2026-11-15 11:00:00', $counter->since?->format('Y-m-d H:i:s'));
     }
 }
