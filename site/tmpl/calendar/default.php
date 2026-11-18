@@ -14,10 +14,9 @@ use Joomla\CMS\Layout\LayoutHelper;
 
 $f      = $this->f;
 $e      = fn (string $text): string => $this->escape($text);
-// [status, label]: Missing Punch is a tag on a present day, not a status of its own.
+// [status, label]
 $legend = [
     ['present', Text::_('COM_BIOTIME_STATUS_PRESENT')],
-    ['missing_punch', Text::_('COM_BIOTIME_MISSING_PUNCH')],
     ['checked_in', Text::_('COM_BIOTIME_STATUS_CHECKED_IN')],
     ['checked_out', Text::_('COM_BIOTIME_STATUS_CHECKED_OUT')],
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT')],
@@ -60,7 +59,6 @@ $legend = [
                             <?php else :
                                 $status = $day->status;
                                 $label  = $f->weekday($day->weekday()) . ' ' . $f->date($day->date) . ': ' . ($day->status !== null ? $f->status($day) : '—')
-                                    . ($day->missingPunch() ? ', ' . Text::_('COM_BIOTIME_MISSING_PUNCH') : '')
                                     . ($day->checkIn !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_IN') . ' ' . $f->time($day->checkIn) : '')
                                     . ($day->checkOut !== null ? ', ' . Text::_('COM_BIOTIME_COL_CHECK_OUT') . ' ' . $f->time($day->checkOut) : '')
                                     . ($day->schedule !== null ? ', ' . Text::_('COM_BIOTIME_COL_SCHEDULE') . ' ' . $day->schedule : '')
@@ -86,10 +84,6 @@ $legend = [
                                                 ($day->late ?? 0) > 0 ? Text::_('COM_BIOTIME_CAL_LATE') . ' ' . $f->duration($day->late) : '',
                                                 ($day->early ?? 0) > 0 ? Text::_('COM_BIOTIME_CAL_EARLY') . ' ' . $f->duration($day->early) : '',
                                             ]))); ?></span>
-                                        <?php endif; ?>
-                                        <?php if ($day->missingPunch()) : ?>
-                                            <span class="bt-cal-tag"><?php echo Text::_('COM_BIOTIME_MISSING_PUNCH'); ?></span>
-                                            <span class="bt-cal-ex" title="<?php echo $e(Text::_('COM_BIOTIME_MISSING_PUNCH')); ?>">!</span>
                                         <?php endif; ?>
                                     </a>
                                 </td>

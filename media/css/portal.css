@@ -677,20 +677,6 @@
   white-space: nowrap;
 }
 
-/* Punches in a row: a small disclosure */
-.com-biotime .bt-punches summary {
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.com-biotime .bt-punches ol {
-  margin: 0.375rem 0 0;
-  padding: 0;
-  font-size: 0.8125rem;
-  color: var(--bt-text-muted);
-  list-style: none;
-}
-
 /* Calendar: 7 equal columns that fit a 390 px phone without page scrolling */
 .com-biotime .bt-cal {
   width: 100%;
