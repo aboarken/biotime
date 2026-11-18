@@ -32,6 +32,12 @@ class Query
     {
     }
 
+    /** The statement without its string literals and quoted names, for the keyword check above. */
+    private static function withoutLiterals(string $sql): string
+    {
+        return preg_replace('/\'(?:[^\']|\'\')*\'|"(?:[^"]|"")*"/', '\'\'', $sql) ?? $sql;
+    }
+
     /** SQLSTATE classes of a connection that is gone (08 connection exception, 57P0x shutdown). */
     private static function connectionLost(\PDOException $e): bool
     {
@@ -50,7 +56,10 @@ class Query
      */
     public function rows(string $sql, array $params = []): array
     {
-        if (!preg_match('/^\s*(SELECT|SHOW|WITH)\b/i', $sql) || preg_match('/;\s*\S/', $sql)) {
+        // Defence in depth (1.0.10): the session is read-only anyway, but a WITH may not carry a
+        // data-changing statement, and nothing that writes or changes settings is sent at all.
+        if (!preg_match('/^\s*(SELECT|SHOW|WITH)\b/i', $sql) || preg_match('/;\s*\S/', $sql)
+            || preg_match('/\b(INSERT|UPDATE|DELETE|MERGE|TRUNCATE|ALTER|DROP|CREATE|GRANT|REVOKE|COPY|SET|CALL|DO|LOCK|VACUUM)\b/i', self::withoutLiterals($sql))) {
             throw new \LogicException('Only single SELECT statements may be run');
         }
 

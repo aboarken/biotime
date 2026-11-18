@@ -91,9 +91,11 @@ final class ManagerModel extends PortalModel
         //  - departments ZKBioTime names them Department Manager of, with those below them.
         $team  = $this->biotime()->getTeamReader();
         $out   = [];
-        $mail  = (string) (Factory::getApplication()->getIdentity()?->email ?? '');
         // Only ZKBioTime decides (1.0.8; the Joomla permission "View all departments" is gone).
-        $scope = $team->userScope($this->identity()->empCode(), [$mail]);
+        // Security (1.0.10): only what ZKBioTime holds links the manager to a ZKBioTime user (the
+        // employee ID and the employee record's e-mail), never the Joomla profile e-mail, which a
+        // user can change themselves.
+        $scope = $team->userScope($this->identity()->empCode());
 
         if (!$scope['readable']) {
             $this->logger()->warning('Manager Dashboard: ZKBioTime users (auth_user, auth_user_auth_dept) could not be read; only Department Managers are used. Grant SELECT (id, username, email, is_active, is_superuser) ON auth_user and SELECT ON auth_user_auth_dept to the portal\'s database user.');
@@ -123,7 +125,7 @@ final class ManagerModel extends PortalModel
                 match (true) {
                     !$scope['readable'] && $scope['users'] === 0 => 'ZKBioTime users could not be read (see the grant in docs/DATABASE.md), and the employee is no Department Manager',
                     !$scope['readable']                          => \sprintf('%d ZKBioTime user(s) matched, but their department permissions (auth_user_auth_dept) could not be read', $scope['users']),
-                    $scope['users'] === 0                        => 'no active ZKBioTime user matched the employee ID (emp_pin or username) or the e-mail of the employee or the Joomla account, and the employee is no Department Manager',
+                    $scope['users'] === 0                        => 'no active ZKBioTime user matched the employee ID (emp_pin or username) or the e-mail of the employee record, and the employee is no Department Manager',
                     default                                      => \sprintf('%d ZKBioTime user(s) matched, but none is a superuser or may manage all departments, and their data permissions list no department', $scope['users']),
                 }
             ));

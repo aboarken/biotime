@@ -162,7 +162,7 @@ final class SettingsValidatorTest extends TestCase
         self::assertSame([], $this->errors($same, $current), 'same server: kept');
         self::assertArrayNotHasKey('db_password_enc', $this->validator()->validate($same, $current), 'not overwritten: the stored one stays');
 
-        foreach ([['db_server' => 'attacker.example.com:7496'], ['db_server' => 'db.example.com:5432'], ['db_connect_via' => '198.51.100.7'], ['db_name' => 'other'], ['db_user' => 'someone'], ['db_engine' => 'sqlsrv', 'db_ca' => '']] as $override) {
+        foreach ([['db_server' => 'attacker.example.com:7496'], ['db_server' => 'db.example.com:5432'], ['db_connect_via' => '198.51.100.7'], ['db_name' => 'other'], ['db_user' => 'someone'], ['db_engine' => 'sqlsrv', 'db_ca' => ''], ['db_ssl' => 'off'], ['db_ssl' => 'require'], ['db_ca' => '/tmp/attacker-ca.pem']] as $override) {
             self::assertContains('COM_BIOTIME_SETTINGS_ERR_REENTER_DB_PASSWORD', $this->errors($override + $same, $current), json_encode($override));
         }
 

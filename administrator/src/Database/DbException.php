@@ -74,6 +74,15 @@ final class DbException extends \RuntimeException
         return new self($kind, 'Database ' . $context . ' failed', self::clean($e->getMessage()), $e);
     }
 
+    /** The driver's SQLSTATE (e.g. 42501), '' without one: safe to log, unlike the driver's text. */
+    public function sqlState(): string
+    {
+        $previous = $this->getPrevious();
+        $state    = $previous instanceof \PDOException ? (string) ($previous->errorInfo[0] ?? $previous->getCode()) : '';
+
+        return preg_match('/^[0-9A-Z]{5}$/', $state) === 1 ? $state : '';
+    }
+
     /** One line, at most 300 characters, with anything that looks like a password removed. */
     public static function clean(string $text): string
     {

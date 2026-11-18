@@ -235,6 +235,8 @@ final class SettingsValidator
             || $values['db_port'] !== $current->get('db_port') || $viaOut !== $current->get('db_connect_via')
             || $name !== $current->get('db_name')
             || strtolower($user) !== strtolower($current->get('db_user'))
+            // A weaker encryption or another CA could expose the stored password (1.0.10).
+            || $ssl !== $current->get('db_ssl') || $ca !== $current->get('db_ca')
         );
 
         if ($moved && $password === '' && $has && $current->hasDbPassword()) {

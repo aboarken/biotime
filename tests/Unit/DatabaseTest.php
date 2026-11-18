@@ -332,4 +332,22 @@ final class DatabaseTest extends TestCase
         self::assertSame(1, (int) $q->value('SELECT 1'), 'the query ran again on a fresh connection');
         self::assertNotSame($pid, (int) $q->value('SELECT pg_backend_pid()'));
     }
+
+    /** 1.0.10: only reading statements are sent, also inside a WITH; words in quotes do not count. */
+    public function testOnlyReadingStatementsAreSent(): void
+    {
+        $q = new \BiotimePortal\Component\Biotime\Administrator\Database\Query(new \PDO('sqlite::memory:'), 'pgsql');
+
+        foreach (['WITH x AS (DELETE FROM t RETURNING *) SELECT * FROM x', 'SELECT 1; DROP TABLE t', 'UPDATE t SET a = 1', 'WITH x AS (SELECT 1) INSERT INTO t SELECT * FROM x', 'SELECT set_config(\'a\', \'b\', false) FROM t WHERE 1 = 1 FOR UPDATE'] as $sql) {
+            try {
+                $q->rows($sql);
+                self::fail('sent: ' . $sql);
+            } catch (\LogicException) {
+                self::assertTrue(true);
+            }
+        }
+
+        self::assertSame([['w' => 'DELETE or UPDATE']], $q->rows("SELECT 'DELETE or UPDATE' AS w"), 'a word in a string literal is fine');
+        self::assertSame([['update_time' => 1]], $q->rows('SELECT 1 AS update_time'), 'a column named like a keyword is fine');
+    }
 }
