@@ -53,7 +53,7 @@ final class Ui
      */
     private const CARD_TONES = [
         'COM_BIOTIME_CARD_ALL_DAYS'             => 'ink',
-        'COM_BIOTIME_MANAGER_WORKFORCE'         => 'ink',
+        'COM_BIOTIME_MANAGER_WORKFORCE'         => 'slate',
         'COM_BIOTIME_CARD_PRESENT_DAYS'         => 'green',
         'COM_BIOTIME_CARD_ABSENT_DAYS'          => 'red',
         'COM_BIOTIME_CARD_LEAVES'               => 'orange',

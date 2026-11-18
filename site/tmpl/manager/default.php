@@ -81,7 +81,9 @@ $dateInput = fn (string $id, string $name, string $value): string => '<input cla
 
 // Cards: [label, value html, tone, filter]; '*' = every day (clears the status filter).
 $cards = $s === null ? [] : [
-    [Text::_('COM_BIOTIME_MANAGER_WORKFORCE'), (string) \count($this->employees), Ui::cardTone('COM_BIOTIME_MANAGER_WORKFORCE'), '*'],
+    // All Days: the selected card by default; it clears the status filter (1.0.7). Workforce counts people.
+    [Text::_('COM_BIOTIME_CARD_ALL_DAYS'), (string) $s->allDays, Ui::cardTone('COM_BIOTIME_CARD_ALL_DAYS'), '*'],
+    [Text::_('COM_BIOTIME_MANAGER_WORKFORCE'), (string) \count($this->employees), Ui::cardTone('COM_BIOTIME_MANAGER_WORKFORCE'), ''],
     [Text::_('COM_BIOTIME_CARD_PRESENT_DAYS'), $s->presentDays . ' <small>/ ' . $s->workingDays . '</small>', Ui::cardTone('COM_BIOTIME_CARD_PRESENT_DAYS'), 'attended'],
     [Text::_('COM_BIOTIME_CARD_ABSENT_DAYS'), (string) $s->absentDays, Ui::cardTone('COM_BIOTIME_CARD_ABSENT_DAYS'), 'absent'],
     [Text::_('COM_BIOTIME_CARD_LEAVES'), (string) $s->leaveDays, Ui::cardTone('COM_BIOTIME_CARD_LEAVES'), 'leave'],

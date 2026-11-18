@@ -34,9 +34,12 @@ $stat = function (string $label, string $value, string $tone, string $filter = '
         . '<span class="bt-stat-value">' . $value . '</span>'
         . ($meta !== '' ? '<span class="bt-stat-meta">' . $this->escape($meta) . '</span>' : '');
 
+    // All Days is the selected card by default, as on My Attendance and the Manager Dashboard.
+    $active = $filter === '*' ? ' is-active' : '';
+
     return $url !== ''
-        ? '<a class="bt-stat bt-tone-' . $tone . '" href="' . $url . '">' . $inner . '</a>'
-        : '<div class="bt-stat bt-tone-' . $tone . '">' . $inner . '</div>';
+        ? '<a class="bt-stat bt-tone-' . $tone . $active . '" href="' . $url . '"' . ($active !== '' ? ' aria-current="true"' : '') . '>' . $inner . '</a>'
+        : '<div class="bt-stat bt-tone-' . $tone . $active . '">' . $inner . '</div>';
 };
 
 ?>

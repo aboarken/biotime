@@ -54,6 +54,7 @@ those releases.
 
 ### 1.0.7 – All Days on My Dashboard
 - [ ] My Dashboard starts with All Days; it equals Present + Absent + Leaves + Holidays + Weekends and opens My Attendance with every day of the school year.
+- [ ] On My Dashboard, My Attendance and the Manager Dashboard, All Days is highlighted when no other card is chosen; on the Manager Dashboard it clears the chosen card, and Workforce is a plain count.
 
 ### 1.0.6 – Card order
 - [ ] My Dashboard, My Attendance and the Manager Dashboard list the cards in the same order: days, punches, times, lateness, work.
