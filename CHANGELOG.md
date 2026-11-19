@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.20] - 2026-11-19
+
+### Fixed
+- **Integration Settings → New users**: the choice is now a drop-down list. On the Yes/No switch, "Wait for administrator approval" was too long and its last word ran over the description below it.
+
 ## [1.0.19] - 2026-11-19
 
 ### Added

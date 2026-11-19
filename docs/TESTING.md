@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.20 – New users as a list
+- [ ] Integration Settings → Employee Mapping → *New users* is a drop-down list; both choices read in full and nothing overlaps the description; the choice is saved.
+
 ### 1.0.19 – New users: approve automatically or wait
 - [ ] After the update, users who were waiting show as *Waiting for approval* in User Mappings (filter Status); mappings suspended for other reasons stay *Suspended*.
 - [ ] Integration Settings → Employee Mapping → *New users* is *Wait for administrator approval*. A new user found by e-mail sees "…waiting for an administrator to approve it" and is listed as *Waiting for approval*; **Confirm** lets them in.
