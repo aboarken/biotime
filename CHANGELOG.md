@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-11-19
+
+### Fixed
+- **PDF report: the last three columns (Late In, Early Out, Total Exceptions) were wider than the others.** The table now has fixed column widths: the employee column and the three totals take a set share of the page (A4: 14 % and 6.5 % each; A3: 10 % and 3.4 % each) and the days share the rest equally. Long names wrap inside their column; a date that does not fit on one line breaks after a separator (2026-10- / 24), never inside a number.
+
 ## [1.2.0] - 2026-11-19
 
 ### Changed
