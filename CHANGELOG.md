@@ -6,7 +6,7 @@ Versions follow the component manifest (`biotime.xml`) and use [Semantic Version
 ## [1.0.20] - 2026-11-19
 
 ### Fixed
-- **Integration Settings → New users**: the choice is now a drop-down list. On the Yes/No switch, "Wait for administrator approval" was too long and its last word ran over the description below it.
+- **Integration Settings → New users**: "Wait for administrator approval" was too long for Joomla's switch, so its last word ran over the description below it. The switch stays; its text is kept on one line next to it (slightly smaller on very narrow screens).
 
 ## [1.0.19] - 2026-11-19
 
