@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.20] - 2026-11-19
+
+### Fixed
+- **Integration Settings → New users**: "Wait for administrator approval" was too long for Joomla's switch, so its last word ran over the description below it. The switch stays; its text is kept on one line next to it (slightly smaller on very narrow screens).
+
 ## [1.0.19] - 2026-11-19
 
 ### Added

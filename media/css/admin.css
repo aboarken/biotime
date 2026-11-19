@@ -13,3 +13,19 @@
   background-color: var(--danger, var(--bs-danger, #c52827));
   border-color: var(--danger, var(--bs-danger, #c52827));
 }
+
+/*
+ * Integration Settings → New users (1.0.20): Joomla's switcher is a fixed 18rem wide and 28px
+ * tall, with the label starting 70px in, so "Wait for administrator approval" wrapped to a second
+ * line drawn over the description below. Keep the label on one line next to the switch (a little
+ * smaller on very narrow screens).
+ */
+#jform_auto_approve_matches .switcher label {
+  white-space: nowrap;
+}
+
+@media (max-width: 399.98px) {
+  #jform_auto_approve_matches .switcher label {
+    font-size: .875rem;
+  }
+}
