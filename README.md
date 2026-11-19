@@ -17,7 +17,7 @@ Which table supplies each value is in [docs/DATABASE.md](docs/DATABASE.md).
 
 ## Features
 
-### Portal pages (four menu item types)
+### Portal pages (menu item types)
 
 Create them under **Menus → Add New Menu Item → ZKBioTime**. The site's own menu is the
 navigation; the pages have no navigation bar of their own. The menu item title is the page
@@ -31,6 +31,8 @@ are respected.
 | **Attendance Calendar** | The month as a calendar; each day shows its status as colour **and** text, its check-in and check-out, and opens the day's details. Weekend days are shaded. Usable with keyboard and screen readers and on a 390 px phone. |
 | **My Punches** | The employee's own punches for a year (from 2025), or one month of it: total punches, by **fingerprint** and by **face**, devices used and days with punches; a table **per month** with a total row (each month opens My Attendance), and a table **per device** (area, fingerprint, face, total, last used). Only the logged-in employee's punches. |
 | **Manager Dashboard** | For managers (one permission, *View Manager Dashboard*). **ZKBioTime decides who they see**: the manager's own ZKBioTime *user* (the account they log in to ZKBioTime with, found by employee ID or by the employee record's e-mail; see *Manager Dashboard access* below) gives every department when it is a superuser or may manage all departments, otherwise exactly the departments of its data permissions; departments ZKBioTime names them *Department Manager* of count too, with those below them. Someone with neither sees a "no access" message. Filters: department (*All Departments*), employee, status, **Employee ID** search (e.g. `E993`, then Enter), From – To (today by default, up to 31 days). Cards: **Workforce** (selected by default), All Days and the My Attendance figures for everyone shown, plus total morning and afternoon punches. The table: one row per employee, **a column per date** (check-in, check-out, the day's late-in + early-out; amber when there are any), then Late In, Early Out and **Total Exceptions**; 50 employees per page, the header row and the employee column stay in view while scrolling. **Export PDF (A4)** and **Export PDF (A3)** under the table: every employee (all pages) as a report, see below. |
+| **My Leaves** | The logged-in employee's own leave requests from ZKBioTime (1.1.0), newest first: leave type, from and to, days, status (Pending, Approved, Rejected, Revoked), **every approval stage** in order (its status, who decided and when, the remark; the stage the request is at is marked), applied date, reason and the attachment's file name. Cards: requests, pending, approved, rejected, approved days. Read only: requests are made in ZKBioTime (a *Leave Request* page is planned). |
+| **My Approvals** | For approvers (1.1.0): the leave requests **waiting at a stage they approve** in ZKBioTime, the longest waiting first: those whose current stage lists one of their ZKBioTime approver roles, or was sent to them; never their own. Then the stages they **approved or rejected**, with their remark and the request's status. Read only: requests are approved in ZKBioTime. The workflows, stages and approver roles are set up in ZKBioTime. |
 
 Day details (one day: check-in, check-out, time between, status, every punch with how it was
 counted, exceptions) open from the Dashboard, Attendance and Calendar pages; they are not a
@@ -223,6 +225,8 @@ group (or the group your employees are in). Without them users get "You are not 
 | `zkb.calendar.view` | Attendance Calendar (and day details) |
 | `zkb.punches.view` | My Punches |
 | `zkb.manager.view` | Manager Dashboard (give it only to the managers' group) |
+| `zkb.leaves.view` | My Leaves |
+| `zkb.approvals.view` | My Approvals (give it to the approvers' group) |
 
 My Dashboard also opens day details. Updating from 0.3.x moves menu items of the removed My
 Schedules, Attendance Reports and My Profile pages to the trash; updating from 0.4.0 or 0.4.1 turns

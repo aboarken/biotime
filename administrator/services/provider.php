@@ -23,6 +23,7 @@ use BiotimePortal\Component\Biotime\Administrator\Audit\DbAuditLog;
 use BiotimePortal\Component\Biotime\Administrator\Cache\DbUserCache;
 use BiotimePortal\Component\Biotime\Administrator\Cache\UserCacheInterface;
 use BiotimePortal\Component\Biotime\Administrator\Database\AttendanceReader;
+use BiotimePortal\Component\Biotime\Administrator\Database\LeaveReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\TeamReader;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbConnector;
 use BiotimePortal\Component\Biotime\Administrator\Database\DbEmployeeDirectory;
@@ -172,6 +173,16 @@ return new class () implements ServiceProviderInterface {
                     \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC',
                     $c->get(SettingsRepository::class)->load()->dbDurationUnit()
                 );
+            }
+        );
+
+        // My Leaves and My Approvals (1.1.0): leave requests and their stages, in the server's time zone.
+        $container->share(
+            LeaveReader::class,
+            static function (Container $c) use ($zone): LeaveReader {
+                $zoneName = $zone($c)->getName();
+
+                return new LeaveReader(static fn (): Query => $c->get(Query::class), \in_array($zoneName, \DateTimeZone::listIdentifiers(), true) ? $zoneName : 'UTC');
             }
         );
 

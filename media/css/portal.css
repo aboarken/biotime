@@ -1739,3 +1739,56 @@
     text-decoration: none;
   }
 }
+
+/* My Leaves and My Approvals (1.1.0): the approval stages of a request, in order */
+.com-biotime .bt-stages {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 13rem;
+  margin: 0;
+  padding: 0 0 0 1.125rem;
+  font-size: 0.8125rem;
+}
+
+.com-biotime .bt-stages li {
+  padding-left: 0.125rem;
+}
+
+.com-biotime .bt-stages li.is-current::marker {
+  font-weight: 700;
+  color: var(--bt-primary);
+}
+
+.com-biotime .bt-stage-name {
+  margin-right: 0.375rem;
+  font-weight: 600;
+}
+
+.com-biotime .bt-stages .bt-sub {
+  display: block;
+}
+
+.com-biotime .bt-stage-remark {
+  display: block;
+  font-style: italic;
+  color: var(--bt-text-muted);
+}
+
+.com-biotime .bt-leaves-table td,
+.com-biotime .bt-leaves-table th {
+  vertical-align: top;
+}
+
+.com-biotime .bt-nowrap {
+  white-space: nowrap;
+}
+
+.com-biotime .bt-attachment {
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.com-biotime .bt-stage-current {
+  font-weight: 400;
+  color: var(--bt-primary);
+}

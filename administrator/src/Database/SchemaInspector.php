@@ -30,10 +30,13 @@ final class SchemaInspector
         'personnel_department' => 'departments',
         'personnel_position'   => 'positions',
         'personnel_area'       => 'areas',
+        // My Leaves and My Approvals (1.1.0)
+        'att_leave'            => 'leaves',
+        'workflow_nodeinstance' => 'approvals',
     ];
 
     /** Tables whose columns are listed: attendance (schedules, time cards, leave, holidays), people, devices. */
-    public const PREFIXES = ['att_', 'personnel_', 'iclock_'];
+    public const PREFIXES = ['att_', 'personnel_', 'iclock_', 'workflow_'];
 
     private const MAX_TABLES  = 600;
     private const MAX_COLUMNS = 120;

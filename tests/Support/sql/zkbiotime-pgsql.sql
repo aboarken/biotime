@@ -4,7 +4,8 @@
 DROP TABLE IF EXISTS auth_user, auth_user_auth_dept, personnel_employee, personnel_department, personnel_position, personnel_resign, att_attemployee,
   iclock_transaction, att_payloadbase, att_timeinterval, att_payloadovertime, att_holiday, att_attshift, att_shiftdetail,
   att_attschedule, att_groupschedule, att_departmentschedule, att_temporaryschedule, att_tempschedule,
-  att_payloadtimecard, att_payloadpaycode, att_payloadattcode, iclock_terminal, iclock_terminalemployee CASCADE;
+  att_payloadtimecard, att_payloadpaycode, att_payloadattcode, iclock_terminal, iclock_terminalemployee,
+  att_paycode, att_leave, workflow_workflowinstance, workflow_nodeinstance, workflow_workflownode_approver, personnel_employee_flow_role CASCADE;
 
 CREATE TABLE personnel_department (id integer PRIMARY KEY, dept_code varchar(50), dept_name varchar(200), parent_dept_id integer, dept_manager_id integer);
 -- ZKBioTime's users (not employees) and their data permissions per department (1.0.8). The real
@@ -111,3 +112,45 @@ INSERT INTO auth_user VALUES
   (5, 'gone', 'x', 'E1', 'a@example.com', true, false, false, 1),
   (6, 'Manager@Example.com', 'x', NULL, NULL, true, false, false, 0);
 INSERT INTO auth_user_auth_dept VALUES (1, 2, 11), (2, 3, 10), (3, 5, 10), (4, 6, 10);
+
+-- Leave requests and their approval stages (1.1.0, My Leaves and My Approvals). Columns as on a
+-- ZKBioTime 9.5 server (information_schema); statuses 0 pending, 1 approved, 2 rejected.
+CREATE TABLE att_paycode (id integer PRIMARY KEY, code varchar(50) NOT NULL, name varchar(100) NOT NULL, code_type smallint NOT NULL);
+CREATE TABLE workflow_workflowinstance (id integer PRIMARY KEY, approval_time timestamptz, approval_status smallint NOT NULL, approval_remark text,
+  approver varchar(100), approver_instance text, employee_id integer NOT NULL, workflow_engine_id integer);
+CREATE TABLE att_leave (workflowinstance_ptr_id integer PRIMARY KEY, start_time timestamptz NOT NULL, end_time timestamptz NOT NULL, apply_reason text,
+  apply_time timestamptz NOT NULL, attachment varchar(200), leave_day double precision NOT NULL, pay_code_id integer);
+CREATE TABLE workflow_nodeinstance (id integer PRIMARY KEY, node_name varchar(100) NOT NULL, order_id integer NOT NULL, approval_status smallint NOT NULL,
+  approval_time timestamptz, approval_remark varchar(200), active boolean NOT NULL, targeted boolean NOT NULL, approver_employee_id integer,
+  workflow_instance_id integer, workflow_node_id integer);
+CREATE TABLE workflow_workflownode_approver (id integer PRIMARY KEY, workflownode_id integer NOT NULL, workflowrole_id integer NOT NULL);
+CREATE TABLE personnel_employee_flow_role (id integer PRIMARY KEY, employee_id integer NOT NULL, workflowrole_id integer NOT NULL);
+
+INSERT INTO att_paycode VALUES (30, 'AL', 'Annual Leave', 2), (31, 'SL', 'Sick Leave', 2);
+-- Stage 1 (node 900) is approved by role 100, held by Alice; stage 2 (node 901) by role 101, held by nobody.
+INSERT INTO personnel_employee_flow_role VALUES (1, 1, 100);
+INSERT INTO workflow_workflownode_approver VALUES (1, 900, 100), (2, 901, 101);
+-- 500: Bob, Annual Leave, waiting at stage 1 (Alice). 501: Bob, Sick Leave, approved by Alice at
+-- both stages. 502: Alice's own request at stage 1 (she does not approve her own). 503: Bob,
+-- stage 2 sent to Alice (targeted). 504: Bob, rejected by Alice at stage 1.
+INSERT INTO workflow_workflowinstance VALUES
+  (500, NULL, 0, NULL, NULL, NULL, 2, 1),
+  (501, '2026-11-03 09:00+00', 1, 'OK', NULL, NULL, 2, 1),
+  (502, NULL, 0, NULL, NULL, NULL, 1, 1),
+  (503, NULL, 0, NULL, NULL, NULL, 2, 1),
+  (504, '2026-11-06 07:00+00', 2, 'No cover', NULL, NULL, 2, 1);
+INSERT INTO att_leave VALUES
+  (500, '2026-11-24 05:00+00', '2026-11-24 13:00+00', 'Family <b>event</b>', '2026-11-10 06:30+00', 'att/leave/2026/11/ticket.pdf', 1, 30),
+  (501, '2026-11-04 05:00+00', '2026-11-05 13:00+00', 'Flu', '2026-11-02 05:00+00', NULL, 2, 31),
+  (502, '2026-12-01 05:00+00', '2026-12-01 13:00+00', NULL, '2026-11-12 08:00+00', NULL, 1, 30),
+  (503, '2026-12-10 05:00+00', '2026-12-11 13:00+00', 'Trip', '2026-11-08 08:00+00', NULL, 2, 30),
+  (504, '2026-11-20 05:00+00', '2026-11-20 13:00+00', NULL, '2026-11-05 08:00+00', NULL, 1, 30);
+INSERT INTO workflow_nodeinstance VALUES
+  (1, 'Head of Department', 1, 0, NULL, NULL, true, false, NULL, 500, 900),
+  (2, 'HR', 2, 0, NULL, NULL, false, false, NULL, 500, 901),
+  (3, 'Head of Department', 1, 1, '2026-11-02 09:00+00', 'Get well', false, false, 1, 501, 900),
+  (4, 'HR', 2, 1, '2026-11-03 09:00+00', NULL, false, false, 1, 501, 901),
+  (5, 'Head of Department', 1, 0, NULL, NULL, true, false, NULL, 502, 900),
+  (6, 'Head of Department', 1, 1, '2026-11-09 08:00+00', NULL, false, false, 1, 503, 900),
+  (7, 'HR', 2, 0, NULL, NULL, true, true, 1, 503, 901),
+  (8, 'Head of Department', 1, 2, '2026-11-06 07:00+00', 'No cover', false, false, 1, 504, 900);

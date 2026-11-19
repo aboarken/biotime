@@ -22,6 +22,8 @@ What the pages then show, per day and per month:
 | Absent, day off | `att_payloadbase` (`absent`, `day_off`) |
 | Holidays (for everyone, the department or the attendance group) | `att_holiday`, `att_attemployee.group_id` |
 | Department and position (My Dashboard) | `personnel_employee`, `personnel_department`, `personnel_position` |
+| Leave requests (My Leaves, 1.1.0) | `workflow_workflowinstance` (the employee and the overall status) with `att_leave` (dates, days, reason, attachment's file name, leave type = `att_paycode`); each approval stage from `workflow_nodeinstance` (order, status, who decided, when, remark; `active` = the stage the request is at). Status 0 = pending, 1 = approved, 2 = rejected, 3 = revoked (UNVERIFIED: compare with ZKBioTime's own screen) |
+| Requests to approve (My Approvals, 1.1.0) | Requests whose current stage (`workflow_nodeinstance.active`, not decided yet) lists one of the employee's approver roles (`workflow_workflownode_approver` + `personnel_employee_flow_role`) or was sent to them (`targeted`, `approver_employee_id`); never their own. Decided by them: stages with their `approver_employee_id` and an `approval_time` |
 
 Shift cycles (UNVERIFIED, check with Test Database → Shifts): `cycle_unit` 0 = days (day 0 = the
 schedule's start date), 1 = weeks (day 0 = Sunday), 2 = months (day 0 = the 1st). If the schedule
@@ -64,6 +66,15 @@ GRANT SELECT ON personnel_employee, personnel_department, personnel_position, pe
 GRANT SELECT (id, username, email, emp_pin, is_active, is_superuser, can_manage_all_dept, del_flag) ON auth_user TO joomla_portal;
 ```
 
+**My Leaves and My Approvals** (1.1.0) also read the leave requests and their approval stages.
+Still read only: requests are made and approved in ZKBioTime.
+
+```sql
+GRANT SELECT ON att_leave, att_paycode, workflow_workflowinstance, workflow_nodeinstance,
+  workflow_workflownode_approver, personnel_employee_flow_role
+  TO joomla_portal;
+```
+
 If PostgreSQL answers *relation "…" does not exist* (another ZKBioTime version), remove that
 name from the list and run it again.
 
@@ -74,7 +85,7 @@ REVOKE SELECT ON ALL TABLES IN SCHEMA public FROM joomla_portal;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE SELECT ON TABLES FROM joomla_portal;
 ```
 
-then run the two `GRANT` statements above.
+then run the `GRANT` statements above.
 
 If Test Database says *read only by default: false*, the `default_transaction_read_only`
 setting did not take: run `ALTER ROLE joomla_portal SET default_transaction_read_only = on;`
