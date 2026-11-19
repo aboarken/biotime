@@ -10,6 +10,8 @@ namespace BiotimePortal\Component\Biotime\Site\View;
 \defined('_JEXEC') or die;
 // phpcs:enable PSR1.Files.SideEffects
 
+use BiotimePortal\Component\Biotime\Administrator\Database\LeaveReader;
+
 /**
  * Small helpers shared by the portal templates: the colour ("tone") and symbol of each day status, in the portal's own design (media/com_biotime/css/portal.css, .bt-tone-*).
  */
@@ -99,17 +101,19 @@ final class Ui
 
     /**
      * A ZKBioTime approval status (leave request or stage, 1.1.0): [language key, tone]. ZKBioTime
-     * stores 0 pending, 1 approved, 2 rejected, 3 revoked; any other number is shown as itself.
+     * stores 1 pending, 2 approved, 3 rejected, 4 revoked (1.1.1, LeaveReader); any other number is
+     * shown as itself.
      *
      * @return array{0: string, 1: string}
      */
     public static function leaveStatus(int $status): array
     {
         return match ($status) {
-            0       => ['COM_BIOTIME_LEAVE_STATUS_PENDING', 'amber'],
-            1       => ['COM_BIOTIME_LEAVE_STATUS_APPROVED', 'green'],
-            2       => ['COM_BIOTIME_LEAVE_STATUS_REJECTED', 'red'],
-            3       => ['COM_BIOTIME_LEAVE_STATUS_REVOKED', 'slate'],
+            LeaveReader::PENDING  => ['COM_BIOTIME_LEAVE_STATUS_PENDING', 'amber'],
+            LeaveReader::APPROVED => ['COM_BIOTIME_LEAVE_STATUS_APPROVED', 'green'],
+            LeaveReader::REJECTED => ['COM_BIOTIME_LEAVE_STATUS_REJECTED', 'red'],
+            LeaveReader::REVOKED  => ['COM_BIOTIME_LEAVE_STATUS_REVOKED', 'slate'],
+            LeaveReader::NOT_DECIDED => ['COM_BIOTIME_LEAVE_STATUS_NOT_DECIDED', 'muted'],
             default => ['COM_BIOTIME_LEAVE_STATUS_OTHER', 'muted'],
         };
     }

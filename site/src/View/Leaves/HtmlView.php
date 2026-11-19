@@ -11,6 +11,7 @@ namespace BiotimePortal\Component\Biotime\Site\View\Leaves;
 // phpcs:enable PSR1.Files.SideEffects
 
 use BiotimePortal\Component\Biotime\Administrator\Database\DbException;
+use BiotimePortal\Component\Biotime\Administrator\Database\LeaveReader;
 use BiotimePortal\Component\Biotime\Site\Model\LeavesModel;
 use BiotimePortal\Component\Biotime\Site\View\PortalViewTrait;
 use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
@@ -57,6 +58,6 @@ final class HtmlView extends BaseHtmlView
     /** Days of the approved requests. */
     public function approvedDays(): float
     {
-        return array_sum(array_map(static fn (array $r): float => $r['status'] === 1 ? (float) ($r['days'] ?? 0) : 0.0, $this->requests));
+        return array_sum(array_map(static fn (array $r): float => $r['status'] === LeaveReader::APPROVED ? (float) ($r['days'] ?? 0) : 0.0, $this->requests));
     }
 }
