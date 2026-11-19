@@ -6,6 +6,7 @@
 
 \defined('_JEXEC') or die;
 
+use BiotimePortal\Component\Biotime\Administrator\Database\LeaveReader;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 
@@ -23,9 +24,9 @@ $days = static fn (?float $d): string => $d === null ? '—' : rtrim(rtrim(numbe
 
 $cards = [
     [Text::_('COM_BIOTIME_LEAVES_CARD_REQUESTS'), (string) count($this->requests), 'ink'],
-    [Text::_('COM_BIOTIME_LEAVE_STATUS_PENDING'), (string) $this->count(0), 'amber'],
-    [Text::_('COM_BIOTIME_LEAVE_STATUS_APPROVED'), (string) $this->count(1), 'green'],
-    [Text::_('COM_BIOTIME_LEAVE_STATUS_REJECTED'), (string) $this->count(2), 'red'],
+    [Text::_('COM_BIOTIME_LEAVE_STATUS_PENDING'), (string) $this->count(LeaveReader::PENDING), 'amber'],
+    [Text::_('COM_BIOTIME_LEAVE_STATUS_APPROVED'), (string) $this->count(LeaveReader::APPROVED), 'green'],
+    [Text::_('COM_BIOTIME_LEAVE_STATUS_REJECTED'), (string) $this->count(LeaveReader::REJECTED), 'red'],
     [Text::_('COM_BIOTIME_LEAVES_CARD_DAYS'), $days($this->approvedDays()), 'teal'],
 ];
 ?>

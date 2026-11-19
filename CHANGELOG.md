@@ -3,6 +3,12 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-11-19
+
+### Fixed
+- **My Leaves and My Approvals showed approved leave as Rejected.** ZKBioTime stores an approved request as 2 (checked on a real server), not 1: statuses are now 1 Pending, 2 Approved, 3 Rejected, 4 Revoked. The cards (Pending, Approved, Rejected, Approved Days, Approved/Rejected by You) count with the same numbers.
+- A finished request (approved, rejected or revoked) never shows a stage as current or as waiting in My Approvals, even when ZKBioTime left that stage's row active; such an undecided stage shows as *Not decided* (it showed "Status 7").
+
 ## [1.1.0] - 2026-11-19
 
 ### Added

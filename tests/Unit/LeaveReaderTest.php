@@ -37,21 +37,27 @@ final class LeaveReaderTest extends TestCase
     {
         $bob = $this->real()->requestsOf(2);
 
-        self::assertSame([500, 503, 504, 501], array_column($bob, 'id'), 'newest first, only Bob\'s');
-        self::assertSame(['Annual Leave', 'Annual Leave', 'Annual Leave', 'Sick Leave'], array_column($bob, 'leave'));
+        self::assertSame([500, 503, 504, 501, 505], array_column($bob, 'id'), 'newest first, only Bob\'s');
+        self::assertSame(['Annual Leave', 'Annual Leave', 'Annual Leave', 'Sick Leave', 'Sick Leave'], array_column($bob, 'leave'));
 
         $first = $bob[0];
         self::assertSame(['2026-11-24 08:00', '2026-11-24 16:00', '2026-11-10 09:30'], [$first['from'], $first['to'], $first['applied']], 'in the ZKBioTime server time zone');
         self::assertSame('Family event', $first['reason'], 'no markup');
         self::assertSame('ticket.pdf', $first['attachment'], 'the file name only');
         self::assertSame(1.0, $first['days']);
-        self::assertSame(0, $first['status']);
-        self::assertSame([['Head of Department', 1, 0, true], ['HR', 2, 0, false]], array_map(static fn (array $s): array => [$s['name'], $s['order'], $s['status'], $s['current']], $first['stages']));
+        self::assertSame(LeaveReader::PENDING, $first['status']);
+        self::assertSame([['Head of Department', 1, LeaveReader::PENDING, true], ['HR', 2, LeaveReader::PENDING, false]], array_map(static fn (array $s): array => [$s['name'], $s['order'], $s['status'], $s['current']], $first['stages']));
 
         $approved = $bob[3];
-        self::assertSame(1, $approved['status']);
+        self::assertSame(LeaveReader::APPROVED, $approved['status'], 'stored as 2 on a real server (1.1.1)');
         self::assertSame(['Alice A', 'Alice A'], array_column($approved['stages'], 'approver'));
         self::assertSame('Get well', $approved['stages'][0]['remark']);
+
+        // Approved as a whole while its stage row is still active, without a time (as found on a
+        // real server, stage status 7): no stage is shown as the current one, and that stage is
+        // shown as not decided.
+        self::assertSame(LeaveReader::APPROVED, $bob[4]['status']);
+        self::assertSame([[LeaveReader::NOT_DECIDED, false]], array_map(static fn (array $s): array => [$s['status'], $s['current']], $bob[4]['stages']));
 
         self::assertSame([502], array_column($this->real()->requestsOf(1), 'id'), 'Alice\'s own');
         self::assertSame([], $this->real()->requestsOf(999));
@@ -62,13 +68,13 @@ final class LeaveReaderTest extends TestCase
         $waiting = $this->real()->waitingFor(1);
 
         // 500: stage 1 lists Alice's role; 503: stage 2 was sent to Alice; 502 is her own; 501 and
-        // 504 are decided.
+        // 504 are decided; 505 is approved although its stage row is still active.
         self::assertSame([503, 500], array_column($waiting, 'id'), 'the longest waiting first');
         self::assertSame(['Bob B', 'E2', 'Human Resources'], [$waiting[0]['employee'], $waiting[0]['emp_code'], $waiting[0]['department']]);
         self::assertSame([], $this->real()->waitingFor(2), 'Bob approves nothing');
 
         $decided = $this->real()->decidedBy(1);
-        self::assertSame([[503, 'Head of Department', 1], [504, 'Head of Department', 2], [501, 'HR', 1], [501, 'Head of Department', 1]], array_map(static fn (array $r): array => [$r['id'], $r['decision']['stage'], $r['decision']['status']], $decided));
+        self::assertSame([[503, 'Head of Department', 2], [504, 'Head of Department', 3], [501, 'HR', 2], [501, 'Head of Department', 2]], array_map(static fn (array $r): array => [$r['id'], $r['decision']['stage'], $r['decision']['status']], $decided));
         self::assertSame('No cover', $decided[1]['decision']['remark']);
     }
 

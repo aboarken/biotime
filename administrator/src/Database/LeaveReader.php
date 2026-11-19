@@ -29,6 +29,21 @@ final class LeaveReader
     /** At most this many requests per list. */
     public const MAX_ROWS = 200;
 
+    /**
+     * ZKBioTime's approval statuses (1.1.1, as stored on a ZKBioTime 9.5 server: an approved
+     * request is 2): 1 pending, 2 approved, 3 rejected, 4 revoked.
+     */
+    public const PENDING  = 1;
+    public const APPROVED = 2;
+    public const REJECTED = 3;
+    public const REVOKED  = 4;
+
+    /** A stage of a finished request that was never decided (no time; e.g. status 7 on a real server). */
+    public const NOT_DECIDED = -1;
+
+    /** A request with one of these statuses is finished: none of its stages is waiting any more. */
+    public const FINISHED = [self::APPROVED, self::REJECTED, self::REVOKED];
+
     private ?Query $query = null;
 
     /**
@@ -68,6 +83,7 @@ final class LeaveReader
             self::SELECT . self::FROM . '
              JOIN workflow_nodeinstance ni ON ni.workflow_instance_id = w.id
             WHERE ni.active = TRUE AND ni.approval_time IS NULL
+              AND w.approval_status NOT IN (' . implode(',', self::FINISHED) . ')
               AND w.employee_id <> :self
               AND ((ni.targeted = TRUE AND ni.approver_employee_id = :emp)
                    OR EXISTS (SELECT 1 FROM workflow_workflownode_approver a
@@ -151,7 +167,19 @@ final class LeaveReader
             ];
         }
 
-        return array_map(static fn (array $r): array => $r + ['stages' => $stages[$r['id']] ?? []], $requests);
+        // A finished request (approved, rejected, revoked) has no stage waiting any more, whatever
+        // its stage rows say: ZKBioTime may leave a stage active when a request is decided as a whole.
+        return array_map(static function (array $r) use ($stages): array {
+            $list = $stages[$r['id']] ?? [];
+
+            if (\in_array($r['status'], self::FINISHED, true)) {
+                $list = array_map(static fn (array $s): array => ['current' => false] + (
+                    $s['time'] === null && !\in_array($s['status'], [self::PENDING, ...self::FINISHED], true) ? ['status' => self::NOT_DECIDED] + $s : $s
+                ), $list);
+            }
+
+            return $r + ['stages' => $list];
+        }, $requests);
     }
 
     /** @param list<array<string, mixed>> $requests */

@@ -52,6 +52,10 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.1.1 – Leave statuses
+- [ ] My Leaves: a leave that ZKBioTime shows as approved is *Approved* (green), and the Approved card counts it; Approved Days adds its days.
+- [ ] A leave entered directly in ZKBioTime (without approval stages) shows no current stage and does not appear in anyone's My Approvals.
+
 ### 1.1.0 – My Leaves and My Approvals
 - [ ] On the BioTime server, run the new `GRANT SELECT …` for the leave tables (docs/DATABASE.md). Before that, both pages say the requests cannot be shown yet.
 - [ ] Components → ZKBioTime → Options → Permissions: allow *View My Leaves* (employees) and *View My Approvals* (approvers). Menus → Add New Menu Item → ZKBioTime → *My Leaves* and *My Approvals*.

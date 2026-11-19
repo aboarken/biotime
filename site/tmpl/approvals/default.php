@@ -6,6 +6,7 @@
 
 \defined('_JEXEC') or die;
 
+use BiotimePortal\Component\Biotime\Administrator\Database\LeaveReader;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 
@@ -26,8 +27,8 @@ $who  = fn (array $r): string => $e($r['employee']) . '<span class="bt-sub">' . 
 $cards = [
     [Text::_('COM_BIOTIME_APPROVALS_CARD_WAITING'), (string) count($this->waiting), 'amber'],
     [Text::_('COM_BIOTIME_APPROVALS_CARD_DECIDED'), (string) count($this->decided), 'ink'],
-    [Text::_('COM_BIOTIME_APPROVALS_CARD_APPROVED'), (string) $this->decidedCount(1), 'green'],
-    [Text::_('COM_BIOTIME_APPROVALS_CARD_REJECTED'), (string) $this->decidedCount(2), 'red'],
+    [Text::_('COM_BIOTIME_APPROVALS_CARD_APPROVED'), (string) $this->decidedCount(LeaveReader::APPROVED), 'green'],
+    [Text::_('COM_BIOTIME_APPROVALS_CARD_REJECTED'), (string) $this->decidedCount(LeaveReader::REJECTED), 'red'],
 ];
 ?>
 <div class="com-biotime biotime-approvals" data-bt-root="approvals">
