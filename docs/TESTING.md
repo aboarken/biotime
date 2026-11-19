@@ -52,6 +52,12 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.1.0 – My Leaves and My Approvals
+- [ ] On the BioTime server, run the new `GRANT SELECT …` for the leave tables (docs/DATABASE.md). Before that, both pages say the requests cannot be shown yet.
+- [ ] Components → ZKBioTime → Options → Permissions: allow *View My Leaves* (employees) and *View My Approvals* (approvers). Menus → Add New Menu Item → ZKBioTime → *My Leaves* and *My Approvals*.
+- [ ] My Leaves: compare a few requests with ZKBioTime's own leave list: leave type, dates, days, **status** (Pending / Approved / Rejected / Revoked) and the stages. If a status name differs from ZKBioTime's, note the request and both names.
+- [ ] My Approvals as an approver: the requests waiting at their stage in ZKBioTime appear (and only those); after approving one in ZKBioTime it moves to *Approved or rejected by you*. As an employee who approves nothing: both lists are empty.
+
 ### 1.0.20 – New users switch text
 - [ ] Integration Settings → Employee Mapping → *New users*: with *Wait for administrator approval* chosen, the words are on one line next to the switch and nothing overlaps the description; also on a phone-sized window.
 

@@ -26,7 +26,7 @@ final class Router extends RouterView
 {
     public function __construct(SiteApplication $app, AbstractMenu $menu)
     {
-        foreach (['dashboard', 'attendance', 'calendar', 'punches', 'manager'] as $view) {
+        foreach (['dashboard', 'attendance', 'calendar', 'punches', 'manager', 'leaves', 'approvals'] as $view) {
             $this->registerView(new RouterViewConfiguration($view));
         }
 

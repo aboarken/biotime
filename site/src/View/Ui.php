@@ -96,4 +96,21 @@ final class Ui
     {
         return $value > 0 ? $tone : 'muted';
     }
+
+    /**
+     * A ZKBioTime approval status (leave request or stage, 1.1.0): [language key, tone]. ZKBioTime
+     * stores 0 pending, 1 approved, 2 rejected, 3 revoked; any other number is shown as itself.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function leaveStatus(int $status): array
+    {
+        return match ($status) {
+            0       => ['COM_BIOTIME_LEAVE_STATUS_PENDING', 'amber'],
+            1       => ['COM_BIOTIME_LEAVE_STATUS_APPROVED', 'green'],
+            2       => ['COM_BIOTIME_LEAVE_STATUS_REJECTED', 'red'],
+            3       => ['COM_BIOTIME_LEAVE_STATUS_REVOKED', 'slate'],
+            default => ['COM_BIOTIME_LEAVE_STATUS_OTHER', 'muted'],
+        };
+    }
 }

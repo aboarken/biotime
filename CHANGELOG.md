@@ -3,6 +3,14 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-11-19
+
+### Added
+- **My Leaves** (menu item type, permission *View My Leaves*): the employee's own leave requests from ZKBioTime, newest first, with the leave type, dates, days, reason, the attachment's file name, the status and **every approval stage** (its status, who decided and when, the remark; the stage the request is at is marked). Cards: requests, pending, approved, rejected, approved days.
+- **My Approvals** (menu item type, permission *View My Approvals*): for approvers, the leave requests **waiting at their stage** in ZKBioTime (the stage lists one of their ZKBioTime approver roles, or was sent to them; never their own), the longest waiting first, then the stages they **approved or rejected**. Cards: waiting, decided, approved, rejected.
+- Both pages are **read only**: requests are made and approved in ZKBioTime, where the workflows, stages and approver roles are set up. A *Leave Request* page is planned.
+- Test Database lists the leave and approval tables. **The portal's database user needs read access to six more tables** (docs/DATABASE.md); until then both pages say the requests cannot be shown yet.
+
 ## [1.0.20] - 2026-11-19
 
 ### Fixed
