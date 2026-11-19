@@ -1,5 +1,4 @@
-# Joomla ZKBioTime
-**A read-only employee self-service attendance portal for ZKTeco ZKBioTime 9.5, inside Joomla 6.**
+# Joomla ZKBioTime (com_biotime)
 
 Employees log in to Joomla and see their own attendance from ZKBioTime: each day's check-in and
 check-out (with the device and how they were verified), late-in and early-out, whether the day
