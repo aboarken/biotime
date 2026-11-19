@@ -1792,3 +1792,26 @@
   font-weight: 400;
   color: var(--bt-primary);
 }
+
+/* The report's own page (Export PDF, 1.1.2): no site template, so its own background and fonts */
+body.bt-report-page {
+  margin: 0;
+  padding: 0 1rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
+  line-height: 1.5;
+  color: #1f2937;
+  background: #f3f4f6;
+}
+
+body.bt-report-page *,
+body.bt-report-page *::before,
+body.bt-report-page *::after {
+  box-sizing: border-box;
+}
+
+@media print {
+  body.bt-report-page {
+    padding: 0;
+    background: #fff;
+  }
+}
