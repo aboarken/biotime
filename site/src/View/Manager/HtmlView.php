@@ -28,7 +28,7 @@ use Joomla\CMS\MVC\View\HtmlView as BaseHtmlView;
  * date with that day's check-in and check-out, then late in, early out and both together over the
  * period.
  */
-final class HtmlView extends BaseHtmlView
+class HtmlView extends BaseHtmlView
 {
     use PortalViewTrait;
 
@@ -212,6 +212,19 @@ final class HtmlView extends BaseHtmlView
         $model->logPage($this->report ? 'manager-pdf' : 'manager', $this->from . '..' . $this->to . ' employees=' . \count($this->employees) . ($this->status !== '' ? ' status=' . $this->status : ''));
 
         parent::display($tpl);
+    }
+
+    /**
+     * The report's paper (A4 or A3, always landscape), its main colour and the room kept for its
+     * footer (1.1.2: one place for the page inside the template and the report's own page). The
+     * colour is checked as #rrggbb when read (Settings::letterhead()).
+     */
+    public function reportCss(): string
+    {
+        $footer = $this->letterhead['footer'];
+
+        return '@page { size: ' . ($this->paper === 'a3' ? 'A3' : 'A4') . ' landscape; }'
+            . ' .com-biotime.bt-report { --bt-report: ' . $this->letterhead['color'] . '; --bt-foot-h: ' . ($footer === [] ? 0 : 4 + 4.2 * min(\count($footer), 6)) . 'mm; }';
     }
 
     private function prepareReport(ManagerModel $model): void

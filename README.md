@@ -39,7 +39,8 @@ counted, exceptions) open from the Dashboard, Attendance and Calendar pages; the
 menu item type.
 
 **Export PDF (Manager Dashboard, 1.0.11).** The button under the table opens the report in a new
-tab and the browser's print dialog; choose **Save as PDF**. The report has the **site name** at the
+tab and the browser's print dialog; choose **Save as PDF**. The report is a page of its own (1.1.2):
+only the report, without the site template, cookie notices or pop-ups. The report has the **site name** at the
 top (Joomla's *Global Configuration → Site Name*), an **Attendance Report** title band with the
 period, the filters used, who printed it and when, the same cards and the table in the page's own
 colours, and page numbers. Two buttons choose the paper, always landscape: **Export PDF (A4)** puts up

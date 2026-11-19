@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.1.2] - 2026-11-19
+
+### Fixed
+- **Export PDF (A4 and A3) printed the site's cookie notice and pop-ups, and hung before the print dialog.** The report opened inside the site template (`tmpl=component`), so the template, its modules and system plugins (cookie consent, pop-ups) and their scripts came with it. It now opens on a page of its own (`format=raw`) that holds **only the report**: the portal's stylesheet, the report and its print script. The print dialog opens as soon as the report and its fonts are ready (about a third of a second in tests), and the saved PDF has the report's information only.
+- The note above the report mentions A4 or A3 landscape (it still said portrait or landscape).
+
+### Security
+- Only the Manager Dashboard's report can be asked for as such a page; any other `format` gives "not found". The page's small inline style (paper and colour) carries the Content Security Policy nonce when Joomla's HTTP Headers plugin sets one.
+
 ## [1.1.1] - 2026-11-19
 
 ### Fixed

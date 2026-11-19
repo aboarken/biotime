@@ -15,7 +15,8 @@ use Joomla\CMS\Uri\Uri;
 /** @var \BiotimePortal\Component\Biotime\Site\View\Manager\HtmlView $this */
 
 /*
- * Manager Dashboard report, "Export PDF" (1.0.11): opened in a new tab with tmpl=component, it
+ * Manager Dashboard report, "Export PDF" (1.0.11): opened in a new tab on a page of its own
+ * (format=raw, RawView, 1.1.2: only the report, no site template, cookie notices or pop-ups), it
  * opens the print dialog, where "Save as PDF" makes the PDF. The page has the letterhead of
  * Integration Settings (logo, header texts, footer on every page), a title band, the filters,
  * the cards and every employee shown (not only one page of them). Always A4 landscape (1.0.14);
@@ -32,11 +33,9 @@ $labels = $this->statusLabels();
 $app    = Factory::getApplication();
 $site   = trim((string) $app->get('sitename', ''));
 
-// The paper: A4 or A3 (1.0.16), always landscape (1.0.14), and the main colour.
-$this->getDocument()->getWebAssetManager()->addInlineStyle(
-    '@page { size: ' . ($this->paper === 'a3' ? 'A3' : 'A4') . ' landscape; }'
-    . ' .com-biotime.bt-report { --bt-report: ' . $head['color'] . '; --bt-foot-h: ' . ($head['footer'] === [] ? 0 : 4 + 4.2 * min(\count($head['footer']), 6)) . 'mm; }'
-);
+// The paper and the main colour (HtmlView::reportCss()). The report's own page (RawView, 1.1.2)
+// writes them into its <head>; inside the site template they go through the asset manager.
+$this->getDocument()->getWebAssetManager()->addInlineStyle($this->reportCss());
 
 // Footer lines: web and e-mail addresses become links.
 $footerLine = static function (string $line) use ($e): string {

@@ -52,6 +52,10 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.1.2 – Report on its own page
+- [ ] Manager Dashboard → Export PDF (A4) and (A3): the new tab shows only the report (no site header, menu, cookie notice or pop-up); the print dialog opens at once; *Save as PDF* gives a file with the report only, on A4 or A3 landscape.
+- [ ] With the cookie notice not yet accepted on the site, the report still shows no notice.
+
 ### 1.1.1 – Leave statuses
 - [ ] My Leaves: a leave that ZKBioTime shows as approved is *Approved* (green), and the Approved card counts it; Approved Days adds its days.
 - [ ] A leave entered directly in ZKBioTime (without approval stages) shows no current stage and does not appear in anyone's My Approvals.
@@ -75,7 +79,7 @@ those releases.
 - [ ] Integration Settings has no *Modules* section; saving still works.
 - [ ] My Dashboard: the chart legends, the Attendance per Month bars and the Punches per Device bars look as before; the month arrows on My Attendance and the Calendar are hidden at the first and the current month.
 - [ ] User Mappings: choosing a Status, Source, sort order or list limit applies at once.
-- [ ] Manager Dashboard: Export PDF works; `…&view=dashboard&layout=print` shows the normal dashboard.
+- [ ] Manager Dashboard: Export PDF works; `…&view=dashboard&layout=print` shows the normal dashboard; `…&view=dashboard&format=raw` is not found.
 - [ ] With Joomla's HTTP Headers plugin and a strict Content-Security-Policy (no `'unsafe-inline'` for styles, nonce on), the portal pages show no CSP error in the browser console.
 
 ### 1.0.17 – Export buttons

@@ -20,9 +20,12 @@
     });
   });
 
+  // Once the page, its image and its fonts are ready, so the dialog opens on the finished report.
   window.addEventListener('load', () => {
     if (document.querySelector('[data-bt-report][data-autoprint="1"]')) {
-      window.setTimeout(print, 300);
+      const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+
+      ready.then(() => window.setTimeout(print, 200));
     }
   });
 })();

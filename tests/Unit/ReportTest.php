@@ -10,6 +10,7 @@ use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
 use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
+use BiotimePortal\Component\Biotime\Site\View\Manager\ReportPage;
 use BiotimePortal\Component\Biotime\Site\View\Manager\ReportColumns;
 use PHPUnit\Framework\TestCase;
 
@@ -110,5 +111,21 @@ final class ReportTest extends TestCase
         self::assertSame('', $head['logo']);
         self::assertSame('#1d3f74', $head['color']);
         self::assertSame([], (new Settings())->letterhead()['footer']);
+    }
+
+    /** 1.1.2: the report's own page holds only the report, its stylesheet and its script. */
+    public function testTheReportPageHoldsOnlyTheReport(): void
+    {
+        $page = ReportPage::html('School "A" - Attendance report', 'ar-AA', true, '/media/com_biotime/css/portal.css?1', '/media/com_biotime/js/report.js?1', '@page { size: A3 landscape; }', 'n0nce', '<div class="bt-report">x</div>');
+
+        self::assertStringStartsWith('<!DOCTYPE html>', $page);
+        self::assertStringContainsString('<html lang="ar-AA" dir="rtl">', $page);
+        self::assertStringContainsString('<title>School &quot;A&quot; - Attendance report</title>', $page);
+        self::assertStringContainsString('<style nonce="n0nce">@page { size: A3 landscape; }</style>', $page);
+        self::assertStringContainsString('<body class="bt-report-page">' . "\n" . '<div class="bt-report">x</div>' . "\n" . '</body>', $page);
+        self::assertSame(1, substr_count($page, '<script'), 'only the report script');
+        self::assertSame(1, substr_count($page, '<link'), 'only the portal stylesheet');
+        self::assertStringNotContainsString('nonce', ReportPage::html('t', 'en-GB', false, 'a.css', 'a.js', '', '', ''), 'no nonce attribute without one');
+        self::assertStringContainsString('<style><\/style', ReportPage::html('t', 'en-GB', false, 'a.css', 'a.js', '</style', '', ''), 'the style cannot be closed early');
     }
 }
