@@ -76,6 +76,12 @@ def main() -> int:
         if script and not os.path.isfile(os.path.join(d, script)):
             errors.append(f'missing installer script {script}')
 
+        # 1.2.0: the bundled PDF library (Export PDF), with its loader and its one font family.
+        for f in ('administrator/vendor/autoload.php', 'administrator/vendor/mpdf/mpdf/src/Mpdf.php',
+                  'administrator/vendor/mpdf/mpdf/ttfonts/DejaVuSansCondensed.ttf', 'administrator/vendor/setasign/fpdi/src/FpdiTrait.php'):
+            if not os.path.isfile(os.path.join(d, f)):
+                errors.append(f'missing PDF library file {f}')
+
         if not os.path.isfile(os.path.join(d, 'administrator/services/provider.php')):
             errors.append('missing administrator/services/provider.php')
 

@@ -10,6 +10,7 @@ use BiotimePortal\Component\Biotime\Administrator\Security\KeyVault;
 use BiotimePortal\Component\Biotime\Administrator\Settings\Settings;
 use BiotimePortal\Component\Biotime\Administrator\Settings\SettingsValidator;
 use BiotimePortal\Component\Biotime\Administrator\Settings\ValidationFailed;
+use BiotimePortal\Component\Biotime\Site\View\Manager\PdfReport;
 use BiotimePortal\Component\Biotime\Site\View\Manager\ReportPage;
 use BiotimePortal\Component\Biotime\Site\View\Manager\ReportColumns;
 use PHPUnit\Framework\TestCase;
@@ -127,5 +128,38 @@ final class ReportTest extends TestCase
         self::assertSame(1, substr_count($page, '<link'), 'only the portal stylesheet');
         self::assertStringNotContainsString('nonce', ReportPage::html('t', 'en-GB', false, 'a.css', 'a.js', '', '', ''), 'no nonce attribute without one');
         self::assertStringContainsString('<style><\/style', ReportPage::html('t', 'en-GB', false, 'a.css', 'a.js', '</style', '', ''), 'the style cannot be closed early');
+    }
+
+    /** 1.2.0: the PDF file is made on the server, always landscape, with the bundled mPDF. */
+    public function testThePdfIsMadeOnTheServerInLandscape(): void
+    {
+        $tmp    = sys_get_temp_dir() . '/biotime-pdf-test-' . getmypid();
+        $writer = new PdfReport(\dirname(__DIR__, 2) . '/administrator/vendor', $tmp);
+        $html   = '<table><thead><tr><th>Employee</th><th>2026-11-01</th></tr></thead><tbody>'
+            . str_repeat('<tr><td>Alice ↘07:42 ↗15:05</td><td dir="rtl">إجازة سنوية</td></tr>', 60) . '</tbody></table>';
+        $saved  = ini_get('pcre.backtrack_limit');
+        // A low limit stands for the default 1 000 000 that a big team's report exceeds.
+        ini_set('pcre.backtrack_limit', '20000');
+        $limit = ini_get('pcre.backtrack_limit');
+
+        try {
+            $a4 = $writer->render($html, 'a4', 'Attendance report');
+            $a3 = $writer->render(str_repeat($html, 6), 'a3', 'Attendance report');
+        } finally {
+            $after = ini_get('pcre.backtrack_limit');
+            ini_set('pcre.backtrack_limit', (string) $saved);
+        }
+
+        self::assertGreaterThan(20000, \strlen(str_repeat($html, 6)));
+
+        self::assertStringStartsWith('%PDF-', $a4);
+        self::assertStringContainsString('/MediaBox [0 0 841.890 595.280]', $a4, 'A4 landscape');
+        self::assertStringContainsString('/MediaBox [0 0 1190.550 841.890]', $a3, 'A3 landscape, from HTML longer than pcre.backtrack_limit');
+        self::assertSame($limit, $after, 'the limit is restored');
+        self::assertStringContainsString('/MediaBox [0 0 841.890 595.280]', $writer->render($html, 'letter', 't'), 'anything else: A4');
+
+        self::assertSame('Attendance report 2026-11-01 - 2026-11-30.pdf', PdfReport::fileName('Attendance report 2026-11-01 - 2026-11-30'));
+        self::assertSame('School A - report.pdf', PdfReport::fileName("School \"A\"/\\ - report\r\n"), 'no quotes, slashes or line breaks');
+        self::assertSame('Attendance report.pdf', PdfReport::fileName('///'));
     }
 }

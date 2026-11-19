@@ -46,7 +46,8 @@ jobs:
       - name: Lint (errors and deprecations)
         run: |
           php -v | head -n1
-          out=$(find administrator site script.php -name '*.php' -print0 | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors' || true)
+          # The bundled PDF library (administrator/vendor) is third-party code: not linted here.
+          out=$(find administrator site script.php -path administrator/vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l 2>&1 | grep -v '^No syntax errors' || true)
           if [ -n "$out" ]; then echo "$out"; exit 1; fi
 
       - name: Install test tools
@@ -96,7 +97,7 @@ jobs:
       - name: Lint PHP
         run: |
           php -v | head -n1
-          find administrator site script.php -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+          find administrator site script.php -path administrator/vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
 
       - name: Install test tools (development only; not part of the package)
         run: composer install --no-interaction --no-progress --prefer-dist

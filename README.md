@@ -38,19 +38,17 @@ Day details (one day: check-in, check-out, time between, status, every punch wit
 counted, exceptions) open from the Dashboard, Attendance and Calendar pages; they are not a
 menu item type.
 
-**Export PDF (Manager Dashboard, 1.0.11).** The button under the table opens the report in a new
-tab and the browser's print dialog; choose **Save as PDF**. The report is a page of its own (1.1.2):
-only the report, without the site template, cookie notices or pop-ups. The report has the **site name** at the
-top (Joomla's *Global Configuration → Site Name*), an **Attendance Report** title band with the
-period, the filters used, who printed it and when, the same cards and the table in the page's own
-colours, and page numbers. Two buttons choose the paper, always landscape: **Export PDF (A4)** puts up
-to 12 days in a table, a longer period in several tables, each repeating the employee
-column, the totals in the last one; **Export PDF (A3)** puts the whole period (up to 31 days) in
-one table, so every employee is one row.
-*Integration Settings → Report Letterhead* can add a logo above the site name, a line of text on
-each side under it and footer lines; all are empty by default. The header row
-repeats on every page, and an employee's row never breaks across pages. It is made by the browser,
-so no PDF library is installed on the server and Arabic text is shown correctly.
+**Export PDF (Manager Dashboard).** **Export PDF (A4)** and **Export PDF (A3)** under the table
+download a finished **PDF file** made on the server (1.2.0): no print dialog, always landscape. It
+has the **site name** at the top (Joomla's *Global Configuration → Site Name*) and an optional
+logo and header lines (*Integration Settings → Report Letterhead*), an **Attendance Report** title
+band with the period, the filters used, who printed it and when, the same cards and the table in
+the page's own colours, the footer and the page number on every page, and the header row repeated
+on each page. **A4** puts up to 12 days in a table, a longer period in several tables (the employee
+column repeated, the totals in the last one); **A3** puts the whole period (up to 31 days) in one
+table, one row per employee. The PDF is made by the bundled **mPDF** library (GPL-2.0,
+`administrator/vendor`, one font family for Latin and Arabic text); nothing is installed on the
+server.
 
 **Design.** The pages use the same design as the ServiceDesk Plus portal: summary cards, panels,
 tables and coloured status pills, month navigation in the heading, and filters that apply as soon

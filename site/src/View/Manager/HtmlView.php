@@ -127,7 +127,8 @@ class HtmlView extends BaseHtmlView
         $model = $this->getModel();
         $input = Factory::getApplication()->getInput();
 
-        $this->report = $this->getLayout() === 'print';
+        // The report: on a page (print) or as a PDF file made on the server (pdf, 1.2.0).
+        $this->report = \in_array($this->getLayout(), ['print', 'pdf'], true);
 
         $this->status = DayFilter::valid($input->getCmd('status', ''));
         $this->today  = $model->attendance()->today();
