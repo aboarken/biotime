@@ -117,11 +117,11 @@ body { font-family: dejavusanscondensed; font-size: 8pt; color: #1f2937; }
 .card-value { font-size: 11pt; font-weight: bold; }
 .card-value small { font-size: 8pt; color: #6b7280; }
 .part { font-size: 9pt; font-weight: bold; color: <?php echo $main; ?>; margin: 2mm 0 1mm; }
-table.data { width: 100%; border-collapse: collapse; font-size: <?php echo $dense ? '6.5pt' : '7.5pt'; ?>; }
+table.data { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: <?php echo $dense ? '6.5pt' : '7.5pt'; ?>; }
 table.data th, table.data td { border: 0.15mm solid #e5e7eb; padding: <?php echo $dense ? '0.8mm 0.6mm' : '1.2mm'; ?>; vertical-align: top; }
 table.data thead th { background-color: <?php echo $main; ?>; color: #ffffff; font-size: <?php echo $dense ? '6pt' : '7pt'; ?>; text-align: left; }
 table.data thead th.bt-num, table.data td.bt-num { text-align: right; }
-table.data tbody th { text-align: left; font-weight: bold; white-space: nowrap; }
+table.data tbody th { text-align: left; font-weight: bold; }
 .bt-sub { display: block; font-size: <?php echo $dense ? '5.5pt' : '6.5pt'; ?>; font-weight: normal; color: #6b7280; }
 div.head-sub { font-size: <?php echo $dense ? '5.5pt' : '6.5pt'; ?>; font-weight: normal; color: #dbe4f0; }
 .bt-inout-line { display: block; }
@@ -216,17 +216,27 @@ td.bt-mgr-late { background-color: #fffbeb; }
             <?php if (\count($this->dateChunks) > 1) : ?>
                 <div class="part"><?php echo $e(Text::sprintf('COM_BIOTIME_REPORT_PART', $i + 1, \count($this->dateChunks), $f->date($dates[0]) . ' – ' . $f->date(end($dates)))); ?></div>
             <?php endif; ?>
+            <?php
+            // Fixed column widths (1.2.1): the employee column and the three totals take a set
+            // share of the page, the dates share the rest equally, and text wraps inside its
+            // column, so long names or large totals never push columns off the page.
+            $nameWidth  = $this->paper === 'a3' ? 10 : 14;
+            $totalWidth = $last ? ($this->paper === 'a3' ? 3.4 : 6.5) : 0;
+            $dateWidth  = round((100 - $nameWidth - 3 * $totalWidth) / max(1, \count($dates)), 3);
+            // A narrow date column breaks its date after a separator (2026-10- / 24), never inside a number.
+            $dateHead = static fn (string $text): string => (string) preg_replace('~([-/.])(?=\d)~u', '$1&#8203;', $e($text));
+            ?>
             <table class="data" repeat_header="1">
                 <thead>
                     <tr>
-                        <th><?php echo Text::_('COM_BIOTIME_MANAGER_EMPLOYEE'); ?></th>
+                        <th style="width: <?php echo $nameWidth; ?>%;"><?php echo Text::_('COM_BIOTIME_MANAGER_EMPLOYEE'); ?></th>
                         <?php foreach ($dates as $date) : ?>
-                            <th><?php echo $e($f->date($date)); ?><div class="head-sub"><?php echo $e($f->weekday((int) (new DateTimeImmutable($date))->format('N'), true)); ?></div></th>
+                            <th style="width: <?php echo $dateWidth; ?>%;"><?php echo $dateHead($f->date($date)); ?><div class="head-sub"><?php echo $e($f->weekday((int) (new DateTimeImmutable($date))->format('N'), true)); ?></div></th>
                         <?php endforeach; ?>
                         <?php if ($last) : ?>
-                            <th class="bt-num"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
-                            <th class="bt-num"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
-                            <th class="bt-num"><?php echo Text::_('COM_BIOTIME_MANAGER_TOTAL'); ?></th>
+                            <th class="bt-num" style="width: <?php echo $totalWidth; ?>%;"><?php echo Text::_('COM_BIOTIME_COL_LATE'); ?></th>
+                            <th class="bt-num" style="width: <?php echo $totalWidth; ?>%;"><?php echo Text::_('COM_BIOTIME_COL_EARLY'); ?></th>
+                            <th class="bt-num" style="width: <?php echo $totalWidth; ?>%;"><?php echo Text::_('COM_BIOTIME_MANAGER_TOTAL'); ?></th>
                         <?php endif; ?>
                     </tr>
                 </thead>

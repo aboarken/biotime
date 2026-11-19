@@ -52,6 +52,10 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.1 – PDF column widths
+- [ ] Export PDF (A4) and (A3) for a whole month: every day column has the same width; Late In, Early Out and Total Exceptions are only a little wider than a day (enough for their titles); nothing is cut off at the right edge.
+- [ ] A long employee name wraps inside the Employee column.
+
 ### 1.2.0 – PDF file made on the server
 - [ ] Manager Dashboard → **Export PDF (A4)**: a PDF file downloads at once (no print dialog), A4 landscape, the right way up; letterhead, filters, cards and table; page numbers; the header row on every page.
 - [ ] **Export PDF (A3)** for a whole month and a large department: one A3 landscape table, each employee one row; it arrives within about 10 seconds.

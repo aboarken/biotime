@@ -44,7 +44,7 @@ has the **site name** at the top (Joomla's *Global Configuration → Site Name*)
 logo and header lines (*Integration Settings → Report Letterhead*), an **Attendance Report** title
 band with the period, the filters used, who printed it and when, the same cards and the table in
 the page's own colours, the footer and the page number on every page, and the header row repeated
-on each page. **A4** puts up to 12 days in a table, a longer period in several tables (the employee
+on each page; the days share the width equally and the totals take only the room their titles need (1.2.1). **A4** puts up to 12 days in a table, a longer period in several tables (the employee
 column repeated, the totals in the last one); **A3** puts the whole period (up to 31 days) in one
 table, one row per employee. The PDF is made by the bundled **mPDF** library (GPL-2.0,
 `administrator/vendor`, one font family for Latin and Arabic text); nothing is installed on the
