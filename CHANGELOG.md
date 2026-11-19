@@ -3,6 +3,12 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.0.19] - 2026-11-19
+
+### Added
+- **Integration Settings → Employee Mapping → New users**, as in the ServiceDesk Plus portal: **Wait for administrator approval** (the default, as before) or **Approve automatically**. With automatic approval a user found by e-mail can use the portal at once. Users waiting when it is switched to automatic are approved on their next visit, after a fresh check that the address still belongs to exactly one employee. Either way a later change of the Joomla e-mail suspends the mapping, and matches by the employee code field never wait.
+- **User Mappings: status *Waiting for approval*** for users found by e-mail and waiting for an administrator (they were listed as *Suspended / waiting for approval*); *Suspended* is now only for mappings stopped by a change (e-mail, field, employee) or by an administrator. Users already waiting are moved to the new status on update.
+
 ## [1.0.18] - 2026-11-18
 
 From an audit of the whole component against the Joomla Manual and for security (docs/AUDIT.md): no critical, high or medium security finding; the following was tightened or tidied.

@@ -56,6 +56,17 @@ final class SettingsValidatorTest extends TestCase
         return [];
     }
 
+    /** 1.0.19: New users waits for an administrator unless "Approve automatically" is chosen. */
+    public function testNewUsersWaitForApprovalUnlessChosenOtherwise(): void
+    {
+        self::assertFalse((new Settings())->autoApproveMatches(), 'default: wait for administrator approval');
+        self::assertSame('0', $this->validator()->validate($this->input(), new Settings())['auto_approve_matches']);
+        $on = $this->validator()->validate($this->input(['auto_approve_matches' => '1']), new Settings());
+        self::assertSame('1', $on['auto_approve_matches']);
+        self::assertTrue((new Settings($on))->autoApproveMatches());
+        self::assertSame('0', $this->validator()->validate($this->input(['auto_approve_matches' => 'yes please']), new Settings())['auto_approve_matches']);
+    }
+
     public function testWeekendDaysAreStoredAsIsoWeekdays(): void
     {
         self::assertSame('5,6', $this->validator()->validate($this->input(), new Settings())['weekend_days']);

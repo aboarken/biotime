@@ -124,7 +124,8 @@ return new class () implements ServiceProviderInterface {
                 $c->get(JoomlaLogger::class),
                 $c->get(SettingsRepository::class)->load()->autoMatch(),
                 null,
-                new DbUserFieldReader($c->get(DatabaseInterface::class), $c->get(SettingsRepository::class)->load()->matchField())
+                new DbUserFieldReader($c->get(DatabaseInterface::class), $c->get(SettingsRepository::class)->load()->matchField()),
+                $c->get(SettingsRepository::class)->load()->autoApproveMatches()
             )
         );
 

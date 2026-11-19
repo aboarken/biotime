@@ -86,9 +86,9 @@ final class IdentityResolverTest extends TestCase
         return \count(array_filter($this->db->sent, static fn (string $sql): bool => str_contains($sql, $fragment)));
     }
 
-    private function resolver(bool $autoMatch = true): IdentityResolver
+    private function resolver(bool $autoMatch = true, bool $autoApprove = false): IdentityResolver
     {
-        return new IdentityResolver($this->repo, fn () => $this->directory(), $this->audit, new ArrayLogger(), $autoMatch, fn () => $this->now, $this->fields);
+        return new IdentityResolver($this->repo, fn () => $this->directory(), $this->audit, new ArrayLogger(), $autoMatch, fn () => $this->now, $this->fields, $autoApprove);
     }
 
     public function testFieldCodeMapsExactlyOneEmployeeEvenWhenTheFilterReturnsPartialMatches(): void
@@ -121,7 +121,7 @@ final class IdentityResolverTest extends TestCase
 
         // Found, and waiting for an administrator (1.0.10): Joomla e-mails are not verified.
         self::assertFalse($identity->isMatched());
-        self::assertSame(['11', 'E1', UserMapping::STATUS_SUSPENDED, UserMapping::SOURCE_AUTO], [$this->repo->find(5)?->employeeId, $this->repo->find(5)?->empCode, $this->repo->find(5)?->status, $this->repo->find(5)?->source]);
+        self::assertSame(['11', 'E1', UserMapping::STATUS_PENDING, UserMapping::SOURCE_AUTO], [$this->repo->find(5)?->employeeId, $this->repo->find(5)?->empCode, $this->repo->find(5)?->status, $this->repo->find(5)?->source]);
     }
 
     public function testSharedEmailIsAmbiguous(): void
@@ -240,13 +240,69 @@ final class IdentityResolverTest extends TestCase
         $identity  = $this->resolver()->resolve(7, 'alice@example.com');
 
         self::assertFalse($identity->isMatched());
-        self::assertSame(UserMapping::STATUS_SUSPENDED, $identity->status);
-        self::assertSame(UserMapping::STATUS_SUSPENDED, $this->repo->find(7)?->status);
+        self::assertSame(UserMapping::STATUS_PENDING, $identity->status);
+        self::assertSame(UserMapping::STATUS_PENDING, $this->repo->find(7)?->status);
         self::assertContains('identity.pending', $this->audit->actions());
 
         // Also a user who had that e-mail from the start: Joomla cannot tell the two apart.
         self::assertFalse($this->resolver()->resolve(8, 'alice.b@example.com')->isMatched());
-        self::assertSame(UserMapping::STATUS_SUSPENDED, $this->repo->find(8)?->status);
+        self::assertSame(UserMapping::STATUS_PENDING, $this->repo->find(8)?->status);
+
+        // Waiting: later visits read nothing from ZKBioTime and stay waiting.
+        $sent = $this->queries();
+        self::assertSame(UserMapping::STATUS_PENDING, $this->resolver()->resolve(8, 'alice.b@example.com')->status);
+        self::assertSame($sent, $this->queries());
+    }
+
+    /** 1.0.19: "New users: Approve automatically" maps a match by e-mail at once. */
+    public function testAutomaticApprovalMapsAMatchByEmailAtOnce(): void
+    {
+        $identity = $this->resolver(true, true)->resolve(5, 'alice@example.com');
+
+        self::assertTrue($identity->isMatched());
+        self::assertSame(['11', 'E1'], [$identity->employeeId(), $identity->empCode()]);
+        self::assertSame(UserMapping::STATUS_ACTIVE, $this->repo->find(5)?->status);
+        self::assertContains('identity.matched', $this->audit->actions());
+
+        // A changed e-mail still suspends it, as before.
+        $this->now = $this->now->modify('+1 minute');
+        self::assertSame(UserMapping::STATUS_SUSPENDED, $this->resolver(true, true)->resolve(5, 'other@example.com')->status);
+    }
+
+    /** 1.0.19: a waiting user is approved on the next visit once automatic approval is on, after a fresh check. */
+    public function testWaitingUsersAreApprovedOnTheirNextVisitOnceAutomaticApprovalIsOn(): void
+    {
+        self::assertSame(UserMapping::STATUS_PENDING, $this->resolver()->resolve(5, 'alice@example.com')->status);
+
+        $this->now = $this->now->modify('+1 day');
+        $identity  = $this->resolver(true, true)->resolve(5, 'alice@example.com');
+
+        self::assertTrue($identity->isMatched());
+        self::assertSame(UserMapping::STATUS_ACTIVE, $this->repo->find(5)?->status);
+
+        // The address no longer belongs to exactly one employee: not approved.
+        self::assertSame(UserMapping::STATUS_PENDING, $this->resolver()->resolve(6, 'alice.b@example.com')->status);
+        $this->employees[] = ['id' => 16, 'emp_code' => 'E6', 'email' => 'alice.b@example.com', 'first_name' => 'Twin'];
+        self::assertSame(UserMapping::STATUS_AMBIGUOUS, $this->resolver(true, true)->resolve(6, 'alice.b@example.com')->status);
+    }
+
+    /** 1.0.19: a waiting user whose Joomla e-mail changes is suspended, never matched by the new address. */
+    public function testAWaitingUserWhoseEmailChangesIsSuspended(): void
+    {
+        self::assertSame(UserMapping::STATUS_PENDING, $this->resolver()->resolve(5, 'alice@example.com')->status);
+        self::assertSame(UserMapping::STATUS_SUSPENDED, $this->resolver(true, true)->resolve(5, 'alice.b@example.com')->status);
+        self::assertSame('11', $this->repo->find(5)?->employeeId, 'still the employee found first');
+    }
+
+    /** 1.0.19: an administrator confirms a waiting user in User Mappings. */
+    public function testAnAdministratorConfirmsAWaitingUser(): void
+    {
+        $this->resolver()->resolve(5, 'alice@example.com');
+        (new MappingManager($this->repo, fn () => $this->directory(), $this->audit, fn () => $this->now))->confirm(5, 'alice@example.com', 99);
+
+        self::assertTrue($this->repo->find(5)?->isActive());
+        self::assertSame(UserMapping::SOURCE_ADMIN, $this->repo->find(5)?->source);
+        self::assertTrue($this->resolver()->resolve(5, 'alice@example.com')->isMatched());
     }
 
     /** A failed daily re-verification is not retried on every page load (each try waits for ZKBioTime's database). */

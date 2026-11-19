@@ -37,6 +37,8 @@ final class Settings
         // Employee mapping: the Joomla custom user field holding emp_code, then e-mail as fallback
         'match_field'      => 'employeeid',
         'auto_match'       => '1',
+        // New users found by e-mail (1.0.19): 0 = wait for an administrator, 1 = approved at once
+        'auto_approve_matches' => '0',
         // Weekend days, ISO weekdays (1 = Monday … 7 = Sunday), comma-separated: Friday and Saturday
         'weekend_days'     => '5,6',
         // ZKBioTime's own database (0.5.0), read by every portal page (1.0.0); '' = not set up
@@ -104,6 +106,12 @@ final class Settings
     public function autoMatch(): bool
     {
         return $this->get('auto_match') !== '0';
+    }
+
+    /** New users found by e-mail are approved at once (1.0.19); otherwise they wait for an administrator. */
+    public function autoApproveMatches(): bool
+    {
+        return $this->get('auto_approve_matches') === '1';
     }
 
     /** Database engine of the direct read: DbConfig::ENGINE_*, or '' when not used. */

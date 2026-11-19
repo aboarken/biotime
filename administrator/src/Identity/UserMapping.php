@@ -21,7 +21,10 @@ final class UserMapping
     public const STATUS_NOT_FOUND = 'not_found';
     public const STATUS_SUSPENDED = 'suspended';
 
-    public const STATUSES = [self::STATUS_ACTIVE, self::STATUS_AMBIGUOUS, self::STATUS_NOT_FOUND, self::STATUS_SUSPENDED];
+    /** Found by e-mail, waiting for an administrator to approve it (1.0.19). */
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUSES = [self::STATUS_ACTIVE, self::STATUS_PENDING, self::STATUS_AMBIGUOUS, self::STATUS_NOT_FOUND, self::STATUS_SUSPENDED];
 
     public const SOURCE_AUTO  = 'auto';
     public const SOURCE_ADMIN = 'admin';

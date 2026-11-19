@@ -6,6 +6,7 @@
         <field name="status" type="list" label="COM_BIOTIME_MAPPING_STATUS" class="js-select-submit-on-change" validate="options">
             <option value="">COM_BIOTIME_MAPPINGS_SELECT_STATUS</option>
             <option value="active">COM_BIOTIME_MAPSTATUS_ACTIVE</option>
+            <option value="pending">COM_BIOTIME_MAPSTATUS_PENDING</option>
             <option value="ambiguous">COM_BIOTIME_MAPSTATUS_AMBIGUOUS</option>
             <option value="not_found">COM_BIOTIME_MAPSTATUS_NOT_FOUND</option>
             <option value="suspended">COM_BIOTIME_MAPSTATUS_SUSPENDED</option>

@@ -34,8 +34,8 @@ final class HtmlView extends BaseHtmlView
         $mapping   = $component instanceof \BiotimePortal\Component\Biotime\Administrator\Extension\BiotimeComponent
             ? $component->getUserMapRepository()->find((int) Factory::getApplication()->getIdentity()?->id)
             : null;
-        $this->pending = $mapping !== null && $mapping->status === \BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::STATUS_SUSPENDED
-            && $mapping->employeeId !== null && $mapping->source === \BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::SOURCE_AUTO;
+        // Found by e-mail and waiting for an administrator (1.0.19: its own status).
+        $this->pending = $mapping !== null && $mapping->status === \BiotimePortal\Component\Biotime\Administrator\Identity\UserMapping::STATUS_PENDING;
 
         $document = $this->getDocument();
         $document->setMetaData('robots', 'noindex, nofollow');
