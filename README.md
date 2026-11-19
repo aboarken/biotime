@@ -91,7 +91,7 @@ page says so when the user's own Joomla time zone differs. Times are never shift
 - **User Mappings**: every Joomla user mapped to a ZKBioTime employee, with search, status and
   source filters, and pages. **New** (map by employee code), **Confirm**, **Suspend**,
   **Re-match**. The status filter *No mapping yet* lists Joomla users that are not matched, and
-  *Suspended / waiting for approval* the new matches by e-mail an administrator still has to
+  *Waiting for approval* the new matches by e-mail an administrator still has to
   confirm (select several, **Confirm**).
 
 ## Requirements
@@ -133,7 +133,8 @@ the Joomla server that each employee only ever sees their own records.
 | | Duration unit | Automatic by default. |
 | | Connection timeout, Query timeout | Seconds; connection ≤ query. |
 | Employee Mapping | Employee code user field | Default `employeeid`; see *Employee mapping* below. |
-| | Match by e-mail when the field is empty | On by default. Since 1.0.10 every match by e-mail waits for an administrator to confirm it in User Mappings (Joomla does not verify e-mail changes). |
+| | Match by e-mail when the field is empty | On by default. |
+| | New users | **Wait for administrator approval** (default): a user found by e-mail waits (*Waiting for approval*) until you **Confirm** them in User Mappings; Joomla does not verify e-mail changes, so someone could enter a colleague's address before their first visit. **Approve automatically**: the match works at once. Users waiting are approved on their next visit once this is switched to automatic. Either way a later e-mail change suspends the mapping, and matches by the employee code field never wait. |
 | Report Letterhead | Logo, Header text left / right, Footer, Main colour | The letterhead of **Export PDF** (Manager Dashboard). All optional and empty by default: the report always shows the site name at the top. Logo: an image from the Media Manager (PNG, JPG, GIF, WebP or SVG in `images/`), shown above the site name. Footer: up to 6 lines. |
 | System | Detailed logging | See *Troubleshooting*. |
 | | Cache time (minutes) | 0–60, default 5; see *Cache*. |
@@ -281,8 +282,9 @@ changed are in [docs/AUDIT.md](docs/AUDIT.md).
 - A manager may make at most 30 PDF reports an hour, each recorded in the audit log; a manager's
   departments are kept for at most 5 minutes, so a permission removed in ZKBioTime stops showing
   quickly. No portal page uses inline `style` attributes or scripts (strict CSP friendly).
-- **New matches by e-mail wait for an administrator** (1.0.10): Joomla lets users change their own
-  e-mail without verifying it, so a match by e-mail is held as *Suspended / waiting for approval*
+- **New matches by e-mail wait for an administrator** unless *Integration Settings → New users* is
+  set to *Approve automatically* (1.0.19; waiting by default since 1.0.10): Joomla lets users change
+  their own e-mail without verifying it, so a match by e-mail is held as *Waiting for approval*
   until an administrator confirms it in User Mappings.
 - The Manager Dashboard shows only what ZKBioTime grants the manager's own ZKBioTime user; filters
   in the URL can only narrow that list.

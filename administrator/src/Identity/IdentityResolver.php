@@ -33,6 +33,12 @@ use Psr\Log\LoggerInterface;
  *    suspended until an administrator confirms it. Automatic mappings are re-verified against
  *    ZKBioTime once a day (suspended when the employee is gone or its code or e-mail changed).
  *  - Administrator mappings do not depend on e-mail; they are re-verified daily for existence.
+ *  - New users found by e-mail (1.0.19, Integration Settings → New users): with "Approve
+ *    automatically" the match is active at once; with "Wait for administrator approval" (the
+ *    default) it is stored as "pending" until an administrator confirms it in User Mappings. A
+ *    pending row is approved on a later visit once automatic approval is on, after a fresh check
+ *    that the address still belongs to exactly one employee; another e-mail since then suspends it.
+ *    Matches by the employee code field (set by an administrator) are never held.
  */
 final class IdentityResolver
 {
@@ -59,7 +65,8 @@ final class IdentityResolver
         private readonly LoggerInterface $logger,
         private readonly bool $autoMatch = true,
         ?\Closure $clock = null,
-        private readonly ?UserFieldReaderInterface $fieldReader = null
+        private readonly ?UserFieldReaderInterface $fieldReader = null,
+        private readonly bool $autoApprove = false
     ) {
         $this->clock = $clock ?? static fn (): \DateTimeImmutable => new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
@@ -86,6 +93,25 @@ final class IdentityResolver
         if ($mapping !== null) {
             if ($mapping->status === UserMapping::STATUS_SUSPENDED) {
                 return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
+            }
+
+            // Found by e-mail, waiting for an administrator (1.0.19). Another e-mail since then
+            // suspends it. With automatic approval on, ZKBioTime is asked again (same address,
+            // still exactly one employee) and the match becomes active; otherwise nothing is read
+            // until an administrator confirms it. An employee code field filled in by an
+            // administrator since then is used instead, as on a first visit.
+            if ($mapping->status === UserMapping::STATUS_PENDING && $fieldCode === null) {
+                if ($mapping->email !== $email) {
+                    $this->suspend($mapping, $now, 'joomla_email_changed');
+
+                    return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
+                }
+
+                if ($this->autoApprove) {
+                    return $this->lookup($userId, $email, $now, false);
+                }
+
+                return Identity::notMatched($userId, UserMapping::STATUS_PENDING);
             }
 
             if ($mapping->isActive()) {
@@ -128,9 +154,10 @@ final class IdentityResolver
         }
 
         // Security (1.0.10): Joomla lets a user change their own e-mail without verifying it, so
-        // anyone could choose a colleague's address before their first visit. Every new match by
-        // e-mail therefore waits for an administrator to confirm it in User Mappings.
-        return $this->lookup($userId, $email, $now, true);
+        // anyone could choose a colleague's address before their first visit. Unless the
+        // administrator chose "Approve automatically" (1.0.19), a new match by e-mail waits for
+        // them to confirm it in User Mappings.
+        return $this->lookup($userId, $email, $now, !$this->autoApprove);
     }
 
     /**
@@ -213,11 +240,11 @@ final class IdentityResolver
         }
 
         if ($hold) {
-            $this->repository->save(new UserMapping($userId, $employeeId, $empCode, $email, UserMapping::STATUS_SUSPENDED, UserMapping::SOURCE_AUTO, $now, $now));
+            $this->repository->save(new UserMapping($userId, $employeeId, $empCode, $email, UserMapping::STATUS_PENDING, UserMapping::SOURCE_AUTO, $now, $now));
             $this->audit->record($userId, 'identity.pending', AuditLogInterface::RESULT_DENIED, 'awaiting_confirmation employee:' . $employeeId);
             $this->logger->warning(\sprintf('Joomla user %d matched an employee by e-mail; the mapping waits for an administrator to confirm it in User Mappings', $userId));
 
-            return Identity::notMatched($userId, UserMapping::STATUS_SUSPENDED);
+            return Identity::notMatched($userId, UserMapping::STATUS_PENDING);
         }
 
         $this->repository->save(new UserMapping($userId, $employeeId, $empCode, $email, UserMapping::STATUS_ACTIVE, UserMapping::SOURCE_AUTO, $now, $now));

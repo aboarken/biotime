@@ -56,7 +56,7 @@ final class DbEmployeeDirectoryTest extends TestCase
 
         // By e-mail: found, and waiting for an administrator (1.0.10); confirmed, it is matched.
         self::assertFalse($this->resolver($repo, $dir)->resolve(5, 'alice@example.COM')->isMatched());
-        self::assertSame(['11', 'E1', UserMapping::STATUS_SUSPENDED], [$repo->find(5)->employeeId, $repo->find(5)->empCode, $repo->find(5)->status], 'personnel_employee.id');
+        self::assertSame(['11', 'E1', UserMapping::STATUS_PENDING], [$repo->find(5)->employeeId, $repo->find(5)->empCode, $repo->find(5)->status], 'personnel_employee.id');
         (new MappingManager($repo, fn () => $dir, new MemoryAudit()))->confirm(5, 'alice@example.com', 1);
         $byEmail = $this->resolver($repo, $dir)->resolve(5, 'alice@example.COM');
         self::assertSame(['11', 'E1'], [$byEmail->employeeId(), $byEmail->empCode()]);

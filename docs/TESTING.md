@@ -52,6 +52,12 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.0.19 – New users: approve automatically or wait
+- [ ] After the update, users who were waiting show as *Waiting for approval* in User Mappings (filter Status); mappings suspended for other reasons stay *Suspended*.
+- [ ] Integration Settings → Employee Mapping → *New users* is *Wait for administrator approval*. A new user found by e-mail sees "…waiting for an administrator to approve it" and is listed as *Waiting for approval*; **Confirm** lets them in.
+- [ ] Switch *New users* to *Approve automatically* and save: a waiting user is let in on their next visit; a brand-new user found by e-mail is let in at once.
+- [ ] With either setting, a user whose Joomla e-mail changes is *Suspended* until you confirm them.
+
 ### 1.0.18 – Audit fixes
 - [ ] Integration Settings has no *Modules* section; saving still works.
 - [ ] My Dashboard: the chart legends, the Attendance per Month bars and the Punches per Device bars look as before; the month arrows on My Attendance and the Calendar are hidden at the first and the current month.
