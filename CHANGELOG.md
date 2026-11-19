@@ -3,6 +3,12 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-19
+
+### Changed
+- **Export PDF (A4) and Export PDF (A3) download a finished PDF file**, made on the server: no print dialog, so no printer to choose. Printing through Windows' *Microsoft Print to PDF* turned the landscape report into portrait pages with the table sideways; the file is now always A4 or A3 **landscape**, on any browser and computer. It has the same content as before: letterhead (site name, logo and header lines), title band, filters, cards and table in the page's colours, the footer and the page number on every page, the header row repeated on each page. Names and texts in Arabic are shown correctly.
+- The PDF is made by **mPDF 8.3** (GPL-2.0), bundled with the extension in `administrator/vendor` with only one font family (about 9 MB; `build/vendor-pdf.sh` updates it). The largest report (300 employees × 31 days on A3) takes about 10 seconds and 160 MB; the time and memory limits are raised for it, and PHP's text-matching limit for that report only.
+
 ## [1.1.2] - 2026-11-19
 
 ### Fixed

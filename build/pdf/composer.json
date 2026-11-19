@@ -1,0 +1,11 @@
+{
+    "description": "The PDF library bundled with com_biotime (administrator/vendor), installed by build/vendor-pdf.sh. psr/log and psr/http-message are Joomla's own and are not bundled.",
+    "require": {
+        "php": ">=8.3",
+        "mpdf/mpdf": "8.3.1"
+    },
+    "config": {
+        "platform": {"php": "8.3.0"},
+        "allow-plugins": {}
+    }
+}

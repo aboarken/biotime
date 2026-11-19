@@ -52,6 +52,11 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.0 – PDF file made on the server
+- [ ] Manager Dashboard → **Export PDF (A4)**: a PDF file downloads at once (no print dialog), A4 landscape, the right way up; letterhead, filters, cards and table; page numbers; the header row on every page.
+- [ ] **Export PDF (A3)** for a whole month and a large department: one A3 landscape table, each employee one row; it arrives within about 10 seconds.
+- [ ] Open the file in Adobe Reader / Edge: an employee or department name in Arabic reads correctly.
+
 ### 1.1.2 – Report on its own page
 - [ ] Manager Dashboard → Export PDF (A4) and (A3): the new tab shows only the report (no site header, menu, cookie notice or pop-up); the print dialog opens at once; *Save as PDF* gives a file with the report only, on A4 or A3 landscape.
 - [ ] With the cookie notice not yet accepted on the site, the report still shows no notice.

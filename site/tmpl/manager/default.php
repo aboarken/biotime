@@ -180,7 +180,7 @@ $range = $this->from === $this->to ? $f->date($this->from) : $f->date($this->fro
                 <?php // A4 (blue) then A3 (green), 1.0.17. A3: the whole period in one table, every employee one row; A4: up to 12 days per table. ?>
                 <div class="bt-export">
                     <?php foreach (['a4' => 'COM_BIOTIME_MANAGER_EXPORT_PDF_A4', 'a3' => 'COM_BIOTIME_MANAGER_EXPORT_PDF_A3'] as $paper => $key) : ?>
-                        <a class="bt-btn bt-btn--<?php echo $paper; ?>" href="<?php echo $this->filterUrl(['layout' => 'print', 'format' => 'raw', 'paper' => $paper]); ?>" target="_blank" rel="noopener">
+                        <a class="bt-btn bt-btn--<?php echo $paper; ?>" href="<?php echo $this->filterUrl(['layout' => 'pdf', 'format' => 'raw', 'paper' => $paper]); ?>" rel="nofollow">
                             <svg class="bt-btn-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M9.5 1.75H4.25a1.5 1.5 0 0 0-1.5 1.5v9.5a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5V5.5zM9.5 1.75V5.5h3.75M8 7.5v4.5M6 10l2 2 2-2"/></svg>
                             <?php echo Text::_($key); ?>
                         </a>

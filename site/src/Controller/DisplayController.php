@@ -57,7 +57,7 @@ final class DisplayController extends BaseController
         // Only the Manager Dashboard's report has a page of its own (format=raw, 1.1.2): it is
         // the report without the site template, its cookie notices and pop-ups.
         if ($this->input->getCmd('format', 'html') !== 'html'
-            && ($view !== 'manager' || $this->input->getCmd('layout', '') !== 'print')) {
+            && ($view !== 'manager' || !\in_array($this->input->getCmd('layout', ''), ['print', 'pdf'], true))) {
             throw new RouteNotFoundException(Text::_('JERROR_PAGE_NOT_FOUND'), 404);
         }
 
@@ -81,9 +81,10 @@ final class DisplayController extends BaseController
         if (!$identity->isMatched()) {
             $this->input->set('view', 'unmatched');
             $this->input->set('layout', 'default');
-        } elseif ($view !== 'manager' || $this->input->getCmd('layout', 'default') !== 'print') {
-            // Only the layouts the component has (1.0.18): the Manager Dashboard's PDF report is
-            // the one layout a request may choose; anything else is the page itself.
+        } elseif ($view !== 'manager' || !\in_array($this->input->getCmd('layout', 'default'), $this->input->getCmd('format', 'html') === 'html' ? ['print'] : ['print', 'pdf'], true)) {
+            // Only the layouts the component has (1.0.18): the Manager Dashboard's report is the
+            // one layout a request may choose (print; pdf only as the file, format=raw, 1.2.0);
+            // anything else is the page itself.
             $this->input->set('layout', 'default');
         }
 

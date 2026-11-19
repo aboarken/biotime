@@ -14,10 +14,13 @@ use Joomla\CMS\Layout\LayoutHelper;
  * and check-out, or the day's status when there are no punches, and the day's late-in plus
  * early-out. The cell is amber when there are any, and its tooltip lists them.
  *
- * @var array{day: ?\BiotimePortal\Component\Biotime\Administrator\Attendance\Day, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter} $displayData
+ * blocks (1.2.0, the PDF): each line is a <div>, as mPDF ignores display:block on a <span> in a cell.
+ *
+ * @var array{day: ?\BiotimePortal\Component\Biotime\Administrator\Attendance\Day, f: \BiotimePortal\Component\Biotime\Administrator\Support\Formatter, blocks?: bool} $displayData
  */
 
 $day   = $displayData['day'];
+$line  = empty($displayData['blocks']) ? 'span' : 'div';
 $f     = $displayData['f'];
 $e     = static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
 $check = static fn ($day, string $type): string => LayoutHelper::render('biotime.checktime', ['day' => $day, 'f' => $f, 'type' => $type, 'compact' => true]);
@@ -37,10 +40,10 @@ $class = $day === null ? '' : ($day->status === 'holiday' ? 'bt-row-holiday' : (
     <?php elseif ($day->punches === [] && $day->status !== null) : ?>
         <?php echo LayoutHelper::render('biotime.status', ['day' => $day, 'f' => $f]); ?>
     <?php else : ?>
-        <span class="bt-inout-line"><?php echo $check($day, 'in'); ?></span>
-        <span class="bt-inout-line"><?php echo $check($day, 'out'); ?></span>
+        <<?php echo $line; ?> class="bt-inout-line"><?php echo $check($day, 'in'); ?></<?php echo $line; ?>>
+        <<?php echo $line; ?> class="bt-inout-line"><?php echo $check($day, 'out'); ?></<?php echo $line; ?>>
         <?php if ($late + $early > 0) : ?>
-            <span class="bt-mgr-mins"><?php echo $e($f->duration($late + $early)); ?></span>
+            <<?php echo $line; ?> class="bt-mgr-mins"><?php echo $e($f->duration($late + $early)); ?></<?php echo $line; ?>>
         <?php endif; ?>
     <?php endif; ?>
 </td>
