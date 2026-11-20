@@ -17,9 +17,10 @@ $e     = fn (string $text): string => $this->escape($text);
 $num   = static fn (int $n): string => number_format($n);
 $t     = $this->selected->total;
 $other = $this->yearStats->total['other'] > 0;
-$scope = $this->monthOnly > 0 ? $f->monthName($this->monthOnly) . ' ' . $this->yearNumber : (string) $this->yearNumber;
 // Under each card: the month when one is chosen, without the year (1.2.4; the year is in the toolbar).
 $cardScope = $this->monthOnly > 0 ? $f->monthName($this->monthOnly) : '';
+// Section titles without the year (1.2.5); Punches per Device names the month when one is chosen.
+$deviceTitle = $cardScope !== '' ? Text::sprintf('COM_BIOTIME_PUNCHES_PER_DEVICE_MONTH', $cardScope) : Text::_('COM_BIOTIME_PUNCHES_PER_DEVICE');
 
 // Summary cards: [label, value, tone]
 $cards = [
@@ -56,14 +57,14 @@ $cards = [
 
     <section class="bt-panel">
         <div class="bt-panel-head">
-            <h2 class="bt-panel-title"><?php echo $e(Text::sprintf('COM_BIOTIME_PUNCHES_PER_MONTH', $this->yearNumber)); ?></h2>
+            <h2 class="bt-panel-title"><?php echo $e(Text::_('COM_BIOTIME_PUNCHES_PER_MONTH')); ?></h2>
         </div>
         <?php if ($this->yearStats->months === []) : ?>
             <p class="bt-panel-body bt-empty"><?php echo Text::_('COM_BIOTIME_PUNCHES_NONE'); ?></p>
         <?php else : ?>
             <div class="bt-table-wrap">
                 <table class="bt-table">
-                    <caption class="visually-hidden"><?php echo $e(Text::sprintf('COM_BIOTIME_PUNCHES_PER_MONTH', $this->yearNumber)); ?></caption>
+                    <caption class="visually-hidden"><?php echo $e(Text::_('COM_BIOTIME_PUNCHES_PER_MONTH')); ?></caption>
                     <thead>
                         <tr>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_MONTH'); ?></th>
@@ -103,7 +104,7 @@ $cards = [
 
     <section class="bt-panel">
         <div class="bt-panel-head">
-            <h2 class="bt-panel-title"><?php echo $e(Text::sprintf('COM_BIOTIME_PUNCHES_PER_DEVICE', $scope)); ?></h2>
+            <h2 class="bt-panel-title"><?php echo $e($deviceTitle); ?></h2>
             <span class="bt-panel-count"><?php echo $e(Text::plural('COM_BIOTIME_N_DEVICES', count($this->selected->devices))); ?></span>
         </div>
         <?php if ($this->selected->devices === []) : ?>
@@ -111,7 +112,7 @@ $cards = [
         <?php else : ?>
             <div class="bt-table-wrap">
                 <table class="bt-table">
-                    <caption class="visually-hidden"><?php echo $e(Text::sprintf('COM_BIOTIME_PUNCHES_PER_DEVICE', $scope)); ?></caption>
+                    <caption class="visually-hidden"><?php echo $e($deviceTitle); ?></caption>
                     <thead>
                         <tr>
                             <th scope="col"><?php echo Text::_('COM_BIOTIME_COL_DEVICE'); ?></th>
