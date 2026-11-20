@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.5] - 2026-11-20
+
+### Changed
+- **My Punches:** the section titles *Punches per Month* and *Punches per Device* no longer end with the year (the year is chosen in the toolbar). When one month is chosen, *Punches per Device* names that month (e.g. "Punches per Device, November").
+
 ## [1.2.4] - 2026-11-20
 
 ### Changed

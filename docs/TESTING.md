@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.5 – My Punches titles
+- [ ] My Punches: the titles read "Punches per Month" and "Punches per Device", without the year. Choose one month: "Punches per Device, November".
+
 ### 1.2.4 – My Punches cards
 - [ ] My Punches, all months: the five cards show no year under their values. Choose one month: the cards show the month's name only.
 
