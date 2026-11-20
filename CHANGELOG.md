@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.4] - 2026-11-20
+
+### Changed
+- **My Punches:** the cards (Total Punches, Fingerprint, Face, Devices Used, Days with punches) no longer show the year under the value; the year is chosen in the toolbar above them. When one month is chosen, its name is still shown.
+
 ## [1.2.3] - 2026-11-20
 
 ### Changed

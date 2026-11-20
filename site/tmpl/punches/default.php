@@ -18,6 +18,8 @@ $num   = static fn (int $n): string => number_format($n);
 $t     = $this->selected->total;
 $other = $this->yearStats->total['other'] > 0;
 $scope = $this->monthOnly > 0 ? $f->monthName($this->monthOnly) . ' ' . $this->yearNumber : (string) $this->yearNumber;
+// Under each card: the month when one is chosen, without the year (1.2.4; the year is in the toolbar).
+$cardScope = $this->monthOnly > 0 ? $f->monthName($this->monthOnly) : '';
 
 // Summary cards: [label, value, tone]
 $cards = [
@@ -45,7 +47,9 @@ $cards = [
             <div class="bt-stat bt-tone-<?php echo $tone; ?>">
                 <span class="bt-stat-label"><?php echo $e($label); ?></span>
                 <span class="bt-stat-value"><?php echo $value; ?></span>
-                <span class="bt-stat-meta"><?php echo $e($scope); ?></span>
+                <?php if ($cardScope !== '') : ?>
+                    <span class="bt-stat-meta"><?php echo $e($cardScope); ?></span>
+                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
