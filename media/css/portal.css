@@ -791,6 +791,17 @@
   gap: 0.375rem;
 }
 
+/* The year under each month's name (1.2.3). */
+.com-biotime .bt-chart-year {
+  font-size: 10px;
+}
+
+/* The legend under the bar lists (Attendance per Month, Punches per Device) as far from the last
+   bar as the other cards' legends are from their month names (1.2.3). */
+.com-biotime .bt-devices + .bt-chart-legend {
+  margin-top: 1.25rem;
+}
+
 .com-biotime .bt-chart-key {
   display: inline-block;
   flex: none;
@@ -845,6 +856,10 @@
 
   .com-biotime .bt-chart-x--alt {
     display: none;
+  }
+
+  .com-biotime .bt-chart-year {
+    font-size: 15px;
   }
 
   .com-biotime .bt-chart .bt-device {

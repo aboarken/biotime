@@ -51,7 +51,7 @@ $label = [
     'weekend' => Text::_('COM_BIOTIME_STATUS_WEEKEND'),
     'leave'   => Text::_('COM_BIOTIME_CHART_LEAVE'),
 ];
-$short = static fn (array $m): string => mb_substr($f->monthName($m['month']), 0, 3) . ($m['month'] === 1 || $m === $months[0] ? ' ' . substr((string) $m['year'], 2) : '');
+$short = static fn (array $m): string => mb_substr($f->monthName($m['month']), 0, 3);
 $long  = static fn (array $m): string => $f->monthName($m['month']) . ' ' . $m['year'];
 
 // A round axis maximum (1, 2, 2.5 or 5 × 10^n) and its gridlines.
@@ -68,7 +68,7 @@ $nice = static function (float $max, int $steps = 4): array {
 };
 
 // The plot area shared by the column and line charts (viewBox 0 0 520 240).
-[$W, $H, $L, $R, $T, $B] = [520, 244, 52, 10, 14, 38];
+[$W, $H, $L, $R, $T, $B] = [520, 250, 52, 10, 14, 44];
 $pw  = $W - $L - $R;
 $ph  = $H - $T - $B;
 $y   = static fn (float $v, float $max): float => round($T + $ph - ($max > 0 ? $v / $max : 0) * $ph, 1);
@@ -92,7 +92,10 @@ $xLabels = static function () use ($months, $cx, $H, $short, $e): string {
     foreach ($months as $i => $m) {
         // On a phone the text is drawn larger: with more than 6 months every other month is named (1.0.13).
         $alt  = \count($months) > 6 && $i % 2 === 1 ? ' bt-chart-x--alt' : '';
-        $out .= '<text class="bt-chart-axis' . $alt . '" x="' . $cx($i) . '" y="' . ($H - 8) . '" text-anchor="middle">' . $e($short($m)) . '</text>';
+        // Every month with its year under it (1.2.3: a school year runs over two years, e.g. Dec 2026 and
+        // Jan 2027); twelve months have no room for the year beside the name.
+        $out .= '<text class="bt-chart-axis' . $alt . '" x="' . $cx($i) . '" y="' . ($H - 22) . '" text-anchor="middle">' . $e($short($m))
+            . '<tspan class="bt-chart-year" x="' . $cx($i) . '" dy="16">' . $m['year'] . '</tspan></text>';
     }
 
     return $out;
@@ -134,12 +137,15 @@ $grouped = '';
 [$maxMin, $stepMin] = $nice(max(4, ...array_map(static fn (array $m): int => max($m['summary']->lateMinutes, $m['summary']->earlyMinutes), $months)));
 // As wide as the check-in / check-out columns (1.0.1); the two bars of a month side by side.
 $gw      = min(30, $band * 0.42);
+// The left edge of a month's bar: the two bars side by side around the month's name, or, when the
+// month has only one of the two (the other is 0), that bar centred above the name (1.2.3).
+$barX = static fn (int $i, int $side, bool $both): float => $both ? ($side < 0 ? $cx($i) - $gw - 1 : $cx($i) + 1) : $cx($i) - $gw / 2;
 $grouped = $grid($maxMin, $stepMin, $hm);
 
 foreach ($months as $i => $m) {
     foreach ([['late', $m['summary']->lateMinutes, -1, 'COM_BIOTIME_COL_LATE'], ['early', $m['summary']->earlyMinutes, 1, 'COM_BIOTIME_COL_EARLY']] as [$k, $v, $side, $key]) {
         $top = $y($v, $maxMin);
-        $x   = $side < 0 ? $cx($i) - $gw - 1 : $cx($i) + 1;
+        $x   = $barX($i, $side, $m['summary']->lateMinutes > 0 && $m['summary']->earlyMinutes > 0);
         $grouped .= '<rect class="bt-chart-mark" x="' . round($x, 1) . '" y="' . $top . '" width="' . round($gw, 1) . '" height="' . max(0, round($T + $ph - $top, 1)) . '" rx="3" fill="' . $color[$k] . '">'
             . '<title>' . $e($long($m) . ' · ' . Text::_($key) . ': ' . $f->duration($v)) . '</title></rect>';
     }
@@ -155,7 +161,7 @@ $missing = $grid($maxMiss, $stepMiss, static fn (float $v): string => (string) (
 foreach ($months as $i => $m) {
     foreach ([['in', $m['summary']->missingMorningDays, -1, 'COM_BIOTIME_CARD_MISSING_MORNING'], ['out', $m['summary']->missingAfternoonDays, 1, 'COM_BIOTIME_CARD_MISSING_AFTERNOON']] as [$k, $v, $side, $key]) {
         $top = $y($v, $maxMiss);
-        $x   = $side < 0 ? $cx($i) - $gw - 1 : $cx($i) + 1;
+        $x   = $barX($i, $side, $m['summary']->missingMorningDays > 0 && $m['summary']->missingAfternoonDays > 0);
         $missing .= '<rect class="bt-chart-mark" x="' . round($x, 1) . '" y="' . $top . '" width="' . round($gw, 1) . '" height="' . max(0, round($T + $ph - $top, 1)) . '" rx="3" fill="' . $color[$k] . '">'
             . '<title>' . $e($long($m) . ' · ' . Text::_($key) . ': ' . Text::plural('COM_BIOTIME_N_DAYS', $v)) . '</title></rect>';
     }

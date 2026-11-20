@@ -3,6 +3,15 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.3] - 2026-11-20
+
+### Changed
+- **My Dashboard charts: every month shows its year.** Under the columns of *Missing Punches per Month*, *Total Late In and Early Out per Month* and *Average Check-In and Check-Out per Month*, the year is written under each month's name (Aug / 2026 … Jan / 2027), since a school year runs over two years. Twelve months have no room for the year beside the name.
+
+### Fixed
+- **A month's column was not above its name** in *Total Late In and Early Out per Month* (and *Missing Punches per Month*) when the month had only one of the two values (for example late in but no early out): the column stood to the left of the name. A single column is now centred above its month; two stay side by side around it.
+- *Attendance per Month* (and *Punches per Device*): a little more space above the legend (Below 70 %, 70 % to 94 %, 95 % and above), like the other cards.
+
 ## [1.2.2] - 2026-11-20
 
 ### Changed
