@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.2 – PDF totals aligned left
+- [ ] Export PDF (A4) and (A3): Late In, Early Out and Total Exceptions, titles and values, start at the left of their column, like the dates.
+
 ### 1.2.1 – PDF column widths
 - [ ] Export PDF (A4) and (A3) for a whole month: every day column has the same width; Late In, Early Out and Total Exceptions are only a little wider than a day (enough for their titles); nothing is cut off at the right edge.
 - [ ] A long employee name wraps inside the Employee column.

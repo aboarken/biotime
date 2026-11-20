@@ -120,7 +120,7 @@ body { font-family: dejavusanscondensed; font-size: 8pt; color: #1f2937; }
 table.data { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: <?php echo $dense ? '6.5pt' : '7.5pt'; ?>; }
 table.data th, table.data td { border: 0.15mm solid #e5e7eb; padding: <?php echo $dense ? '0.8mm 0.6mm' : '1.2mm'; ?>; vertical-align: top; }
 table.data thead th { background-color: <?php echo $main; ?>; color: #ffffff; font-size: <?php echo $dense ? '6pt' : '7pt'; ?>; text-align: left; }
-table.data thead th.bt-num, table.data td.bt-num { text-align: right; }
+table.data thead th.bt-num, table.data td.bt-num { text-align: left; }
 table.data tbody th { text-align: left; font-weight: bold; }
 .bt-sub { display: block; font-size: <?php echo $dense ? '5.5pt' : '6.5pt'; ?>; font-weight: normal; color: #6b7280; }
 div.head-sub { font-size: <?php echo $dense ? '5.5pt' : '6.5pt'; ?>; font-weight: normal; color: #dbe4f0; }
