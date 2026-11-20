@@ -52,6 +52,9 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.4 – My Punches cards
+- [ ] My Punches, all months: the five cards show no year under their values. Choose one month: the cards show the month's name only.
+
 ### 1.2.3 – Dashboard charts
 - [ ] My Dashboard: under the monthly charts, each month has its year under the name (Dec 2026, Jan 2027); on a phone too.
 - [ ] Total Late In and Early Out per Month: a month with late in but no early out has its column centred above the month's name.
