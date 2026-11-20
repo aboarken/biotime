@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.2] - 2026-11-20
+
+### Changed
+- **PDF report:** Late In, Early Out and Total Exceptions (titles and values) are aligned to the left, like the date columns.
+
 ## [1.2.1] - 2026-11-19
 
 ### Fixed
