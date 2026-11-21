@@ -3,6 +3,11 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.7] - 2026-11-21
+
+### Changed
+- **Calendar legend:** *Rest Day* is listed only in a month that has one. A rest day is a weekday without punches on which the employee's ZKBioTime shift has no working hours (e.g. part-time staff); most staff never have one, so the legend no longer shows it for them.
+
 ## [1.2.6] - 2026-11-21
 
 ### Added

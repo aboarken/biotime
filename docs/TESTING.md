@@ -52,6 +52,10 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.7 – Calendar legend
+- [ ] Calendar of a full-time employee: the legend has no *Rest Day*.
+- [ ] An employee whose ZKBioTime shift leaves a weekday without working hours: that month's legend lists *Rest Day* and the day shows ○.
+
 ### 1.2.6 – Pages open at once while they update
 - [ ] Open My Dashboard, wait longer than the cache time (Integration Settings), open it again: it appears at once with "Showing your data from … Updating…" above the title (with a small spinner), then the note disappears and the page shows current data.
 - [ ] Same on My Attendance, the Calendar, a day's details and My Punches; the filters and date picker still work after the update.
