@@ -22,8 +22,17 @@ $legend = [
     ['absent', Text::_('COM_BIOTIME_STATUS_ABSENT')],
     ['weekend', Text::_('COM_BIOTIME_STATUS_WEEKEND')],
     ['holiday', Text::_('COM_BIOTIME_STATUS_HOLIDAY')],
-    ['rest', Text::_('COM_BIOTIME_STATUS_REST')],
 ];
+
+// Rest Day (a weekday off in the employee's ZKBioTime shift, e.g. part-time staff) is rare: it is
+// in the legend only when the month has one (1.2.7).
+foreach ($this->period->days as $day) {
+    if ($day->status === 'rest') {
+        $legend[] = ['rest', Text::_('COM_BIOTIME_STATUS_REST')];
+
+        break;
+    }
+}
 ?>
 <div class="com-biotime biotime-calendar" data-bt-root="calendar">
     <div class="bt-head">
