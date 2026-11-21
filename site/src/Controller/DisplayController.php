@@ -46,11 +46,10 @@ final class DisplayController extends BaseController
     ];
 
     /**
-     * Pages that may open with older data while they update (1.2.6): the employee's own
-     * attendance only. The Manager Dashboard (a team, by permission), My Leaves and My Approvals
-     * always read current data.
+     * Pages that may open with older data while they update (1.2.6; every portal page since
+     * 1.2.8). Which employees a manager may see is never taken from an older copy (ManagerModel).
      */
-    private const STALE_VIEWS = ['dashboard', 'attendance', 'calendar', 'punches', 'day'];
+    private const STALE_VIEWS = ['dashboard', 'attendance', 'calendar', 'punches', 'day', 'manager', 'leaves', 'approvals'];
 
     protected $default_view = 'dashboard';
 

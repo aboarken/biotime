@@ -157,7 +157,8 @@ class HtmlView extends BaseHtmlView
                     $this->employees = [];
                 }
 
-                $read         = $model->teamDays($this->employees, $this->from, $this->to);
+                // The page uses the cache (1.2.8); the printed report and the PDF read current data.
+                $read         = $model->teamDays($this->employees, $this->from, $this->to, !$this->report);
                 $this->errors = $read['errors'];
                 $all          = [];
 

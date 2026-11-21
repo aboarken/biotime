@@ -52,6 +52,12 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.8 – Every page opens at once while it updates
+- [ ] My Leaves and My Approvals: open, wait longer than the cache time, open again: the page appears at once with "Showing your data from … Updating…", then current data.
+- [ ] Manager Dashboard: open a department, wait longer than the cache time, open it again: same note, then current data. Filters, the date range and paging still work after the update.
+- [ ] Remove a department from a manager in ZKBioTime, wait longer than the cache time: the Manager Dashboard no longer lists its employees, even before the update finishes.
+- [ ] Export PDF (A4/A3) after a punch was just made: the PDF has it (never an older copy).
+
 ### 1.2.7 – Calendar legend
 - [ ] Calendar of a full-time employee: the legend has no *Rest Day*.
 - [ ] An employee whose ZKBioTime shift leaves a weekday without working hours: that month's legend lists *Rest Day* and the day shows ○.
