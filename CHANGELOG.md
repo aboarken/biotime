@@ -3,6 +3,18 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.6] - 2026-11-21
+
+### Added
+- **Pages open at once while they update.** My Dashboard, My Attendance, the Calendar, day details and My Punches no longer wait for ZKBioTime when the data they were last shown with is older than the cache time: they open at once with it, with the note *"Showing your data from Saturday, 21 November 2026 13:25. Updating…"* above the title, read current data in the background and replace their content (as in the ServiceDesk Plus portal).
+  - If the user has started choosing a filter meanwhile, the page is not replaced: *Newer data is available. Reload the page* is shown.
+  - If the update fails or ZKBioTime is unavailable, the page stays and the note says *Could not update just now*.
+  - If the page is no longer the user's (signed out, no longer matched, no permission), it is loaded normally, so older data is never kept.
+  - Data older than 7 days is never shown this way. The Manager Dashboard, My Leaves and My Approvals always read current data. Without JavaScript the page reloads at once with current data.
+
+### Changed
+- Cache entries are kept 7 days past their time (for the above) before they are deleted, and now store when they were read. Entries written by older versions are still used until their time ends.
+
 ## [1.2.5] - 2026-11-20
 
 ### Changed

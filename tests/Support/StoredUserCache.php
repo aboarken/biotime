@@ -34,6 +34,15 @@ final class StoredUserCache implements UserCacheInterface
         $this->clock = $clock ?? static fn (): int => time();
     }
 
+    public function allowStale(bool $allow): void
+    {
+    }
+
+    public function staleSince(): ?int
+    {
+        return null;
+    }
+
     public function get(Identity $identity, string $key): ?array
     {
         if ($this->ttl <= 0 || !$identity->isMatched()) {

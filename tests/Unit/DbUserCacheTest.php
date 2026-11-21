@@ -73,8 +73,52 @@ final class DbUserCacheTest extends TestCase
         self::assertNull($cache->get($alice, 'punches:2026-11'), 'current month: cache time (5 minutes)');
         self::assertSame(['at' => 1], $cache->get($alice, 'punches:2026-10'), 'past month: a day');
 
+        // Kept a few more days past their time (1.2.6: shown while a page updates), then purged.
         $cache->purge();
-        self::assertSame(1, $this->rows());
+        self::assertSame(2, $this->rows());
+        $this->time += 86400 + DbUserCache::STALE_SECONDS;
+        $cache->purge();
+        self::assertSame(0, $this->rows());
+    }
+
+    public function testEntriesPastTheirTimeAreShownOnlyWhileAPageUpdates(): void
+    {
+        $alice = Identity::matched(5, '11', 'E1');
+        $cache = $this->cache();
+        $at    = $this->time;
+
+        $cache->set($alice, 'punches:2026-11', ['rows' => [], 'at' => 1]);
+        $this->time += 600;
+
+        self::assertNull($cache->get($alice, 'punches:2026-11'), 'a normal read never returns it');
+        self::assertNull($cache->staleSince());
+
+        $cache->allowStale(true);
+        self::assertSame(['rows' => [], 'at' => 1], $cache->get($alice, 'punches:2026-11'));
+        self::assertSame($at, $cache->staleSince(), 'from when');
+        self::assertNull($cache->get(Identity::matched(6, '12', 'E2'), 'punches:2026-11'), 'never another user\'s');
+
+        // A fresh entry does not change staleSince(); the oldest older one counts.
+        $cache->set($alice, 'punches:2026-10', ['at' => 2]);
+        self::assertSame(['at' => 2], $cache->get($alice, 'punches:2026-10'));
+        self::assertSame($at, $cache->staleSince());
+
+        // Too old to be shown at all.
+        $this->time += DbUserCache::STALE_SECONDS;
+        self::assertNull($cache->get($alice, 'punches:2026-11'));
+    }
+
+    public function testRowsOfOlderVersionsAreReadButNeverShownPastTheirTime(): void
+    {
+        $alice = Identity::matched(5, '11', 'E1');
+        $this->db->setQuery("INSERT INTO \"j_biotime_cache\" VALUES ('5|E1|k', 5, " . ($this->time + 300) . ", '{\"rows\":[],\"at\":3}')")->execute();
+        $cache = $this->cache();
+        $cache->allowStale(true);
+
+        self::assertSame(['rows' => [], 'at' => 3], $cache->get($alice, 'k'));
+        $this->time += 600;
+        self::assertNull($cache->get($alice, 'k'), 'its age is unknown');
+        self::assertNull($cache->staleSince());
     }
 
     public function testCacheTimeZeroWritesNothingAndErrorsNeverBreakAPage(): void

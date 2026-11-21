@@ -52,6 +52,14 @@ those releases.
 - [ ] Record the ZKBioTime **build number** (ZKBioTime *System → About*) in `docs/DATABASE.md`.
 - [ ] Create the read-only database user for the portal (`docs/DATABASE.md`).
 
+### 1.2.6 – Pages open at once while they update
+- [ ] Open My Dashboard, wait longer than the cache time (Integration Settings), open it again: it appears at once with "Showing your data from … Updating…" above the title (with a small spinner), then the note disappears and the page shows current data.
+- [ ] Same on My Attendance, the Calendar, a day's details and My Punches; the filters and date picker still work after the update.
+- [ ] While the note shows, change a filter: the filter is applied (the page is not replaced under it).
+- [ ] Stop the BioTime server's database (or block it) and open a page after the cache time: the older page stays with "Could not update just now…".
+- [ ] The Manager Dashboard, My Leaves and My Approvals never show the note.
+- [ ] With *Cache time* 0, no page shows the note.
+
 ### 1.2.5 – My Punches titles
 - [ ] My Punches: the titles read "Punches per Month" and "Punches per Device", without the year. Choose one month: "Punches per Device, November".
 

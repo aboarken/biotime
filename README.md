@@ -241,8 +241,16 @@ it, and it survives logging out. Each entry belongs to one Joomla user and one e
   within that time.
 - **Past months** are kept for **24 hours**: their punches no longer change. (Only while the cache
   is on; *Cache time* 0 turns everything off.)
-- Expired entries are deleted automatically; the table holds only what was read recently (a few KB
-  per employee and month, a few MB for a whole school).
+- **Pages open at once (1.2.6).** When the data a page was last shown with is older than the cache
+  time, My Dashboard, My Attendance, the Calendar, day details and My Punches open at once with it
+  and the note *"Showing your data from Saturday, 21 November 2026 13:25. Updating…"* above the
+  title; the page reads current data in the background and replaces itself. If the user has
+  started choosing a filter meanwhile, a *Reload the page* link is offered instead; if the update
+  fails, the note says so. Data older than **7 days** is never shown this way, and the Manager
+  Dashboard, My Leaves and My Approvals always read current data. Without JavaScript the page
+  reloads at once with current data.
+- Expired entries are deleted automatically 7 days after their time; the table holds only what was
+  read recently (a few KB per employee and month, a few MB for a whole school).
 - **One connection, kept open**: all queries of a page share one read-only connection to
   ZKBioTime's database, opened when first needed and kept open between pages (a persistent
   connection, 1.0.10), so a page does not wait for a new encrypted connection. A closed one is

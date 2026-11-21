@@ -81,7 +81,15 @@
     });
   };
 
-  const start = () => document.querySelectorAll('form[data-bt-filters]').forEach(init);
+  // Each element once; again for the new content when the page updates itself (refresh.js, 1.2.6).
+  const start = () => document.querySelectorAll('form[data-bt-filters]').forEach((el) => {
+    if (el.dataset.btFiltersReady !== '1') {
+      el.dataset.btFiltersReady = '1';
+      init(el);
+    }
+  });
+
+  document.addEventListener('bt:refreshed', start);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);

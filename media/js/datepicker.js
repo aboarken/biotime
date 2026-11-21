@@ -245,7 +245,15 @@
     });
   };
 
-  const start = () => document.querySelectorAll('input[data-bt-datepicker]').forEach(init);
+  // Each element once; again for the new content when the page updates itself (refresh.js, 1.2.6).
+  const start = () => document.querySelectorAll('input[data-bt-datepicker]').forEach((el) => {
+    if (el.dataset.btPickerReady !== '1') {
+      el.dataset.btPickerReady = '1';
+      init(el);
+    }
+  });
+
+  document.addEventListener('bt:refreshed', start);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);
