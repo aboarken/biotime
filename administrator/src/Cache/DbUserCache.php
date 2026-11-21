@@ -23,6 +23,11 @@ use Psr\Log\LoggerInterface;
  * deleted now and then, so the table only holds what was read recently.
  *
  * A database error never breaks a page: the entry is simply read from ZKBioTime again.
+ *
+ * 1.2.6: an entry past its time is kept a few more days (STALE_SECONDS). On a normal page load
+ * (allowStale()) it is still returned, so the page opens at once with the data it was last shown
+ * with; staleSince() then tells from when, and the page updates itself in the background. Each
+ * row stores when it was written ({"c": time, "v": value}).
  */
 final class DbUserCache implements UserCacheInterface
 {
@@ -33,6 +38,13 @@ final class DbUserCache implements UserCacheInterface
 
     /** Larger entries are not cached (a month of punches is a few KB). */
     private const MAX_BYTES = 2_000_000;
+
+    /** How long past its time an entry may still be shown while the page updates (1.2.6). */
+    public const STALE_SECONDS = 7 * 86400;
+
+    private bool $allowStale = false;
+
+    private ?int $staleSince = null;
 
     /** @var \Closure(): int */
     private \Closure $clock;
@@ -49,38 +61,68 @@ final class DbUserCache implements UserCacheInterface
         $this->clock = $clock ?? static fn (): int => time();
     }
 
+    public function allowStale(bool $allow): void
+    {
+        $this->allowStale = $allow;
+    }
+
+    public function staleSince(): ?int
+    {
+        return $this->staleSince;
+    }
+
     public function get(Identity $identity, string $key): ?array
     {
         if ($this->ttl <= 0 || !$identity->isMatched()) {
             return null;
         }
 
-        $id  = $this->key($identity, $key);
-        $now = ($this->clock)();
+        $id     = $this->key($identity, $key);
+        $now    = ($this->clock)();
+        $oldest = $this->allowStale ? $now - self::STALE_SECONDS : $now;
 
         try {
             $query = $this->db->createQuery()
-                ->select($this->db->quoteName('value'))
+                ->select($this->db->quoteName(['value', 'expires']))
                 ->from($this->db->quoteName(self::TABLE))
                 ->where($this->db->quoteName('cache_key') . ' = :key')
-                ->where($this->db->quoteName('expires') . ' > :now')
+                ->where($this->db->quoteName('expires') . ' > :oldest')
                 ->bind(':key', $id)
-                ->bind(':now', $now, ParameterType::INTEGER);
+                ->bind(':oldest', $oldest, ParameterType::INTEGER);
 
-            $raw = $this->db->setQuery($query)->loadResult();
+            $row = $this->db->setQuery($query)->loadAssoc();
         } catch (\Throwable $e) {
             $this->logger->warning('ZKBioTime cache could not be read: ' . $e::class);
 
             return null;
         }
 
-        if (!\is_string($raw) || $raw === '') {
+        if (!\is_array($row) || !\is_string($row['value'] ?? null) || $row['value'] === '') {
             return null;
         }
 
-        $value = json_decode($raw, true);
+        $stored = json_decode($row['value'], true);
 
-        return \is_array($value) ? $value : null;
+        if (!\is_array($stored)) {
+            return null;
+        }
+
+        // Rows written before 1.2.6 hold the value itself, without the time it was written.
+        $written = isset($stored['c'], $stored['v']) && \is_int($stored['c']) && \is_array($stored['v']) && \count($stored) === 2;
+        $value   = $written ? $stored['v'] : $stored;
+
+        if ((int) $row['expires'] > $now) {
+            return $value;
+        }
+
+        // Past its time: only on a page that updates itself, and only when we know its age.
+        if (!$this->allowStale || !$written) {
+            return null;
+        }
+
+        $this->staleSince = min($this->staleSince ?? $stored['c'], $stored['c']);
+
+        return $value;
     }
 
     public function set(Identity $identity, string $key, array $value, ?int $ttl = null): void
@@ -89,14 +131,13 @@ final class DbUserCache implements UserCacheInterface
             return;
         }
 
-        $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $id   = $this->key($identity, $key);
+        $now  = ($this->clock)();
+        $json = json_encode(['c' => $now, 'v' => $value], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         if ($json === false || \strlen($json) > self::MAX_BYTES) {
             return;
         }
-
-        $id  = $this->key($identity, $key);
-        $now = ($this->clock)();
 
         try {
             $this->delete($this->db->quoteName('cache_key') . ' = :key', [':key' => [$id, ParameterType::STRING]]);
@@ -117,10 +158,10 @@ final class DbUserCache implements UserCacheInterface
         }
     }
 
-    /** Delete every expired entry. */
+    /** Delete every entry too old to be shown even while a page updates (STALE_SECONDS past its time). */
     public function purge(?int $now = null): void
     {
-        $this->delete($this->db->quoteName('expires') . ' <= :now', [':now' => [$now ?? ($this->clock)(), ParameterType::INTEGER]]);
+        $this->delete($this->db->quoteName('expires') . ' <= :oldest', [':oldest' => [($now ?? ($this->clock)()) - self::STALE_SECONDS, ParameterType::INTEGER]]);
     }
 
     /**

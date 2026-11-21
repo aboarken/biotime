@@ -1830,3 +1830,43 @@ body.bt-report-page *::after {
     background: #fff;
   }
 }
+
+/* Page opened with older data while it updates itself (1.2.6, refresh.js): a note above the title. */
+.com-biotime .bt-refresh-note {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #17426f;
+  background: #eef4fb;
+  border-radius: 0.5rem;
+}
+
+.com-biotime .bt-refresh-note--error {
+  color: #92400e;
+  background: #fffbeb;
+}
+
+[data-bt-root][aria-busy="true"] .bt-refresh-note::before {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.5rem;
+  vertical-align: -0.1em;
+  content: "";
+  border: 0.15em solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: bt-spin 0.75s linear infinite;
+}
+
+@keyframes bt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-bt-root][aria-busy="true"] .bt-refresh-note::before {
+    animation-duration: 2.5s;
+  }
+}

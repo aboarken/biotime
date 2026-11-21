@@ -27,4 +27,13 @@ interface UserCacheInterface
      *                            months, which no longer change); ignored when the cache is off
      */
     public function set(Identity $identity, string $key, array $value, ?int $ttl = null): void;
+
+    /**
+     * Whether get() may also return an entry past its time, up to a few days old (1.2.6): a page
+     * is then shown at once with it and updated in the background (DisplayController, refresh.js).
+     */
+    public function allowStale(bool $allow): void;
+
+    /** When the oldest entry past its time that get() returned was stored (Unix time); null if none. */
+    public function staleSince(): ?int;
 }
