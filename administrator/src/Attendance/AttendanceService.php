@@ -196,6 +196,34 @@ final class AttendanceService
         }
     }
 
+    /**
+     * Whether every month of the range is in the cache for this employee (1.2.8, Manager
+     * Dashboard): only the employees who are not are then read ahead together. The entries looked
+     * up are kept for range(), which does not look them up again.
+     */
+    public function isCached(Identity $identity, \DateTimeImmutable $from, \DateTimeImmutable $to): bool
+    {
+        $all = true;
+
+        for ($m = $from->modify('first day of this month'); $m <= $to; $m = $m->modify('first day of next month')) {
+            foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY] as $type) {
+                $key  = self::cacheKey($type, (int) $m->format('Y'), (int) $m->format('n'));
+                $peek = $this->peekKey($identity, $key);
+
+                $this->peek[$peek] ??= $this->cache->get($identity, $key);
+                $all = $all && $this->peek[$peek] !== null;
+            }
+        }
+
+        return $all;
+    }
+
+    /** The look-ups kept between isCached() and range() belong to one user and employee. */
+    private function peekKey(Identity $identity, string $key): string
+    {
+        return $identity->joomlaUserId . '|' . ($identity->isMatched() ? $identity->empCode() : '') . '|' . $key;
+    }
+
     private function readRange(Identity $identity, \DateTimeImmutable $from, \DateTimeImmutable $to): Period
     {
         $from = new \DateTimeImmutable($from->format('Y-m-d'));
@@ -215,9 +243,14 @@ final class AttendanceService
 
         for ($m = $from->modify('first day of this month'); $m <= $to; $m = $m->modify('first day of next month')) {
             foreach ([self::TYPE_PUNCHES, self::TYPE_DAILY] as $type) {
-                $key = self::cacheKey($type, (int) $m->format('Y'), (int) $m->format('n'));
+                $key = $this->peekKey($identity, self::cacheKey($type, (int) $m->format('Y'), (int) $m->format('n')));
 
-                if (($this->peek[$key] = $this->cacheOn ? $this->cache->get($identity, $key) : null) === null) {
+                // Already looked up by isCached() (Manager Dashboard, 1.2.8), else now.
+                if (!\array_key_exists($key, $this->peek)) {
+                    $this->peek[$key] = $this->cacheOn ? $this->cache->get($identity, self::cacheKey($type, (int) $m->format('Y'), (int) $m->format('n'))) : null;
+                }
+
+                if ($this->peek[$key] === null) {
                     $missing[$m->format('Y-m')] = $m;
                 }
             }
@@ -410,8 +443,9 @@ final class AttendanceService
 
         // Rows of older versions are never read from the cache (CACHE_VERSION).
         $key    = self::cacheKey($type, $year, $month);
-        $cached = \array_key_exists($key, $this->peek) ? $this->peek[$key] : ($this->cacheOn ? $this->cache->get($identity, $key) : null);
-        unset($this->peek[$key]);
+        $peek   = $this->peekKey($identity, $key);
+        $cached = \array_key_exists($peek, $this->peek) ? $this->peek[$peek] : ($this->cacheOn ? $this->cache->get($identity, $key) : null);
+        unset($this->peek[$peek]);
 
         if ($cached !== null && isset($cached['rows'], $cached['at'])) {
             $stat['cached']++;

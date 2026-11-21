@@ -71,7 +71,7 @@ final class DbUserCache implements UserCacheInterface
         return $this->staleSince;
     }
 
-    public function get(Identity $identity, string $key): ?array
+    public function get(Identity $identity, string $key, bool $stale = true): ?array
     {
         if ($this->ttl <= 0 || !$identity->isMatched()) {
             return null;
@@ -79,7 +79,7 @@ final class DbUserCache implements UserCacheInterface
 
         $id     = $this->key($identity, $key);
         $now    = ($this->clock)();
-        $oldest = $this->allowStale ? $now - self::STALE_SECONDS : $now;
+        $oldest = $this->allowStale && $stale ? $now - self::STALE_SECONDS : $now;
 
         try {
             $query = $this->db->createQuery()
@@ -116,7 +116,7 @@ final class DbUserCache implements UserCacheInterface
         }
 
         // Past its time: only on a page that updates itself, and only when we know its age.
-        if (!$this->allowStale || !$written) {
+        if (!$this->allowStale || !$stale || !$written) {
             return null;
         }
 

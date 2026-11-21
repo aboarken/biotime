@@ -18,8 +18,13 @@ use BiotimePortal\Component\Biotime\Administrator\Identity\Identity;
  */
 interface UserCacheInterface
 {
-    /** @return array<mixed>|null */
-    public function get(Identity $identity, string $key): ?array;
+    /**
+     * @param bool $stale false: never an entry past its time, even while a page updates (1.2.8;
+     *                    e.g. which employees a manager may see)
+     *
+     * @return array<mixed>|null
+     */
+    public function get(Identity $identity, string $key, bool $stale = true): ?array;
 
     /**
      * @param array<mixed> $value

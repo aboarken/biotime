@@ -68,7 +68,8 @@ final class ManagerModel extends PortalModel
         // Kept for the cache time (1.0.10): the departments a manager may see change rarely, and
         // reading them takes several queries to the ZKBioTime server on every page.
         $cache  = $this->biotime()->getUserCache();
-        $cached = $cache->get($this->identity(), self::CACHE . 'departments');
+        // Never an older copy (1.2.8): which employees a manager may see is always current.
+        $cached = $cache->get($this->identity(), self::CACHE . 'departments', false);
 
         if (isset($cached['d']) && \is_array($cached['d'])) {
             return $this->departments = $cached['d'];
@@ -165,7 +166,7 @@ final class ManagerModel extends PortalModel
         $ids    = array_column($this->departments(), 'id');
         $key    = self::CACHE . 'team:' . $this->attendance()->today() . ':' . md5(implode(',', $ids));
         $cache  = $this->biotime()->getUserCache();
-        $cached = $cache->get($this->identity(), $key);
+        $cached = $cache->get($this->identity(), $key, false);
 
         if (isset($cached['t']) && \is_array($cached['t'])) {
             return $this->team = $cached['t'];
@@ -287,24 +288,35 @@ final class ManagerModel extends PortalModel
      * Each shown employee's days in the range (up to today), read as that employee. The cache
      * entries belong to the manager's Joomla user and the employee's code.
      *
+     * 1.2.8: the page uses the per-employee cache (so it can open at once with the last data and
+     * update itself in the background, like the employee's own pages); only the employees not in
+     * it are read ahead together. The printed report and the PDF ($cache false) always read
+     * every employee from ZKBioTime.
+     *
      * @param  list<array{id: int, emp_code: string, name: string}> $employees
      * @return array{days: array<string, list<Day>>, errors: array<string, string>}
      */
-    public function teamDays(array $employees, string $from, string $to): array
+    public function teamDays(array $employees, string $from, string $to, bool $cache = false): array
     {
-        $days   = [];
-        $errors = [];
-        $user   = $this->identity()->joomlaUserId;
+        $days    = [];
+        $errors  = [];
+        $user    = $this->identity()->joomlaUserId;
+        $start   = new \DateTimeImmutable($from);
+        $end     = new \DateTimeImmutable($to);
+        $as      = static fn (array $e): Identity => Identity::matched($user, (string) $e['id'], $e['emp_code']);
+        $toRead  = $cache ? array_values(array_filter($employees, fn (array $e): bool => !$this->attendance()->isCached($as($e), $start, $end))) : $employees;
 
         // Everyone's rows in a few queries instead of about fifteen per employee and month.
-        try {
-            $this->biotime()->getAttendanceReader()->preload(array_column($employees, 'emp_code'), new \DateTimeImmutable($from), new \DateTimeImmutable($to));
-        } catch (DbException) {
-            // Each employee is then read on its own, and its error shown as usual.
+        if ($toRead !== []) {
+            try {
+                $this->biotime()->getAttendanceReader()->preload(array_column($toRead, 'emp_code'), $start, $end);
+            } catch (DbException) {
+                // Each employee is then read on its own, and its error shown as usual.
+            }
         }
 
         foreach ($employees as $e) {
-            $period = $this->attendance()->range(Identity::matched($user, (string) $e['id'], $e['emp_code']), new \DateTimeImmutable($from), new \DateTimeImmutable($to), false);
+            $period = $this->attendance()->range($as($e), $start, $end, $cache);
 
             foreach ($period->errors as $type => $kind) {
                 $errors[$type] = (string) $kind;

@@ -96,6 +96,7 @@ final class DbUserCacheTest extends TestCase
         $cache->allowStale(true);
         self::assertSame(['rows' => [], 'at' => 1], $cache->get($alice, 'punches:2026-11'));
         self::assertSame($at, $cache->staleSince(), 'from when');
+        self::assertNull($cache->get($alice, 'punches:2026-11', false), 'never for a look-up that must be current (a manager\'s team)');
         self::assertNull($cache->get(Identity::matched(6, '12', 'E2'), 'punches:2026-11'), 'never another user\'s');
 
         // A fresh entry does not change staleSince(); the oldest older one counts.

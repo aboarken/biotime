@@ -3,6 +3,14 @@
 All notable changes to `com_biotime` are documented in this file.
 Versions follow the component manifest (`biotime.xml`) and use [Semantic Versioning](https://semver.org/).
 
+## [1.2.8] - 2026-11-21
+
+### Changed
+- **Every portal page opens at once while it updates.** The *"Showing your data from … Updating…"* behaviour of 1.2.6 now also covers **My Leaves**, **My Approvals** and the **Manager Dashboard**.
+  - My Leaves and My Approvals keep their lists for the cache time (they were read on every visit).
+  - Manager Dashboard: each employee's attendance is kept in the manager's own cache (as on the employee pages), so a team page the manager has seen opens at once and updates in the background; only the employees not in the cache are read, together in a few queries. **Which employees a manager may see is never taken from an older copy.** The printed report and the PDF still read every employee from ZKBioTime.
+  - The first visit of a large team takes slightly longer than before (each employee's month is stored once); later visits open at once.
+
 ## [1.2.7] - 2026-11-21
 
 ### Changed

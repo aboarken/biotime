@@ -26,7 +26,7 @@ final class ApprovalsModel extends PortalModel
      */
     public function waiting(): array
     {
-        return $this->biotime()->getLeaveReader()->waitingFor((int) $this->identity()->employeeId());
+        return $this->cachedList('leaves:waiting', fn (): array => $this->biotime()->getLeaveReader()->waitingFor((int) $this->identity()->employeeId()));
     }
 
     /**
@@ -36,6 +36,6 @@ final class ApprovalsModel extends PortalModel
      */
     public function decided(): array
     {
-        return $this->biotime()->getLeaveReader()->decidedBy((int) $this->identity()->employeeId());
+        return $this->cachedList('leaves:decided', fn (): array => $this->biotime()->getLeaveReader()->decidedBy((int) $this->identity()->employeeId()));
     }
 }

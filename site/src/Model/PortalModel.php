@@ -188,6 +188,29 @@ abstract class PortalModel extends BaseModel
         ));
     }
 
+    /**
+     * A list read from ZKBioTime, kept in the user's cache for the cache time (1.2.8: My Leaves,
+     * My Approvals), so the page can open at once with the last data and update itself. A read
+     * error is never cached.
+     *
+     * @param  \Closure(): list<array<string, mixed>> $read
+     * @return list<array<string, mixed>>
+     */
+    protected function cachedList(string $key, \Closure $read): array
+    {
+        $cache  = $this->biotime()->getUserCache();
+        $cached = $cache->get($this->identity(), $key);
+
+        if (isset($cached['l']) && \is_array($cached['l'])) {
+            return $cached['l'];
+        }
+
+        $list = $read();
+        $cache->set($this->identity(), $key, ['l' => $list]);
+
+        return $list;
+    }
+
     public function logger(): \Psr\Log\LoggerInterface
     {
         return $this->biotime()->getLogger();

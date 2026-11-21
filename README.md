@@ -241,22 +241,26 @@ it, and it survives logging out. Each entry belongs to one Joomla user and one e
   within that time.
 - **Past months** are kept for **24 hours**: their punches no longer change. (Only while the cache
   is on; *Cache time* 0 turns everything off.)
-- **Pages open at once (1.2.6).** When the data a page was last shown with is older than the cache
-  time, My Dashboard, My Attendance, the Calendar, day details and My Punches open at once with it
-  and the note *"Showing your data from Saturday, 21 November 2026 13:25. Updating…"* above the
-  title; the page reads current data in the background and replaces itself. If the user has
-  started choosing a filter meanwhile, a *Reload the page* link is offered instead; if the update
-  fails, the note says so. Data older than **7 days** is never shown this way, and the Manager
-  Dashboard, My Leaves and My Approvals always read current data. Without JavaScript the page
-  reloads at once with current data.
+- **Pages open at once (1.2.6; every portal page since 1.2.8).** When the data a page was last
+  shown with is older than the cache time, the page opens at once with it and the note *"Showing
+  your data from Saturday, 21 November 2026 13:25. Updating…"* above the title; it reads current
+  data in the background and replaces itself. If the user has started choosing a filter meanwhile,
+  a *Reload the page* link is offered instead; if the update fails, the note says so. Data older
+  than **7 days** is never shown this way. Without JavaScript the page reloads at once with
+  current data.
+  - **My Leaves and My Approvals** keep their lists for the cache time (1.2.8).
+  - **Manager Dashboard** (1.2.8): each employee's attendance is kept in the manager's cache, so
+    a team page the manager has seen opens at once. *Which* employees a manager may see (their
+    departments and team) is never taken from an older copy. The printed report and the PDF always
+    read current data.
 - Expired entries are deleted automatically 7 days after their time; the table holds only what was
   read recently (a few KB per employee and month, a few MB for a whole school).
 - **One connection, kept open**: all queries of a page share one read-only connection to
   ZKBioTime's database, opened when first needed and kept open between pages (a persistent
   connection, 1.0.10), so a page does not wait for a new encrypted connection. A closed one is
   replaced once automatically.
-- **Manager Dashboard**: the whole team is read in a few queries (not per employee), without the
-  per-user cache; the manager's departments and team list are kept for the cache time.
+- **Manager Dashboard**: the employees not in the cache are read together in a few queries (not
+  per employee); the manager's departments and team list are kept for the cache time.
 - **Daily employee check**: once a day each user's mapping is checked against ZKBioTime. If
   ZKBioTime does not answer, the check is tried again after an hour, not on every page.
 

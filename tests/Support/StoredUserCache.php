@@ -43,7 +43,7 @@ final class StoredUserCache implements UserCacheInterface
         return null;
     }
 
-    public function get(Identity $identity, string $key): ?array
+    public function get(Identity $identity, string $key, bool $stale = true): ?array
     {
         if ($this->ttl <= 0 || !$identity->isMatched()) {
             return null;

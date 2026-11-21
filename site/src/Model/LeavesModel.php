@@ -25,6 +25,6 @@ final class LeavesModel extends PortalModel
      */
     public function requests(): array
     {
-        return $this->biotime()->getLeaveReader()->requestsOf((int) $this->identity()->employeeId());
+        return $this->cachedList('leaves:mine', fn (): array => $this->biotime()->getLeaveReader()->requestsOf((int) $this->identity()->employeeId()));
     }
 }
